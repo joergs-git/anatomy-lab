@@ -5,12 +5,12 @@ const SL={},VL={}; for(const p of POSE_PARAMS){ SL[p.key]=$('ps_'+p.key); VL[p.k
 let syncing=false;
 function syncSliders(){
   syncing=true;
-  for(const p of POSE_PARAMS){ const el=SL[p.key]; const v=Math.round(pose[p.key]); if(+el.value!==v) el.value=v; }
+  for(const p of POSE_PARAMS){ const el=SL[p.key]; if(p.type==='check'){ el.checked=pose[p.key]>=0.5; continue; } const v=Math.round(pose[p.key]); if(+el.value!==v) el.value=v; }
   for(const p of POSE_PARAMS){ VL[p.key].textContent=p.text(pose); }
   for(const p of POSE_PARAMS){ if(!p.range) continue; const r=p.range(pose); const el=SL[p.key]; if(r.min!==undefined) el.min=Math.round(r.min); if(r.max!==undefined) el.max=Math.round(r.max); }
   syncing=false;
 }
-for(const p of POSE_PARAMS){ SL[p.key].addEventListener('input',()=>{ if(syncing) return; stopAnim(); const o={}; o[p.key]=+SL[p.key].value; setPose(o); }); }
+for(const p of POSE_PARAMS){ SL[p.key].addEventListener(p.type==='check'?'change':'input',()=>{ if(syncing) return; stopAnim(); const o={}; o[p.key]=p.type==='check'?(SL[p.key].checked?1:0):+SL[p.key].value; setPose(o); }); }
 $('btnNeutral').addEventListener('click',()=>runPreset(PRESETS[0]));
 // Pathologie (Regler in Anzeigeeinheit, Zustand in Modelleinheit: sliderScale)
 const PL={}; for(const p of PATHO_PARAMS) PL[p.key]=$('pp_'+p.key);
@@ -37,7 +37,9 @@ const loadLabel=pr=>pr.load?(LANG==='en'?(LOAD_EN[pr.id]||pr.load.label):pr.load
 let poseAnim=null, activeChip=null, activeRunId=null;
 function releaseChip(){ if(activeChip){ activeChip.classList.remove('on'); activeChip=null; } activeRunId=null; }
 function stopAnim(){ poseAnim=null; releaseChip(); }
-function setLoad(load,srcId){ if(load){ EXT.F=V3(load.F[0],load.F[1],load.F[2]); EXT.label=load.label; EXT.axialOnly=!!load.axialOnly; EXT.src=srcId||null; } else { EXT.F=null; EXT.label=''; EXT.axialOnly=false; EXT.src=null; } }
+/* Äußere Last: alle Felder der Preset-Last (F als Vektor, dazu modulspezifische wie axialOnly oder at) in EXT übernehmen, sonst Grundzustand */
+const EXT_DEFAULTS=Object.assign({},EXT);
+function setLoad(load,srcId){ for(const k in EXT) delete EXT[k]; Object.assign(EXT,EXT_DEFAULTS); if(load){ Object.assign(EXT,load); EXT.F=V3(load.F[0],load.F[1],load.F[2]); EXT.src=srcId||null; } else EXT.src=null; }
 function animateTo(target,dur,opts={}){ poseAnim={t0:performance.now(),dur,from:Object.assign({},pose),to:Object.assign({},pose,target),loop:!!opts.loop,then:opts.then||null}; }
 function stepAnim(now){
   if(!poseAnim) return false;
@@ -173,7 +175,7 @@ function structStrain(id){ const s=STRUCT_BY_ID[id]; if(!s) return 0; let mx=-9;
 const LOAD_EL={}, LG_EL={};
 (function buildLoadList(){
   const root=$('loadlist'); const known=new Set(LOAD_GROUPS.flatMap(g=>g.ids));
-  const rest=[...STRUCT.filter(s=>!s.static).map(s=>s.id),'bursa'].filter(id=>!known.has(id)); if(rest.length) LOAD_GROUPS[LOAD_GROUPS.length-1].ids.push(...rest);
+  const rest=STRUCT.filter(s=>!s.static).map(s=>s.id).filter(id=>!known.has(id)); if(rest.length) LOAD_GROUPS[LOAD_GROUPS.length-1].ids.push(...rest);
   for(const g of LOAD_GROUPS){
     const wrap=document.createElement('div'); wrap.className='lgrp'; wrap.hidden=true; wrap.dataset.g=g.id;
     const h=document.createElement('button'); h.type='button'; h.className='acc'; h.setAttribute('aria-expanded',String(g.open));
@@ -312,7 +314,7 @@ function dragArm(cx,cy){
   const fr=frames[drag.f]; const p0=drag.local.clone().applyQuaternion(fr.q).add(fr.p);   /* Modellkoordinaten */
   _plane.setFromNormalAndCoplanarPoint(drag.normal,toR(p0)); const p1r=V3(); if(!raycaster.ray.intersectPlane(_plane,p1r)) return;
   const p1=toR(p1r);
-  const patch=DRAG.pose(p0,p1,frames); if(patch) setPose(patch);   /* Griffpunkt-Versatz → Pose: Modulsache */
+  const patch=DRAG.pose(p0,p1,frames,drag.f); if(patch) setPose(patch);   /* Griffpunkt-Versatz → Pose: Modulsache (f = Rahmen des Griffpunkts) */
 }
 let hoverT=0;
 function hover(e){ const now=performance.now(); if(now-hoverT<40) return; hoverT=now;
@@ -406,7 +408,7 @@ function applyLang(){
   document.querySelectorAll('[data-i18n-title]').forEach(e=>{ e.title=t(e.dataset.i18nTitle); });
   document.querySelectorAll('[data-i18n-aria]').forEach(e=>{ e.setAttribute('aria-label',t(e.dataset.i18nAria)); });
   const bl=$('btnLang'); bl.textContent=LANG==='de'?'EN':'DE'; bl.title=t('langT');
-  document.querySelectorAll('#moduleSeg button').forEach(b=>{ const r=REGISTRY.find(x=>x.id===b.dataset.module); b.textContent=LANG==='en'?(r.nameEn||r.name):r.name; });
+  document.querySelectorAll('#moduleSeg button, #moduleSel option').forEach(b=>{ const r=REGISTRY.find(x=>x.id===(b.dataset.module||b.value)); b.textContent=LANG==='en'?(r.nameEn||r.name):r.name; });
   relabelChips(); relabelLayers(); relabelMetrics(); sortLoadList(); relabel3D(); updatePeelLabels();
   $('dockToggle').textContent=dock.classList.contains('collapsed')?t('dockShow'):t('dockHide');
   document.querySelectorAll('.panel').forEach(peekLabel);

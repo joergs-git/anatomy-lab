@@ -1,6 +1,8 @@
 /* ===================== Szene & Geometrie ===================== */
 const canvas=document.getElementById('gl');
-const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
+/* preserveDrawingBuffer: die Detailfenster werden per drawImage aus diesem Canvas kopiert – ohne die Option kann der Puffer
+   zwischen zwei Kopien geleert werden (beobachtet mit SwiftShader im Headless-Test, LESSONS 31) */
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance',preserveDrawingBuffer:true});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
 const scene=new THREE.Scene();
 scene.add(new THREE.HemisphereLight(0xffffff,0x6b7686,0.9));
@@ -99,8 +101,8 @@ const viewports=[{el:mainView,cam:mainCam,main:true}];
 const PEEL_CACHE=[]; function peelIds(level){ if(!PEEL_CACHE[level]){ const s=[]; for(let i=1;i<=level;i++) s.push(...PEEL[i].ids); PEEL_CACHE[level]=s; } return PEEL_CACHE[level]; }
 for(const d of detailDefs){ const el=document.getElementById(d.id); const cam=new THREE.PerspectiveCamera(d.fov,1,1,400); cam.layers.enableAll();
   const c2d=document.createElement('canvas'); c2d.className='dvc'; el.insertBefore(c2d,el.firstChild); d.c2d=c2d; d.ctx2=c2d.getContext('2d');
-  const clip=d.clipX!==undefined?[new THREE.Plane(V3(1,0,0),0)]:null; /* Darstellung: x_R < −x0 weggeschnitten ⇔ Modell x > x0 */ viewports.push({el,cam,def:d,clip}); }
-function fitDetailCams(){ for(const vp of viewports){ if(!vp.def) continue; const f=vp.def.fit(frames); vp.cam.position.copy(toR(f.pos)); vp.cam.up.set(0,1,0); vp.cam.lookAt(toR(f.t)); if(vp.clip){ vp.clip[0].constant=frames.H.p.x+vp.def.clipX; } } }
+  const clip=d.clip?[new THREE.Plane(V3(1,0,0),0)]:null; /* Darstellung: x_R < −x0 weggeschnitten ⇔ Modell x > x0 = d.clip(frames) */ viewports.push({el,cam,def:d,clip}); }
+function fitDetailCams(){ for(const vp of viewports){ if(!vp.def) continue; const f=vp.def.fit(frames); vp.cam.position.copy(toR(f.pos)); vp.cam.up.set(0,1,0); vp.cam.lookAt(toR(f.t)); if(vp.clip){ vp.clip[0].constant=vp.def.clip(frames); } } }
 
 /* ---- Pose anwenden ---- */
 let needsRender=true;

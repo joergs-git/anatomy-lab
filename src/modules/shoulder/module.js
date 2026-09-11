@@ -43,4 +43,6 @@ const MODULE={
   readout:{sum:'scapSum',note:'scapNote',html:scapReadoutHTML},readout0:READOUT0,
   /* Ziehen am Körperteil */
   drag:DRAG,
+  /* Nur für tests/harness.mjs: Bewegungsgrenzen und Kapselfaserzahl */
+  testing:{Emax,rotLimits,CAPS_N},
 };

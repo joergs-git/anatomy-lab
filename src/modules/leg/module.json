@@ -1,0 +1,19 @@
+{
+  "id": "leg",
+  "name": "Beinlabor",
+  "nameEn": "Leg Lab",
+  "description": "Rechtes Bein: Hüfte, Knie, Sprunggelenk; Bodenkontakt mit Gleichgewicht; patellofemorale und tibiofemorale Kraft, Kreuzbandlast, Patellar- und Achillessehne, Tractus, Sprunggelenkbänder.",
+  "parts": [
+    "anatomy.js",
+    "kinematics.js",
+    "presets.js",
+    "bones.js",
+    "views.js",
+    "monitor.js",
+    "hud.js",
+    "interaction.js",
+    "i18n.js",
+    "module.js"
+  ],
+  "alias": "Beinlabor"
+}

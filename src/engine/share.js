@@ -23,7 +23,7 @@ function currentState(){
   if(MOD.id!==REGISTRY[0].id) add('m',MOD.id);
   if(UI.langExplicit) add('lang',LANG);
   if(activeRunId) add('run',activeRunId);
-  else for(const [k,key] of POSE_KEYS){ if(Math.abs(pose[k])>=0.05) add(key,numStr(pose[k])); }
+  else for(const pp of POSE_PARAMS){ if(Math.abs(pose[pp.key]-(pp.def||0))>=0.05) add(pp.url,numStr(pose[pp.key])); }   /* nur Abweichungen vom Standardwert des Parameters */
   if(EXT.F&&EXT.src&&EXT.src!==activeRunId) add('load',EXT.src);
   if(Math.abs(UI.speed-1)>0.001) add('speed',numStr(UI.speed,2));
   if(!UI.loopSweeps) add('loop','0');
@@ -160,6 +160,7 @@ function switchModule(id){
   else location.href=base+(pairs.length?'?'+serialize(pairs):'');
 }
 document.querySelectorAll('#moduleSeg button').forEach(b=>b.addEventListener('click',()=>switchModule(b.dataset.module)));
+$('moduleSel').addEventListener('change',e=>switchModule(e.target.value));
 
 /* ---- Adresszeile laufend aktualisieren (eigenständige Seite; nicht im eingebetteten Viewer) ---- */
 let lastURLq=null, lastURLt=0, urlSyncOK=!IN_FRAME&&!!(window.history&&history.replaceState);
