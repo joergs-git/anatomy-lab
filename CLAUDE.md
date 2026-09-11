@@ -9,8 +9,8 @@ Interaktive biomechanische Lehrmodelle als eine HTML-Datei (three.js r128, kein 
 
 ## Befehle
 
-- `npm run build` – baut `index.html` (Pages), `dist/artifact.html` (claude.ai-Viewer, ohne Dokumentgerüst), `dist/test.html` (lokal, three.js aus node_modules)
-- `npm test` – Modell-Invarianten (`tests/model.test.mjs`, ohne Browser)
+- `npm run build` – baut alle Module aus `src/modules/registry.json` in `index.html` (Pages), `dist/artifact.html` (claude.ai-Viewer, ohne Dokumentgerüst), `dist/test.html` (lokal, three.js aus node_modules); `node build.mjs --registry <json> --out <dir>` für Testbuilds
+- `npm test` – Modell-Invarianten (`tests/model.test.mjs`) und Registry/Build (`tests/registry.test.mjs`), ohne Browser
 - `npm run shots` – Screenshots Desktop/iPhone + Link-Roundtrip in Chromium (braucht `npm i -D playwright && npx playwright install chromium`)
 - Vor jedem Commit: `npm run check` (= build + test). **`index.html` immer mit committen**, die CI vergleicht sie mit dem Quellstand.
 
@@ -24,20 +24,23 @@ Interaktive biomechanische Lehrmodelle als eine HTML-Datei (three.js r128, kein 
 - `src/modules/shoulder/monitor.js`: `METRICS`, `MONITOR` (Top/Spezial/Kapsel-Sammelzeile), `LOAD_GROUPS`, `computeLoads`, `structReadouts`, `BONE_NAME_KEYS`, `LAYER_PRESETS`.
 - `src/modules/shoulder/hud.js`: `planeLabel`, HUD-, Pose- und Skapula-Texte, `READOUT0`.
 - `src/modules/shoulder/interaction.js`: `LABELS` (3D-Beschriftungen), `DRAG` (greifbare Teile, Rotationsachsen, Griffpunkt → Pose).
-- `src/engine/render.js`: Szene, Röhren, Sichtbarkeit/Transparenz, Kameras, Detail-Dock; ruft `buildBones`, nutzt `detailDefs`/`PEEL`/`ORBIT0`/`VIEWS` aus dem Modul.
-- `src/engine/ui.js`: Regler, Chips, Schichten, Monitor-Aufbau, Strukturliste, Maus/Touch, Mobil-Sheets, Sprache – nur noch generische Mechanik über die Modul-Tabellen.
-- `src/engine/share.js`: `currentState()` → lesbare Query oder kompakter Hash-Token; `applyURLState()` beim Laden.
-- Bauteile und Reihenfolge stehen in `src/modules/<modul>/module.json`; `build.mjs` konkateniert sie in eine IIFE (Modul-Dateien vor `render.js`/`ui.js`, damit deren Tabellen beim Aufbau vorliegen).
-- Noch nicht modularisiert (siehe `docs/HANDOVER.md` §9): `page.html` (Markup, Regler-IDs), `i18n.js` (ein Wörterbuch), Pose-/Patho-Schlüssel in `share.js` und `ui.js` (`SL`, `PL`, `syncSliders`), Zonen → Kompression und Kapselfläche in `applyPose`, `window.Schulterlabor`.
+- `src/modules/shoulder/i18n.js`: modulspezifische Texte (`I18N_MOD`) und die englischen Namen (`STRUCT_EN`, `PRESET_EN`, `METRIC_EN`, `INFO_EN`, …).
+- `src/modules/shoulder/module.js`: **die Schnittstelle** – `POSE_PARAMS`/`PATHO_PARAMS` (Regler, Link-Schlüssel, Kurz-Link-Buchstaben, Wertetexte, dynamische Grenzen) und das `MODULE`-Objekt, das die Fabrik zurückgibt.
+- `src/modules/registry.json`: registrierte Module in Link-Reihenfolge (Index im Kurz-Link, nur anhängen). `build.mjs` legt alle in eine Datei: Engine-Kopf → `REGISTRY` + `MODULES[id]=function(){…; return MODULE;}` → `engine/boot.js` → Engine-Rest.
+- `src/engine/boot.js`: wählt das Modul (`m=<id>` / `x<Index>`), ruft die Fabrik, mischt `MOD.i18n` in `I18N`, löst `MOD` in die festen Engine-Namen auf und erzeugt das modulabhängige Markup (Pose-/Pathologie-Regler, Kopplungs-Block, Schicht-Schnellwahl, Detail-Dock, Umschalter `#moduleSeg`, Fußzeile).
+- `src/engine/render.js`: Szene, Röhren, Flächen-Strukturen (`s.surface`), Sichtbarkeit über `material.userData` (`fixed`, `noPick`, `baseOpacity`), Zonen → Kompression über `MOD.render.zones`, `MOD.render.afterPose`, Kameras, Detail-Dock.
+- `src/engine/ui.js`: Regler, Chips, Schichten, Monitor-Aufbau, Strukturliste, Maus/Touch, Mobil-Sheets, Sprache – generische Mechanik über die Modul-Tabellen; Testschnittstelle `window.AnatomyLab` (+ Alias aus `module.json`, z. B. `Schulterlabor`).
+- `src/engine/share.js`: `currentState()` → lesbare Query oder kompakter Hash-Token (Pose/Patho-Felder aus den Parametern, Modul als `m`/`x`); `applyURLState()` beim Laden; `switchModule(id)` lädt die Seite mit dem Modul-Feld neu.
+- Noch in der Engine mit Schulterbezug (siehe `docs/HANDOVER.md` §9): Startpose-Regler heißen generisch, aber `page.html` trägt die restlichen Blöcke (Presets-Überschriften, Legende) fest; der Umschalter wird auf dem Handy noch nicht gesondert gelegt.
 
 ## Regeln, die man leicht bricht
 
 1. **Koordinaten**: Modell in cm, +X lateral rechts, +Y kranial, +Z ventral – linkshändig. `ROOT.scale.x = -1` spiegelt für die Darstellung; alles, was Bildschirm und Modell verbindet (Picking, Kameras, Beschriftungen, Clip-Ebenen), geht durch `toR()`.
-2. **Index-Listen nur anhängen**: `allIds()` (Schichten), `PRESETS`+`ANIMS`+`PHYSIO` (= `RUN_LIST`), `LAYER_GROUPS`, `LOAD_GROUPS` stecken als Basis-36-Index in Kurz-Links. Neue Einträge ans Ende, nie umsortieren oder löschen.
-3. **Kurz-Link-Token** (`compactEncode`): nur `[A-Za-z0-9._:~-]`, höchstens 120 Zeichen, Felder mit `_` getrennt, Kennbuchstabe + Wert. Großbuchstaben sind vergeben; neue Felder bekommen Kleinbuchstaben und gehören meist zu `OPTIONAL_KEYS`.
+2. **Index-Listen nur anhängen**: `registry.json` (Module), `allIds()` (Schichten), `PRESETS`+`ANIMS`+`PHYSIO` (= `RUN_LIST`), `LAYER_GROUPS`, `LOAD_GROUPS` stecken als Basis-36-Index in Kurz-Links. Neue Einträge ans Ende, nie umsortieren oder löschen.
+3. **Kurz-Link-Token** (`compactEncode`): nur `[A-Za-z0-9._:~-]`, höchstens 120 Zeichen, Felder mit `_` getrennt, Kennbuchstabe + Wert. Engine-Buchstaben: `N A W S Q H V O L C I X T U D K Y J m k g x` (`x` = Modul). Pose-/Pathologie-Parameter bekommen ihre Buchstaben im Modul (`code` in `POSE_PARAMS`/`PATHO_PARAMS`; Schulter: `E P R B F` und `M G Z`) und dürfen mit keinem Engine-Buchstaben kollidieren (Warnung in der Konsole). Neue Engine-Felder bekommen Kleinbuchstaben und gehören meist zu `OPTIONAL_KEYS`.
 4. **Referenzlängen**: Muskeln relativ zur Neutralstellung; Bänder/Kapsel als normierte Spannung 0 … 12 % zwischen 85 % und 100 % ihrer Maximallänge im Bewegungsraum, mit anatomischen Ankern (`taut`, `endAt`). Wer in `computeReferenceLengths` eine Pose löst, muss am Ende **die Ruhestellung wieder herstellen**, bevor `REF.lbsDefl` gesetzt wird.
 5. **`EVAL.metrics` ist ein wiederverwendetes Objekt** – für Vergleiche zwischen Posen kopieren (`Object.assign({}, EVAL.metrics)`).
-6. **Sprache**: Deutsch im Markup und in den Datenstrukturen; Englisch ausschließlich in `i18n.js` (`data-i18n`, `STRUCT_EN`, `PRESET_EN`, `LOAD_EN`, `METRIC_EN`, `INFO_EN`, `LAYER_EN`). Zahlenformat über `fmt()` (Locale folgt der Sprache).
+6. **Sprache**: Deutsch im Markup und in den Datenstrukturen; Englisch ausschließlich in den Wörterbüchern: `engine/i18n.js` für Engine-Texte, `modules/<modul>/i18n.js` für Modul-Texte (`I18N_MOD`, `STRUCT_EN`, `PRESET_EN`, `LOAD_EN`, `METRIC_EN`, `INFO_EN`, `LAYER_EN`). Gleiche Schlüssel: das Modul gewinnt. Zahlenformat über `fmt()` (Locale folgt der Sprache).
 7. **Mobil (≤ 980 px)**: Bedienfelder sind Bottom-Sheets, das Detail-Dock verschwindet bei offenem Sheet, das HUD startet eingeklappt. Jede UI-Änderung auch bei 390 px prüfen (`npm run shots`).
 8. **Feste Reihenfolge, nichts springt**: Monitor und Strukturliste sortieren nie dynamisch; Ein-/Ausblenden mit Hysterese (`updateLoads`).
 9. Kein `//`-Kommentar am Zeilenende in Code, der per Skript ersetzt wird – `/* */` verwenden.
@@ -48,7 +51,7 @@ Ruhe AHD ≈ 9,9 mm · 90° Abduktion ≈ 3–4 mm · Wurfposition: posterosuper
 
 ## Fahrplan
 
-Engine/Modul-Schnittstelle → Bein-Modul (Hüfte–Knie–Sprunggelenk) → Rumpf-Modul (LWS–Becken–Hüfte) → HWS als Erweiterung der Schulter. Module nach kinetischen Ketten schneiden, nicht nach Einzelgelenken.
+Engine/Modul-Schnittstelle (Registry, Umschalter, `MODULE`-Objekt: **fertig, v0.10**) → Bein-Modul (Hüfte–Knie–Sprunggelenk) → Rumpf-Modul (LWS–Becken–Hüfte) → HWS als Erweiterung der Schulter. Module nach kinetischen Ketten schneiden, nicht nach Einzelgelenken. Ein neues Modul: Ordner unter `src/modules/<id>/` mit `module.json` (Bauteile, Name, Alias), letzte Datei liefert `MODULE` nach dem Muster von `shoulder/module.js`, dann die ID an `registry.json` **anhängen**; der Umschalter erscheint automatisch.
 
 ## Arbeitsweise
 
@@ -60,4 +63,4 @@ Engine/Modul-Schnittstelle → Bein-Modul (Hüfte–Knie–Sprunggelenk) → Rum
 ## Veröffentlichen
 
 - GitHub Pages: `git push` auf `main` genügt (Root-Ausspielung). Live: https://joergs-git.github.io/anatomy-lab/
-- claude.ai-Spiegel: `dist/artifact.html` als Artefakt neu veröffentlichen (nur aus der ursprünglichen Cowork-Sitzung möglich); dort gilt die Kurz-Link-Form.
+- claude.ai-Spiegel: `dist/artifact.html` als Artefakt neu veröffentlichen (nur aus der ursprünglichen Cowork-Sitzung möglich); dort gilt die Kurz-Link-Form. Der Modulwechsel lädt die Seite mit neuem Hash neu (`switchModule`).

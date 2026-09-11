@@ -1,24 +1,31 @@
 # Aufgaben
 
-## Migration Schritt 1: schulterspezifische Teile aus `engine/` nach `modules/shoulder/` (HANDOVER §9)
+## Schritt 2: Modul-Registry und Umschalter (HANDOVER §9)
 
-Ziel: reine Verschiebung, kein Verhaltensunterschied. Nachweis: `npm run check` grün, `npm run shots` byte-identisch zur Baseline (Ausnahme `desktop-start.png`: ≤ 40 Pixel Animationsrauschen, wie zwischen zwei Baseline-Läufen gemessen).
+Ziel: Die Engine instanziiert ein Modul über eine Schnittstelle (`MODULE`-Objekt), alle registrierten Module liegen in einer `index.html`, das Modul steht im Link (`m=<id>` / kompakt `x<Index>`), die Kopfzeile bekommt einen Umschalter (verborgen, solange nur ein Modul registriert ist). Verhalten des Schultermoduls bleibt identisch (A/B-Vergleich gegen den v0.9.1-Build wie in Schritt 1).
 
-- [x] Baseline: Build, Tests, Screenshots (zwei Läufe zur Rauschmessung)
-- [x] `modules/shoulder/presets.js` – `PRESETS`, `ANIMS`, `PHYSIO`
-- [x] `modules/shoulder/bones.js` – `buildBones(ctx)` (Thorax, Klavikula, Skapula, Humerus, Unterarm/Hand)
-- [x] `modules/shoulder/views.js` – `ORBIT0`, `VIEWS`, `detailDefs` (mit `readout`), `PEEL`
-- [x] `modules/shoulder/monitor.js` – `METRICS`, `MONITOR` (Top/Spezial/Kapsel-Sammelzeile), `LOAD_GROUPS`, `computeLoads`, `structReadouts`, `BONE_NAME_KEYS`, `LAYER_PRESETS`
-- [x] `modules/shoulder/hud.js` – `planeLabel`, HUD-/Zusammenfassungs-/Skapula-Texte, `READOUT0`
-- [x] `modules/shoulder/interaction.js` – `LABELS`, `DRAG` (Greifbare Teile, Rotationsachsen, Ziehen → Pose)
-- [x] `engine/render.js`, `engine/ui.js` auf die Modul-Bausteine umstellen; `G`/`BONES` aus `frames` bzw. dynamisch
-- [x] `module.json` Reihenfolge, `tests/harness.mjs` liest Presets aus `presets.js`
-- [x] Verifikation: check + shots + Pixelvergleich
-- [x] Doku: CLAUDE.md (Architektur), HANDOVER §9 (Stand, Restkopplungen), README (Struktur), LESSONS bei Bedarf
-- [x] Version 0.9.1, Commit(s), Push, Merge nach `main`
+- [x] `build.mjs`: Registry (`src/modules/registry.json`, Reihenfolge = Link-Index, nur anhängen), Modul-Dateien als Fabrik `MODULES[id]=function(){…; return MODULE;}`, Engine-Reihenfolge fest, Optionen `--registry` und `--out` für Tests
+- [x] `modules/shoulder/module.js`: Schnittstellenobjekt (Pose-/Pathologie-Parameter deklarativ mit Link-Codes, Anatomie, Kinematik, Presets, Knochen, Kameras, Detailfenster, Monitor, HUD, Drag, Render-Hooks, Startanimation, Alias)
+- [x] `modules/shoulder/i18n.js`: modulspezifische Texte und `*_EN`-Tabellen aus `engine/i18n.js` herauslösen; Engine mischt beim Start
+- [x] `engine/boot.js`: Modul aus URL wählen, Fabrik aufrufen, Wörterbuch mischen, modulabhängiges Markup erzeugen (Pose-Regler, Pathologie-Regler, Rhythmus-Block, Schicht-Schnellwahl, Detail-Dock, Umschalter)
+- [x] `engine/render.js`: Materialien mit `userData` statt Identitätsvergleich, Zonen → Metrik aus dem Modul, Flächen-Strukturen generisch, `afterPose`-Hook
+- [x] `engine/ui.js`: Regler generisch (`poseParams`/`pathoParams`), `stepAnim`, Intro, `window.AnatomyLab` + Alias
+- [x] `engine/share.js`: Pose-/Patho-Codes aus den Parametern, Modul-Feld `m`/`x`, `switchModule`
+- [x] `page.html`: Platzhalter statt Schulter-Markup, Umschalter-Element, Fußzeile
+- [x] Tests: `harness.mjs` unverändert lauffähig, neuer `tests/registry.test.mjs` (Zwillings-Build, Syntaxprüfung), `shots.mjs` auf `AnatomyLab`
+- [x] Verifikation: check, shots, A/B (Pixel, Texte, Metriken, Zustand, Interaktion) gegen v0.9.1; Zwillings-Build im Browser: Umschalter sichtbar, Wechsel funktioniert, Link trägt `m`
+- [x] Doku: CLAUDE.md (Regeln: Registry anhängen, Modul-Wörterbuch, Schnittstelle), HANDOVER §9, README (Struktur, Link-Feld, Umschalter), LESSONS
+- [x] Version 0.10.0, Commits, Push
+
+## Offen (blockiert, Nutzerentscheidung)
+
+- Git-Historie umschreiben (Autor „Joerg Klaas“/„Claude“ → joergs-git, Co-Authored-By-Trailer entfernen) braucht `git filter-branch` + `push --force-with-lease`; vom Auto-Modus blockiert, Befehle stehen im Abschlussbericht der Sitzung vom 11. September 2026.
+- `git push origin main` wurde in dieser Sitzung vom Auto-Modus blockiert; Commits liegen lokal auf `main`.
 
 ## Results
 
-- 11 Modell-Tests grün, `npm run shots` ohne Skriptfehler, Link-Roundtrip OK; vier von fünf Screenshots byte-identisch, Startbild im Rauschmaß (Monitor-Balken-Transition).
-- Zusätzlicher A/B-Vergleich beider Builds mit acht festen Link-Zuständen (Desktop + iPhone): Pixel, Panel-Texte, Metriken, Link-Zustand identisch; Arm-Drag, Rotationsmodus und Klick-Auswahl identisch.
-- `engine/render.js` 268 → 177 Zeilen, `engine/ui.js` 538 → 449 Zeilen; sechs neue Modul-Dateien. Restkopplungen in `docs/HANDOVER.md` §9 aufgelistet.
+- `npm run check`: Build mit Registry, 14 Tests grün (11 Modell, 3 Registry/Build inkl. Syntaxprüfung des Seitenskripts).
+- `npm run shots`: keine Skriptfehler, Link-Roundtrip OK.
+- A/B gegen v0.9.1: acht Link-Zustände (Desktop + iPhone) pixel-, text-, metrik- und zustandsidentisch; Arm-Drag, Rotationsmodus, Auswahl identisch.
+- Zwillings-Build (shoulder + Kopie „Zwilling“): Umschalter sichtbar, Wechsel hin und zurück, Fußzeile/Link `m=shoulder2` bzw. `x1`, englische Modulnamen, Sprache bleibt beim Wechsel erhalten.
+- Engine kennt kein Gelenk mehr beim Namen: Regler, Link-Codes, Dock, Monitor, Texte kommen aus `MODULE`.

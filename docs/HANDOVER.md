@@ -138,3 +138,42 @@ Noch in der Engine mit Schulterwissen (nächster Schritt, zusammen mit Registry 
 - `share.js`: `POSE_KEYS`, Kennbuchstaben `E P R B F` (Pose) und `M G Z` (Pathologie), `applyURLState` (Pathologie-Grenzen).
 - `render.js`: `LAYER` (Namen), Zonen 1–4 → `bursaComp`/`corComp`/`grooveComp`/`psComp` in `applyPose`, Kapselfläche (`CAPS_N`/`CAPS_M`, `capsuleMesh`), Bursa-Dicke aus `ahd`, Sonderfälle `thorax`/`bursa`/`capsule` in `applyVisibility` und `pick`.
 - `i18n.js`: ein gemeinsames Wörterbuch (UI und Schulteranatomie); `window.Schulterlabor` als Testschnittstelle.
+
+### Stand Schritt 2 (11. September 2026, v0.10.0): Registry, Schnittstelle, Umschalter
+
+Umgesetzt, Verhalten des Schultermoduls unverändert (A/B gegen v0.9.1 wie in Schritt 1: acht Link-Zustände pixel-, text- und metrikidentisch, Interaktion identisch; Zwillings-Build mit zwei Registry-Einträgen im Browser geprüft: Umschalter, Wechsel in beide Richtungen, `m=`/`x1` in beiden Link-Formen, englische Modulnamen).
+
+- **Fabrik statt Konkatenation**: `build.mjs` legt Engine-Kopf (`math.js`, `i18n.js`), `REGISTRY` und je Modul `MODULES[id]=function(){…; return MODULE;}` und danach `boot.js`, `render.js`, `ui.js`, `share.js` in eine Datei. Nur die im Link gewählte Fabrik läuft; `computeReferenceLengths()` des Schultermoduls kostet also nur einmal. Optionen `--registry`/`--out` für Testbuilds (`tests/registry.test.mjs`).
+- **Schnittstelle** (`modules/shoulder/module.js`), tatsächliche Form gegenüber dem Zielbild oben:
+
+```
+MODULE = {
+  i18n:{de,en}, names:{struct,group,layer,preset,load,metric,info},
+  pose, patho, frames,
+  poseParams:[{key,url,code,min,max,step,def,label,ends,text(ps),range(ps)?}],
+  pathoParams:[{key,url,code,min,max,step,sliderScale,urlScale,compactScale,label,text(v)}],
+  intro,                                   // Zielpose der Startanimation (oder null)
+  anatomy:{AN,STRUCT,STRUCT_BY_ID,LAYER_GROUPS,INFO,LABELS},
+  kinematics:{worldPt,solvePose,clampPose,evaluate,EVAL,EXT,REF,fasKey},
+  presets, anims, physio,
+  buildBones(ctx), render:{zones:{z→Metrik}, afterPose(M,{BONES,COL})},
+  camera:{orbit0,views}, detailViews:[{id,title,label,fov,level,clipX?,fit(fr),readout(M,rh)}], peel,
+  metrics, monitor:{top,special,aggregate}, loadGroups, computeLoads(), structReadouts(id,M), boneNameKeys, layerPresets:[{id,key,ids}],
+  hud:{mini,body,summary}, readout:{sum,note,html}|null, readout0,
+  drag:{ids,frame,rot:{x,y},pose(p0,p1,fr)}
+}
+```
+
+- **boot.js** wählt das Modul (`URL_PARAMS.m` oder Kurz-Feld `x<Index>`), mischt `MOD.i18n` in `I18N`, destrukturiert `MOD` in die festen Engine-Namen und erzeugt das modulabhängige Markup (Pose-/Pathologie-Regler mit IDs `ps_<key>`/`pp_<key>`, Kopplungs-Block `#readout`, Schicht-Schnellwahl, Detail-Dock, Umschalter `#moduleSeg`, Fußzeile). `page.html` enthält dafür Platzhalter.
+- **Wörterbuch geteilt**: 104 Engine-Schlüssel bleiben in `engine/i18n.js`, 133 Schulter-Schlüssel plus `*_EN`-Tabellen liegen in `modules/shoulder/i18n.js`.
+- **render.js** generisch: Materialien tragen `userData.fixed` (Kontexthülle: Transparenz/Highlight unverändert), `noPick`, `baseOpacity`; Flächen-Strukturen (`s.surface`) beliebig viele; Zonen → Kompressionsmetrik aus `render.zones`; Bursa-Dicke über `render.afterPose`.
+- **share.js**: Pose-/Patho-Felder generisch aus den Parametern (lesbare Schlüssel, Kurz-Buchstaben, Skalen), Modul-Feld `m` (lesbar) / `x` (kompakt, Basis-36-Index der Registry), `switchModule(id)` lädt mit Modul-Feld und ggf. Sprache neu (Artefakt/`file:` über Hash + `reload`). Engine-Buchstaben `N A W S Q H V O L C I X T U D K Y J m k g x`; Kollisionen mit Modul-Codes werden in der Konsole gemeldet.
+- **Testschnittstelle** `window.AnatomyLab` (+ Alias aus `module.json`, `Schulterlabor`), `tests/shots.mjs` umgestellt.
+
+Für das Bein-Modul noch zu klären bzw. offen:
+
+- Der Umschalter sitzt in der Kopfzeile neben dem Titel und ist auf dem Handy bei zwei Modulen eng; ggf. in das Bewegungs-Sheet oder ein Menü legen.
+- Presets-Überschriften (`hPresets`, `hPhysio`, `hAnims`), Legende und Hinweistexte sind Engine-Schlüssel; ein Modul kann sie über gleichnamige Schlüssel in seinem Wörterbuch überschreiben (Modul gewinnt).
+- `LAYER` (three.js-Render-Layer) lebt im Modul (`bones.js`); Strukturen tragen `layer` in `anatomy.js`.
+- `hashchange` lädt im eingebetteten Viewer weiterhin nicht neu (Viewer setzt den Hash selbst); der Umschalter ruft `reload()` explizit.
+- Ein Modul ohne Pathologie-Parameter blendet den Block aus (`blk-patho`), ohne Kopplungs-Block (`readout:null`) entfällt der `<details>`-Teil.
