@@ -1220,40 +1220,56 @@ function evaluate(fr){
 }
 computeReferenceLengths();
 
-/* ===================== Szene & Geometrie ===================== */
-const canvas=document.getElementById('gl');
-const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
-const scene=new THREE.Scene();
-scene.add(new THREE.HemisphereLight(0xffffff,0x6b7686,0.9));
-const keyLight=new THREE.DirectionalLight(0xffffff,0.75); keyLight.position.set(40,70,90); scene.add(keyLight);
-const fillLight=new THREE.DirectionalLight(0xdfe8ff,0.35); fillLight.position.set(-70,10,-50); scene.add(fillLight);
-const rimLight=new THREE.DirectionalLight(0xffffff,0.25); rimLight.position.set(60,-30,-60); scene.add(rimLight);
+/* ===================== Schulter: klinische Positionen, Bewegungsabläufe, Übungen =====================
+   Reihenfolge nie ändern, neue Einträge nur anhängen – die Position in PRESETS+ANIMS+PHYSIO (RUN_LIST) steckt als Basis-36-Index in Kurz-Links. */
+const PRESETS=[
+ {id:'neutral',name:'Neutral',pose:{P:0,E:0,IR:0,elbow:0,pro:0}},
+ {id:'abd90',name:'Abduktion 90° (frontal)',pose:{P:10,E:90,IR:0,elbow:0,pro:0}},
+ {id:'scap90',name:'Skapulaebene 90°',pose:{P:35,E:90,IR:0,elbow:0,pro:0}},
+ {id:'flex90',name:'Flexion 90°',pose:{P:90,E:90,IR:0,elbow:0,pro:0}},
+ {id:'over',name:'Überkopf 170°',pose:{P:35,E:170,IR:0,elbow:0,pro:0}},
+ {id:'jobe',name:'Jobe / Empty Can',pose:{P:35,E:90,IR:60,elbow:0,pro:70}},
+ {id:'fullcan',name:'Full Can',pose:{P:35,E:90,IR:-30,elbow:0,pro:-60}},
+ {id:'hawkins',name:'Hawkins-Kennedy ▶',pose:{P:90,E:90,IR:0,elbow:90,pro:0},sweep:{IR:70}},
+ {id:'neer',name:'Neer ▶',pose:{P:95,E:60,IR:50,elbow:0,pro:60},sweep:{E:130}},
+ {id:'aber',name:'Wurfposition / Apprehension',pose:{P:-10,E:90,IR:-95,elbow:90,pro:0}},
+ {id:'cross',name:'Cross-Body-Adduktion',pose:{P:120,E:70,IR:20,elbow:110,pro:0}},
+ {id:'schuerze',name:'Schürzengriff',pose:{P:-53,E:43,IR:100,elbow:135,pro:40}},
+ {id:'nacken',name:'Nackengriff',pose:{P:90,E:140,IR:-20,elbow:140,pro:0}},
+ {id:'speed',name:'Speed-Test (Bizeps)',pose:{P:90,E:90,IR:-30,elbow:0,pro:-80}},
+];
+const ANIMS=[
+ {id:'arc',name:'Painful Arc (Abduktion 0–180°)',from:{P:10,E:0,IR:0,elbow:0,pro:0},to:{P:10,E:180,IR:0,elbow:0,pro:0},dur:5200},
+ {id:'flexarc',name:'Flexion 0–180°',from:{P:90,E:0,IR:0,elbow:0,pro:0},to:{P:90,E:180,IR:0,elbow:0,pro:0},dur:5200},
+ {id:'rot',name:'Rotation bei 90° Abduktion',from:{P:10,E:90,IR:-90,elbow:90,pro:0},to:{P:10,E:90,IR:70,elbow:90,pro:0},dur:4200},
+ {id:'prosup',name:'Hand drehen (Pro-/Supination)',from:{P:0,E:0,IR:0,elbow:90,pro:-85},to:{P:0,E:0,IR:0,elbow:90,pro:80},dur:3200},
+];
+/* Physiotherapeutische Übungen & Haltemuster – Kräfte in N, Modellkoordinaten (+X lateral, +Y kranial, +Z ventral) */
+const PHYSIO=[
+ {id:'wall',name:'Isometrisches Wanddrücken',pose:{P:90,E:90,IR:0,elbow:0,pro:70},load:{F:[0,0,-80],label:'Wand drückt 80 N zurück'}},
+ {id:'erband',name:'Außenrotation gegen Band (Ellbogen am Körper) ▶',pose:{P:0,E:0,IR:30,elbow:90,pro:0},sweep:{IR:-45},load:{F:[-20,0,0],label:'Band zieht 20 N nach innen, Ellbogen am Körper',axialOnly:true}},
+ {id:'irband',name:'Innenrotation gegen Band (Ellbogen am Körper) ▶',pose:{P:0,E:0,IR:-40,elbow:90,pro:0},sweep:{IR:60},load:{F:[20,0,0],label:'Band zieht 20 N nach außen, Ellbogen am Körper',axialOnly:true}},
+ {id:'er90band',name:'Außenrotation bei 90° Abduktion gegen Band ▶',pose:{P:10,E:90,IR:0,elbow:90,pro:0},sweep:{IR:-85},load:{F:[0,0,25],label:'Band zieht 25 N nach vorn'}},
+ {id:'fullcanW',name:'Full Can mit 2 kg ▶',pose:{P:35,E:10,IR:-30,elbow:0,pro:-60},sweep:{E:90},load:{F:[0,-20,0],label:'Hantel 2 kg'}},
+ {id:'latraise',name:'Seitheben 3 kg – Painful-Arc-Check ▶',pose:{P:10,E:10,IR:0,elbow:0,pro:60},sweep:{E:100},load:{F:[0,-30,0],label:'Hantel 3 kg'}},
+ {id:'wallslide',name:'Wandrutschen ▶',pose:{P:85,E:85,IR:-75,elbow:90,pro:60},sweep:{E:150,elbow:25,IR:-20},load:{F:[0,0,-15],label:'Wandkontakt 15 N'}},
+ {id:'elbowchest',name:'Ellbogen waagerecht zur Brustmitte (hintere Schulter dehnen)',pose:{P:135,E:85,IR:60,elbow:100,pro:0},load:{F:[-30,0,0],label:'Gegenhand zieht 30 N nach innen'}},
+ {id:'schuerzeUp',name:'Schürzengriff, Daumen oben',pose:{P:-53,E:43,IR:85,elbow:135,pro:-25}},
+ {id:'sleeper',name:'Sleeper Stretch (Seitlage) ▶',pose:{P:90,E:90,IR:0,elbow:90,pro:0},sweep:{IR:65}},
+ {id:'pendel',name:'Pendeln (Codman) ↻',pose:{P:-40,E:18,IR:0,elbow:0,pro:0},loop:{P:50,E:18}},
+ {id:'row',name:'Ruderzug gegen Band ▶',pose:{P:90,E:55,IR:0,elbow:20,pro:0},sweep:{P:-45,E:35,elbow:105},load:{F:[0,0,40],label:'Band zieht 40 N nach vorn'}},
+ {id:'pushplus',name:'Wand-Liegestütz plus (Serratus) ▶',pose:{P:90,E:60,IR:-45,elbow:70,pro:70},sweep:{E:90,elbow:0,IR:-10},load:{F:[0,0,-120],label:'Wandreaktion 120 N'}},
+ {id:'ohp',name:'Überkopfdrücken 5 kg ▶',pose:{P:30,E:90,IR:-90,elbow:100,pro:60},sweep:{E:170,elbow:0,IR:-20},load:{F:[0,-50,0],label:'Hantel 5 kg'}},
+ /* Neue Einträge nur ANHÄNGEN – die Position in dieser Liste steckt in Kurz-Links */
+ {id:'sleeperMod',name:'Sleeper Stretch, modifiziert (30° zurückgerollt) ▶',pose:{P:60,E:90,IR:0,elbow:90,pro:0},sweep:{IR:65}},
+ {id:'crossStretch',name:'Cross-Body-Dehnung (hintere Kapsel) ▶',pose:{P:95,E:75,IR:20,elbow:100,pro:0},sweep:{P:135}},
+];
 
-const LAYER={deltoid:1,thorax:2,arm:3,sheet:4};
-/* Das Modell ist in anatomischen Koordinaten (+X lateral rechts, +Y kranial, +Z ventral) definiert – ein linkshändiges System.
-   ROOT spiegelt es für die rechtshändige Darstellung (x → −x). Alle Umrechnungen Modell ↔ Darstellung laufen über toR(). */
-const ROOT=new THREE.Group(); ROOT.scale.x=-1; scene.add(ROOT);
-const toR=v=>V3(-v.x,v.y,v.z);
-const G={T:new THREE.Group(),C:new THREE.Group(),S:new THREE.Group(),H:new THREE.Group(),F:new THREE.Group(),R:new THREE.Group()};
-for(const k in G) ROOT.add(G[k]);
-
-const MAT={
-  bone:new THREE.MeshStandardMaterial({color:COL.bone,roughness:0.62,metalness:0.02}),
-  thorax:new THREE.MeshStandardMaterial({color:COL.bone,roughness:0.7,transparent:true,opacity:0.28,depthWrite:false}),
-  ribs:new THREE.MeshStandardMaterial({color:COL.bone,roughness:0.62,transparent:true,opacity:0.55}),
-  cart:new THREE.MeshStandardMaterial({color:COL.cart,roughness:0.35}),
-  bursa:new THREE.MeshStandardMaterial({color:COL.bursa,roughness:0.3,transparent:true,opacity:0.65}),
-  capsule:new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.5,transparent:true,opacity:0.82,side:THREE.DoubleSide}),
-};
-const BONE_MATS={};  // pro Knochen eigene Kopie (Transparenz/Highlight)
-function boneMat(id){ if(!BONE_MATS[id]) BONE_MATS[id]=MAT.bone.clone(); return BONE_MATS[id]; }
-const pickables=[];
-function tag(mesh,sid,kind,layer){ mesh.userData.sid=sid; mesh.userData.kind=kind; if(layer) mesh.layers.set(layer); pickables.push(mesh); return mesh; }
-const BONES={thorax:[],clav:[],scap:[],hum:[],fore:[]};   // id → meshes
-function addBone(group,mesh,id,layer){ group.add(mesh); BONES[id].push(mesh); tag(mesh,id,'bone',layer); return mesh; }
-const ell=(c,r,mat)=>{ const m=new THREE.Mesh(new THREE.SphereGeometry(1,20,14),mat); m.position.copy(c); m.scale.set(r.x,r.y,r.z); return m; };
-
+/* ===================== Schulter: Knochengeometrie =====================
+   Baut die Knochen je Rahmen (T Thorax, C Klavikula, S Skapula, H Humerus, F Ulna, R Radius/Hand) plus Labrum und Bursa.
+   ctx kommt aus engine/render.js: G (Gruppen je Rahmen), LAYER (Render-Layer), MAT (Materialien), boneMat(id), addBone(group,mesh,id,layer),
+   ell(center,radii,mat), pickables (Trefferliste), BONES (id → Meshes). Geometrie in Modellkoordinaten (cm, +X lateral, +Y kranial, +Z ventral). */
+function buildBones({G,LAYER,MAT,boneMat,addBone,ell,pickables,BONES}){
 /* ---- Thorax ---- */
 (function buildThorax(){
   const g=G.T, mat=boneMat('thorax');
@@ -1269,7 +1285,7 @@ const ell=(c,r,mat)=>{ const m=new THREE.Mesh(new THREE.SphereGeometry(1,20,14),
     const yb=6-2.6*i;
     for(const side of [1,-1]){
       const pts=[]; for(let a=-95;a<=72;a+=12){ const y=yb-3.6*(a+95)/167; const s=thoraxSec(y); pts.push(V3(AN.mid+side*(s.rx+0.25)*Math.cos(a*DEG),y,s.cz+(s.rz+0.25)*Math.sin(a*DEG))); }
-      const rib=staticTube(pts,0.4,7,{material:MAT.ribs,rings:24}); rib.layers.set(LAYER.thorax); g.add(rib); BONES.thorax.push(rib); tag(rib,'thorax','bone',LAYER.thorax);
+      const rib=staticTube(pts,0.4,7,{material:MAT.ribs,rings:24}); addBone(g,rib,'thorax',LAYER.thorax);
     }
   }
   // Sternum
@@ -1334,6 +1350,182 @@ const ell=(c,r,mat)=>{ const m=new THREE.Mesh(new THREE.SphereGeometry(1,20,14),
   for(const z of [-2.1,-0.7,0.75,2.2]){ const len=z<0?(z<-2?7.2:8.2):(z<1?8.6:7.8); const f=staticTube([V3(1.0,-9.5,0.7+z),V3(1.0,-9.5-len*0.55,0.7+z*1.02),V3(1.0,-9.5-len,0.7+z*1.05)],[0.62,0.58,0.45],7,{material:mat,rings:10}); addBone(G.R,f,'fore',L); }
   const th=staticTube([V3(1.2,-3.0,3.6),V3(1.35,-5.8,5.6),V3(1.45,-8.6,6.8)],[0.85,0.7,0.5],7,{material:mat,rings:10}); addBone(G.R,th,'fore',L);
 })();
+}
+
+/* ===================== Schulter: Kameras, Detailansichten, Schichtstufen =====================
+   ORBIT0: Standardkamera (Bezug für geteilte Links). VIEWS: Ansichts-Schalter der Kopfzeile.
+   detailDefs: die vier Detailfenster (id = Element-ID in page.html) mit Kamera-Fit je Pose und Anzeigetext (readout).
+   PEEL: Schichtstufen der Detailansichten – Reihenfolge nie ändern (Stufe steckt in Kurz-Links). */
+const ORBIT0={tx:6,ty:-8,tz:0,theta:-32,phi:74,dist:112};   // Standardkamera (Grad / cm), Bezug für geteilte Links
+const VIEWS={front:{theta:-12,phi:78},side:{theta:-92,phi:78},back:{theta:-186,phi:78},top:{theta:-35,phi:14}};
+
+const detailDefs=[
+  {id:'dv1',fov:26,level:2,readout:(M)=>fmt(M.ahd*10,1)+' mm',
+   fit(fr){ const t=worldPt(fr,AN.bursaCenter).add(V3(0.3,-0.8,0)); const d=V3(0.95,0.5,0.8).normalize(); return {t,pos:t.clone().addScaledVector(d,16)}; }},
+  {id:'dv2',fov:26,level:4,clipX:0.55,readout:(M)=>t('ant')+' '+fmt(M.capAnt*100)+' % · '+t('post')+' '+fmt(M.capPost*100)+' %',
+   fit(fr){ const t=fr.H.p.clone().add(V3(-1.2,0,0)); const d=V3(1,0.28,0.32).normalize(); return {t,pos:t.clone().addScaledVector(d,14)}; }},
+  {id:'dv3',fov:26,level:2,readout:(M)=>t('kink')+' '+(M.lbsDeflRel>=0?'+':'')+fmt(M.lbsDeflRel)+'°',
+   fit(fr){ const t=worldPt(fr,AN.grooveLm).add(V3(-0.5,-1.0,0)); const d=V3(0.45,0.55,0.75).normalize(); return {t,pos:t.clone().addScaledVector(d,15)}; }},
+  {id:'dv4',fov:28,level:0,readout:(M,rh)=>rh?t('scapUp')+fmt(rh.UR)+'° · '+t('tilt')+' '+fmt(rh.PT)+'°':null,
+   fit(fr){ const t=worldPt(fr,L('S',sc(-6,-4,0))).add(V3(-3,2,0)); const d=V3(-0.12,0.18,-1).normalize(); return {t,pos:t.clone().addScaledVector(d,52)}; }},
+];
+
+/* Schichtstufen der Detailansichten (von außen nach innen abtragen) */
+const PEEL=[{ids:[],key:'peel0'},{ids:['thorax','deltA','deltM','deltP'],key:'peel1'},{ids:['pecM','pecMin','lat','trapU','trapM','trapL','rhomb','lev','serr','tmaj'],key:'peel2'},{ids:['bicSH','corbr','triLH','nAx','nSS'],key:'peel3'},{ids:['supra','infra','tmin','subsc'],key:'peel4'},{ids:['bicLH','bursa','CHL','GHL','CAL','ACCC'],key:'peel5'},{ids:['capsule','labrum'],key:'peel6'}];
+PEEL.forEach(p=>Object.defineProperty(p,'name',{get(){ return t(p.key); }}));
+
+/* ===================== Schulter: Engstellen-Monitor, belastete Strukturen, Struktur-Zusatzwerte =====================
+   METRICS: Zeilen des Monitors (get liest EVAL.metrics; levels: Schwelle → Statuswort → Statusklasse; text: optionale Sonderformatierung).
+   MONITOR: feste Reihenfolge – oben die häufigen Problemzonen, darunter eingeklappt die Spezialfälle; die Kapsel erscheint als Sammelzeile
+   ihrer vier Regionen (aggregate). LOAD_GROUPS: Gruppen der Strukturliste – Reihenfolge nie ändern (Gruppenindex steckt in Kurz-Links). */
+const METRICS=[
+ {id:'ahd',name:'Subakromialer Abstand',unit:'mm',get:M=>M.ahd*10,levels:[[7,'lvFree','ok'],[5,'lvContact','warn'],[3,'lvNarrow','bad'],[-99,'lvSevere','crit']],max:12,sub:'Schulterdach ↔ Humeruskopf/Tub. majus; hier laufen Supraspinatussehne und Bursa (Ruhe ≈ 9–10 mm)'},
+ {id:'chd',name:'Subkorakoidaler Abstand',unit:'mm',get:M=>M.chd*10,levels:[[8,'lvFree','ok'],[6,'lvContact','warn'],[4,'lvNarrow','bad'],[-99,'lvSevere','crit']],max:14,sub:'Coracoid ↔ Tub. minus; Subscapularissehne, Rotatorenintervall, lange Bizepssehne'},
+ {id:'psd',name:'Posterosuperiorer Pfannenrand ↔ Manschettenansatz',unit:'mm',get:M=>M.psd*10,levels:[[8,'lvFree','ok'],[4,'lvContact','warn'],[-99,'lvStop','bad']],max:20,sub:'Internes Impingement in der Wurfposition (Abduktion + Außenrotation)'},
+ {id:'capAnt',name:'Kapsel vorn (SGHL · MGHL · IGHL)',unit:'%',get:M=>M.capAnt*100,levels:[[10,'lvEnd','bad'],[5,'lvTens','warn'],[0,'lvBears','ok'],[-99,'lvSlack','ok']],max:12,tension:true},
+ {id:'capPost',name:'Kapsel hinten',unit:'%',get:M=>M.capPost*100,levels:[[10,'lvEnd','bad'],[5,'lvTens','warn'],[0,'lvBears','ok'],[-99,'lvSlack','ok']],max:12,tension:true},
+ {id:'capInf',name:'Kapsel unten (Recessus axillaris)',unit:'%',get:M=>M.capInf*100,levels:[[10,'lvEnd','bad'],[5,'lvTens','warn'],[0,'lvBears','ok'],[-99,'lvSlack','ok']],max:12,tension:true},
+ {id:'capSup',name:'Kapsel oben / Rotatorenintervall',unit:'%',get:M=>M.capSup*100,levels:[[10,'lvEnd','bad'],[5,'lvTens','warn'],[0,'lvBears','ok'],[-99,'lvSlack','ok']],max:12,tension:true},
+ {id:'lbs',name:'Lange Bizepssehne: Umlenkung am Sulcuseingang',unit:'°',get:M=>M.lbsDeflRel,text:(v,M)=>(v>=0?'+':'')+fmt(v)+'°'+(M.lbsStrain<-0.1?' · '+fmt(M.lbsStrain*100)+t('shorter'):M.lbsStrain>0.05?' · +'+fmt(M.lbsStrain*100)+t('longer'):''),levels:[[40,'lvStrong','bad'],[15,'lvRaised','warn'],[-99,'lvRest','ok']],max:90,sub:'Zusatzknick gegenüber Ruhe (Innenrotation, Flexion); dazu Länge des intraartikulären Anteils'},
+ {id:'nax',name:'N. axillaris (quadrilateraler Raum)',unit:'%',get:M=>M.axStrain*100,levels:[[8,'lvStretched','warn'],[-99,'lvRelaxed','ok']],max:12,tension:true},
+ {id:'jrf',name:'Gelenkreaktionskraft (Kompression im Gelenk)',unit:'N',get:M=>M.jrf,levels:[[900,'lvVeryHigh','crit'],[500,'lvHigh','bad'],[200,'lvMod','warn'],[-1,'lvLow','ok']],max:1200,sub:'Schätzung aus Muskelzug, Armgewicht und äußerer Last (Band, Hantel, Wand)'},
+];
+/* Reihenfolge nach klinischer Häufigkeit: subakromial (≈ Hälfte aller Schulterbeschwerden), Kapsel (Frozen Shoulder, GIRD, Instabilität),
+   lange Bizepssehne, Gelenkkraft – darunter eingeklappt die Spezialfälle (Wurfsport, selten). */
+const CAP_IDS=['capAnt','capPost','capInf','capSup'];
+const MONITOR={
+  top:['ahd','capsule','lbs','jrf'], special:['psd','chd','nax'],
+  /* Sammelzeile: stärkster Anteil der vier Kapselregionen; Text = Wert + Region */
+  aggregate:{id:'capsule',ids:CAP_IDS,nameKey:'mCapsule',max:12,tension:true,
+    text:(v,best)=>(v>=0?'+':'')+fmt(v)+' % '+t({capAnt:'ant',capPost:'post',capInf:'inf',capSup:'sup_'}[best])},
+};
+
+/* ---- Belastete Strukturen: Dehnung/Haltearbeit je Struktur plus Engstellen (Kompression) auf die betroffenen Strukturen abbilden ---- */
+function computeLoads(){
+  const M=EVAL.metrics; const out={};
+  const add=(id,score,label,col)=>{ const e=out[id]||(out[id]={score:0,labels:[],col}); if(score>e.score){ e.score=score; e.col=col; } e.labels.push(label); };
+  for(const s of STRUCT){ if(s.surface||s.static) continue; const st=structStrain(s.id);
+    if(s.kind==='muscle'){ if(st>0.08) add(s.id,st/0.35,t('stretched')+fmt(st*100)+' %','var(--red)');
+      const a=EVAL.act[s.id]||0; if(a>0.22) add(s.id,a*0.9,t('holding')+' '+fmt(Math.min(a,1.5)*100)+' %','var(--amber)'); }
+    else if(st>0.04) add(s.id,st/0.12,t('tensioned')+fmt(st*100)+' %','var(--red)');
+  }
+  const capMax=Math.max(M.capAnt,M.capPost,M.capInf,M.capSup); if(capMax>0.04){ const reg=[[t('ant'),M.capAnt],[t('post'),M.capPost],[t('inf'),M.capInf],[t('sup_'),M.capSup]].filter(r=>r[1]>0.04).map(r=>r[0]).join(', '); add('capsule',capMax/0.12,t('tensionedReg')+' '+reg+' +'+fmt(capMax*100)+' %','var(--red)'); }
+  if(M.bursaComp>0.05){ add('bursa',M.bursaComp+0.2,t('compressed')+fmt(M.ahd*10,1)+' mm)','var(--violet)'); add('supra',M.bursaComp+0.25,t('underArch')+fmt(M.ahd*10,1)+' mm)','var(--violet)'); }
+  if(M.corComp>0.05){ add('subsc',M.corComp+0.15,t('underCor')+fmt(M.chd*10,1)+' mm)','var(--violet)'); }
+  if(M.grooveComp>0.15){ add('bicLH',M.grooveComp+0.1,t('inGroove'),'var(--violet)'); }
+  if(M.psComp>0.05){ add('infra',M.psComp+0.15,t('postRim')+fmt(M.psd*10,1)+' mm)','var(--violet)'); }
+  return out;
+}
+/* Gruppen in fester klinischer Reihenfolge (häufigste Problemzonen oben), innerhalb alphabetisch; Zeilen mit Hysterese ein-/ausblenden, damit nichts springt.
+   Reihenfolge nie ändern – Gruppenindex steckt in Kurz-Links. */
+const LOAD_GROUPS=[
+ {id:'cuff',key:'lgCuffB',ids:['supra','infra','tmin','subsc','bursa'],open:true},
+ {id:'joint',key:'lgJointB',ids:['capsule','GHL','CHL'],open:true},
+ {id:'arm',key:'lgArmB',ids:['bicLH','bicSH','corbr','triLH'],open:true},
+ {id:'delt',key:'lgDeltB',ids:['deltA','deltM','deltP'],open:false},
+ {id:'back',key:'lgBackB',ids:['trapU','trapM','trapL','rhomb','lev','serr','lat','tmaj'],open:false},
+ {id:'chest',key:'lgChestB',ids:['pecM','pecMin'],open:false},
+ {id:'nerve',key:'lgNerveB',ids:['nAx','nSS'],open:false},
+];
+
+/* Anzeigenamen der Teile, die keine Strukturen sind (Knochen, Labrum, Bursa, Kapsel) – Schlüssel in i18n.js */
+const BONE_NAME_KEYS={thorax:'nameThorax',clav:'nameClav',scap:'nameScap',hum:'nameHum',fore:'nameFore',labrum:'nameLabrum',bursa:'nameBursa',capsule:'nameCapsule'};
+/* Schnellwahl der Schichten (Buttons „nur Knochen“ / „Manschette“) */
+const LAYER_PRESETS={bones:['thorax','clav','scap','hum','fore','labrum'],cuff:['thorax','clav','scap','hum','fore','labrum','capsule','bursa','CAL','CHL','GHL','ACCC','supra','infra','tmin','subsc','bicLH']};
+
+/* Zusatzzeilen im Struktur-Info: welche Engstellen-Werte zu welcher Struktur gehören */
+function structReadouts(id,M){
+  const rows=[];
+  if(id==='capsule') rows.push([t('liRegions'),[M.capAnt,M.capPost,M.capInf,M.capSup].map(v=>(v>=0?'+':'')+fmt(v*100)+' %').join(' · ')]);
+  if(id==='supra'||id==='bursa') rows.push([t('liAHD'),fmt(M.ahd*10,1)+' mm']);
+  if(id==='subsc') rows.push([t('liCHD'),fmt(M.chd*10,1)+' mm']);
+  if(id==='bicLH') rows.push([t('liDefl'),(M.lbsDeflRel>=0?'+':'')+fmt(M.lbsDeflRel)+'° '+t('liVsRest')],[t('liIntra'),(M.lbsStrain>=0?'+':'')+fmt(M.lbsStrain*100)+' % '+t('liLength')]);
+  if(id==='infra') rows.push([t('liPSD'),fmt(M.psd*10,1)+' mm']);
+  if(id==='nAx') rows.push([t('liStrain'),(M.axStrain>=0?'+':'')+fmt(M.axStrain*100)+' %']);
+  return rows;
+}
+
+/* ===================== Schulter: Texte für HUD, Pose-Zusammenfassung und Skapula-Anzeige =====================
+   Reine Textbausteine aus pose (humerothorakal), rh (Rhythmus-Auswertung aus solvePose) und M (EVAL.metrics); die Engine setzt sie in die Elemente. */
+function planeLabel(P){ return t(P<-60?'plane0':P<-15?'plane1':P<=15?'plane2':P<=55?'plane3':P<=110?'plane4':'plane5'); }
+/* Rhythmus-Auswertung, bevor die erste Pose gelöst ist */
+const READOUT0={UR:0,PT:0,ER:0,cEl:0,cRet:0};
+const rotAbbr=ps=>ps.IR<0?t('ER'):t('IR');
+function hudMiniText(ps,M){ return `E ${fmt(ps.E)}° · ${rotAbbr(ps)} ${fmt(Math.abs(ps.IR))}° · ${fmt(M.ahd*10,1)} mm`; }
+function hudBodyHTML(ps,rh,M){
+  return `${t('elev')} ${fmt(ps.E)}° · ${planeLabel(ps.P)} (${fmt(ps.P)}°)<br>${ps.IR<0?t('ERfull'):t('IRfull')} ${fmt(Math.abs(ps.IR))}° · ${t('elbow')} ${fmt(ps.elbow)}° · ${Math.abs(ps.pro)<3?t('foreNeutral'):(ps.pro<0?t('supination'):t('pronation'))+' '+fmt(Math.abs(ps.pro))+'°'}<span class="hud-more"><br>${t('scapUp')}${fmt(rh.UR)}° · ${t('tilt')} ${fmt(rh.PT)}° · ${rh.ER>=0?t('ER'):t('IR')} ${fmt(Math.abs(rh.ER))}° · GH ≈ ${fmt(Math.max(0,ps.E-rh.UR))}°</span><br>${t('subac')} ${fmt(M.ahd*10,1)} mm · ${t('subcor')} ${fmt(M.chd*10,1)} mm · ${t('jforce')} ${fmt(M.jrf)} N`;
+}
+function poseSummaryText(ps){ return `E ${fmt(ps.E)}° / ${fmt(ps.P)}° / ${rotAbbr(ps)} ${fmt(Math.abs(ps.IR))}°`; }
+function scapReadoutHTML(ps,rh){
+  return `${t('upRot')} ${fmt(rh.UR)}° · ${t('postTilt')} ${fmt(rh.PT)}° · ${rh.ER>=0?t('ERfull'):t('IRfull')} ${fmt(Math.abs(rh.ER))}°<br>${t('clav')}: ${t('elev')} ${fmt(rh.cEl)}° · ${rh.cRet>=0?t('retr'):t('protr')} ${fmt(Math.abs(rh.cRet))}°<br>${t('gh')} ${fmt(Math.max(0,ps.E-rh.UR))}° · ${t('st')} ${fmt(rh.UR)}°`;
+}
+
+/* ===================== Schulter: 3D-Beschriftungen und Ziehen am Arm =====================
+   LABELS: Knochen-Landmarken (key → i18n) und je eine Beschriftung pro Struktur (Mitte des ersten Faszikels).
+   DRAG: welche Teile greifbar sind, an welchem Rahmen Strukturen hängen, welche Pose-Achsen der Rotationsmodus steuert
+   und wie ein Griffpunkt-Versatz (Modellkoordinaten) in eine neue Pose übersetzt wird. */
+const LABELS=[
+ {id:'scap',key:'lbAcr',lm:L('S',AN.acromionPath[3].clone().add(V3(0,0.5,0)))},{id:'scap',key:'lbCor',lm:L('S',AN.coracoidTip.clone().add(V3(0,0.4,0.4)))},
+ {id:'clav',key:'nameClav',lm:L('C',V3(-9.5,5.4,6.0))},{id:'hum',key:'lbGT',lm:L('H',AN.GT.c.clone().add(V3(0.8,0.8,0)))},{id:'hum',key:'lbLT',lm:L('H',AN.LT.c.clone().add(V3(0,0.6,0.8)))},
+ {id:'scap',key:'lbGlen',lm:L('S',AN.glenoid.c.clone().add(V3(0,-2.4,0)))},{id:'scap',key:'nameScap',lm:L('S',sc(-8,-6,0.8))},{id:'hum',key:'nameHum',lm:L('H',V3(1.5,-18,0))},
+ {id:'fore',key:'lbRad',lm:L('R',V3(2.2,12,1.0))},{id:'fore',key:'lbUlna',lm:L('F',V3(-1.2,-12,-0.4))},{id:'thorax',key:'lbC7',lm:L('T',V3(AN.mid,6.5,spineBack(6)-0.5))},{id:'thorax',key:'lbStern',lm:L('T',V3(AN.mid,-2,sternumFront(-2)+0.5))},
+];
+STRUCT.forEach(s=>{ if(!s.surface) LABELS.push({id:s.id,struct:s}); });
+LABELS.push({id:'capsule',key:'lbCaps',lm:L('S',AN.glenoid.c.clone().add(V3(1.3,-2.6,0.2)))},{id:'bursa',key:'lbBursa',lm:AN.bursaCenter},{id:'labrum',key:'lbLab',lm:L('S',AN.glenoid.c.clone().add(V3(0,2.4,0)))});
+
+/* Greifbare Teile: Humerus, Unterarm/Hand und alle Strukturen mit Ansatz am Arm, dazu die Kapsel */
+const ARM_IDS=new Set(['hum','fore']); STRUCT.forEach(s=>{ if(!s.surface&&s.fas.some(f=>f.some(lm=>lm.f==='H'||lm.f==='F'||lm.f==='R'))) ARM_IDS.add(s.id); }); ARM_IDS.add('capsule');
+const DRAG={
+  ids:ARM_IDS,
+  frame:'H',                 /* Rahmen für Strukturen ohne eigenen Knochen-Rahmen (Röhren hängen an ROOT) */
+  rot:{x:'IR',y:'elbow'},    /* Rotationsmodus: horizontal → Innen-/Außenrotation, vertikal → Ellbogen */
+  /* Griffpunkt p0 → Zielpunkt p1 (Modellkoordinaten): Drehung um das Humeruskopfzentrum, daraus Ebene und Elevation */
+  pose(p0,p1,fr){
+    const GH=fr.H.p; const v0=p0.clone().sub(GH), v1=p1.clone().sub(GH); if(v0.length()<3||v1.length()<3) return null;
+    const q=new THREE.Quaternion().setFromUnitVectors(v0.normalize(),v1.normalize());
+    const qH=q.multiply(fr.H.q); const d=V3(0,-1,0).applyQuaternion(qH);
+    const P=Math.atan2(d.z,d.x)/DEG, E=Math.acos(clamp(-d.y,-1,1))/DEG;
+    return {P:clamp(P,-90,150),E};
+  },
+};
+
+/* ===================== Szene & Geometrie ===================== */
+const canvas=document.getElementById('gl');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+const scene=new THREE.Scene();
+scene.add(new THREE.HemisphereLight(0xffffff,0x6b7686,0.9));
+const keyLight=new THREE.DirectionalLight(0xffffff,0.75); keyLight.position.set(40,70,90); scene.add(keyLight);
+const fillLight=new THREE.DirectionalLight(0xdfe8ff,0.35); fillLight.position.set(-70,10,-50); scene.add(fillLight);
+const rimLight=new THREE.DirectionalLight(0xffffff,0.25); rimLight.position.set(60,-30,-60); scene.add(rimLight);
+
+const LAYER={deltoid:1,thorax:2,arm:3,sheet:4};
+/* Das Modell ist in anatomischen Koordinaten (+X lateral rechts, +Y kranial, +Z ventral) definiert – ein linkshändiges System.
+   ROOT spiegelt es für die rechtshändige Darstellung (x → −x). Alle Umrechnungen Modell ↔ Darstellung laufen über toR(). */
+const ROOT=new THREE.Group(); ROOT.scale.x=-1; scene.add(ROOT);
+const toR=v=>V3(-v.x,v.y,v.z);
+/* Eine Gruppe je Rahmen der Modul-Rahmenkette (frames aus kinematics.js) */
+const G={}; for(const k in frames) G[k]=new THREE.Group();
+for(const k in G) ROOT.add(G[k]);
+
+const MAT={
+  bone:new THREE.MeshStandardMaterial({color:COL.bone,roughness:0.62,metalness:0.02}),
+  thorax:new THREE.MeshStandardMaterial({color:COL.bone,roughness:0.7,transparent:true,opacity:0.28,depthWrite:false}),
+  ribs:new THREE.MeshStandardMaterial({color:COL.bone,roughness:0.62,transparent:true,opacity:0.55}),
+  cart:new THREE.MeshStandardMaterial({color:COL.cart,roughness:0.35}),
+  bursa:new THREE.MeshStandardMaterial({color:COL.bursa,roughness:0.3,transparent:true,opacity:0.65}),
+  capsule:new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.5,transparent:true,opacity:0.82,side:THREE.DoubleSide}),
+};
+const BONE_MATS={};  // pro Knochen eigene Kopie (Transparenz/Highlight)
+function boneMat(id){ if(!BONE_MATS[id]) BONE_MATS[id]=MAT.bone.clone(); return BONE_MATS[id]; }
+const pickables=[];
+function tag(mesh,sid,kind,layer){ mesh.userData.sid=sid; mesh.userData.kind=kind; if(layer) mesh.layers.set(layer); pickables.push(mesh); return mesh; }
+const BONES={};   // id → meshes (Knochen, Labrum, Bursa – gefüllt vom Modul über addBone bzw. direkt)
+function addBone(group,mesh,id,layer){ group.add(mesh); (BONES[id]||(BONES[id]=[])).push(mesh); tag(mesh,id,'bone',layer); return mesh; }
+const ell=(c,r,mat)=>{ const m=new THREE.Mesh(new THREE.SphereGeometry(1,20,14),mat); m.position.copy(c); m.scale.set(r.x,r.y,r.z); return m; };
+
+/* ---- Knochen: Geometrie kommt aus dem Modul (modules/shoulder/bones.js) ---- */
+buildBones({G,LAYER,MAT,boneMat,addBone,ell,pickables,BONES});
 
 /* ---- Muskeln, Sehnen, Bänder, Nerven als Röhren ---- */
 const FMESH={};     // fasKey → Tube
@@ -1383,29 +1575,16 @@ function applyVisibility(){
 /* ---- Kameras & Ansichten ---- */
 const mainView=document.getElementById('mainView');
 const mainCam=new THREE.PerspectiveCamera(34,1,1,600); mainCam.layers.enableAll();
-const ORBIT0={tx:6,ty:-8,tz:0,theta:-32,phi:74,dist:112};   // Standardkamera (Grad / cm), Bezug für geteilte Links
+/* ORBIT0 (Standardkamera) und VIEWS (Ansichts-Schalter) definiert das Modul (views.js) */
 const orbit={target:V3(ORBIT0.tx,ORBIT0.ty,ORBIT0.tz),theta:ORBIT0.theta*DEG,phi:ORBIT0.phi*DEG,dist:ORBIT0.dist};   // Darstellungskoordinaten
 function updateMainCam(){ const o=orbit; const sp=Math.sin(o.phi); mainCam.position.set(o.target.x+o.dist*sp*Math.sin(o.theta),o.target.y+o.dist*Math.cos(o.phi),o.target.z+o.dist*sp*Math.cos(o.theta)); mainCam.lookAt(o.target); }
 updateMainCam();
-const VIEWS={front:{theta:-12,phi:78},side:{theta:-92,phi:78},back:{theta:-186,phi:78},top:{theta:-35,phi:14}};
 function setView(name){ const v=VIEWS[name]; if(!v) return; animateOrbit(v.theta*DEG,v.phi*DEG); }
 let orbitAnim=null;
 function animateOrbit(theta,phi){ orbitAnim={t0:performance.now(),dur:600,th0:orbit.theta,ph0:orbit.phi,th1:theta,ph1:phi}; needsRender=true; }
 
-const detailDefs=[
-  {id:'dv1',fov:26,level:2,
-   fit(fr){ const t=worldPt(fr,AN.bursaCenter).add(V3(0.3,-0.8,0)); const d=V3(0.95,0.5,0.8).normalize(); return {t,pos:t.clone().addScaledVector(d,16)}; }},
-  {id:'dv2',fov:26,level:4,clipX:0.55,
-   fit(fr){ const t=fr.H.p.clone().add(V3(-1.2,0,0)); const d=V3(1,0.28,0.32).normalize(); return {t,pos:t.clone().addScaledVector(d,14)}; }},
-  {id:'dv3',fov:26,level:2,
-   fit(fr){ const t=worldPt(fr,AN.grooveLm).add(V3(-0.5,-1.0,0)); const d=V3(0.45,0.55,0.75).normalize(); return {t,pos:t.clone().addScaledVector(d,15)}; }},
-  {id:'dv4',fov:28,level:0,
-   fit(fr){ const t=worldPt(fr,L('S',sc(-6,-4,0))).add(V3(-3,2,0)); const d=V3(-0.12,0.18,-1).normalize(); return {t,pos:t.clone().addScaledVector(d,52)}; }},
-];
+/* detailDefs (Detailfenster) und PEEL (Schichtstufen) definiert das Modul (views.js) */
 const viewports=[{el:mainView,cam:mainCam,main:true}];
-/* Schichtstufen der Detailansichten (von außen nach innen abtragen) */
-const PEEL=[{ids:[],key:'peel0'},{ids:['thorax','deltA','deltM','deltP'],key:'peel1'},{ids:['pecM','pecMin','lat','trapU','trapM','trapL','rhomb','lev','serr','tmaj'],key:'peel2'},{ids:['bicSH','corbr','triLH','nAx','nSS'],key:'peel3'},{ids:['supra','infra','tmin','subsc'],key:'peel4'},{ids:['bicLH','bursa','CHL','GHL','CAL','ACCC'],key:'peel5'},{ids:['capsule','labrum'],key:'peel6'}];
-PEEL.forEach(p=>Object.defineProperty(p,'name',{get(){ return t(p.key); }}));
 const PEEL_CACHE=[]; function peelIds(level){ if(!PEEL_CACHE[level]){ const s=[]; for(let i=1;i<=level;i++) s.push(...PEEL[i].ids); PEEL_CACHE[level]=s; } return PEEL_CACHE[level]; }
 for(const d of detailDefs){ const el=document.getElementById(d.id); const cam=new THREE.PerspectiveCamera(d.fov,1,1,400); cam.layers.enableAll();
   const c2d=document.createElement('canvas'); c2d.className='dvc'; el.insertBefore(c2d,el.firstChild); d.c2d=c2d; d.ctx2=c2d.getContext('2d');
@@ -1495,7 +1674,6 @@ const $=id=>document.getElementById(id);
 const SL={E:$('sElev'),P:$('sPlane'),IR:$('sRot'),elbow:$('sElbow'),pro:$('sPro')};
 const VL={E:$('vElev'),P:$('vPlane'),IR:$('vRot'),elbow:$('vElbow'),pro:$('vPro')};
 let syncing=false;
-function planeLabel(P){ return t(P<-60?'plane0':P<-15?'plane1':P<=15?'plane2':P<=55?'plane3':P<=110?'plane4':'plane5'); }
 function syncSliders(){
   syncing=true;
   for(const k in SL){ const v=Math.round(pose[k]); if(+SL[k].value!==v) SL[k].value=v; }
@@ -1527,49 +1705,7 @@ function setLoopLive(on){
     a.loop=false; a.t0=now-t_*d; a.then=()=>{ releaseChip(); }; }
 }
 
-/* ---- Klinische Positionen ---- */
-const PRESETS=[
- {id:'neutral',name:'Neutral',pose:{P:0,E:0,IR:0,elbow:0,pro:0}},
- {id:'abd90',name:'Abduktion 90° (frontal)',pose:{P:10,E:90,IR:0,elbow:0,pro:0}},
- {id:'scap90',name:'Skapulaebene 90°',pose:{P:35,E:90,IR:0,elbow:0,pro:0}},
- {id:'flex90',name:'Flexion 90°',pose:{P:90,E:90,IR:0,elbow:0,pro:0}},
- {id:'over',name:'Überkopf 170°',pose:{P:35,E:170,IR:0,elbow:0,pro:0}},
- {id:'jobe',name:'Jobe / Empty Can',pose:{P:35,E:90,IR:60,elbow:0,pro:70}},
- {id:'fullcan',name:'Full Can',pose:{P:35,E:90,IR:-30,elbow:0,pro:-60}},
- {id:'hawkins',name:'Hawkins-Kennedy ▶',pose:{P:90,E:90,IR:0,elbow:90,pro:0},sweep:{IR:70}},
- {id:'neer',name:'Neer ▶',pose:{P:95,E:60,IR:50,elbow:0,pro:60},sweep:{E:130}},
- {id:'aber',name:'Wurfposition / Apprehension',pose:{P:-10,E:90,IR:-95,elbow:90,pro:0}},
- {id:'cross',name:'Cross-Body-Adduktion',pose:{P:120,E:70,IR:20,elbow:110,pro:0}},
- {id:'schuerze',name:'Schürzengriff',pose:{P:-53,E:43,IR:100,elbow:135,pro:40}},
- {id:'nacken',name:'Nackengriff',pose:{P:90,E:140,IR:-20,elbow:140,pro:0}},
- {id:'speed',name:'Speed-Test (Bizeps)',pose:{P:90,E:90,IR:-30,elbow:0,pro:-80}},
-];
-const ANIMS=[
- {id:'arc',name:'Painful Arc (Abduktion 0–180°)',from:{P:10,E:0,IR:0,elbow:0,pro:0},to:{P:10,E:180,IR:0,elbow:0,pro:0},dur:5200},
- {id:'flexarc',name:'Flexion 0–180°',from:{P:90,E:0,IR:0,elbow:0,pro:0},to:{P:90,E:180,IR:0,elbow:0,pro:0},dur:5200},
- {id:'rot',name:'Rotation bei 90° Abduktion',from:{P:10,E:90,IR:-90,elbow:90,pro:0},to:{P:10,E:90,IR:70,elbow:90,pro:0},dur:4200},
- {id:'prosup',name:'Hand drehen (Pro-/Supination)',from:{P:0,E:0,IR:0,elbow:90,pro:-85},to:{P:0,E:0,IR:0,elbow:90,pro:80},dur:3200},
-];
-/* Physiotherapeutische Übungen & Haltemuster – Kräfte in N, Modellkoordinaten (+X lateral, +Y kranial, +Z ventral) */
-const PHYSIO=[
- {id:'wall',name:'Isometrisches Wanddrücken',pose:{P:90,E:90,IR:0,elbow:0,pro:70},load:{F:[0,0,-80],label:'Wand drückt 80 N zurück'}},
- {id:'erband',name:'Außenrotation gegen Band (Ellbogen am Körper) ▶',pose:{P:0,E:0,IR:30,elbow:90,pro:0},sweep:{IR:-45},load:{F:[-20,0,0],label:'Band zieht 20 N nach innen, Ellbogen am Körper',axialOnly:true}},
- {id:'irband',name:'Innenrotation gegen Band (Ellbogen am Körper) ▶',pose:{P:0,E:0,IR:-40,elbow:90,pro:0},sweep:{IR:60},load:{F:[20,0,0],label:'Band zieht 20 N nach außen, Ellbogen am Körper',axialOnly:true}},
- {id:'er90band',name:'Außenrotation bei 90° Abduktion gegen Band ▶',pose:{P:10,E:90,IR:0,elbow:90,pro:0},sweep:{IR:-85},load:{F:[0,0,25],label:'Band zieht 25 N nach vorn'}},
- {id:'fullcanW',name:'Full Can mit 2 kg ▶',pose:{P:35,E:10,IR:-30,elbow:0,pro:-60},sweep:{E:90},load:{F:[0,-20,0],label:'Hantel 2 kg'}},
- {id:'latraise',name:'Seitheben 3 kg – Painful-Arc-Check ▶',pose:{P:10,E:10,IR:0,elbow:0,pro:60},sweep:{E:100},load:{F:[0,-30,0],label:'Hantel 3 kg'}},
- {id:'wallslide',name:'Wandrutschen ▶',pose:{P:85,E:85,IR:-75,elbow:90,pro:60},sweep:{E:150,elbow:25,IR:-20},load:{F:[0,0,-15],label:'Wandkontakt 15 N'}},
- {id:'elbowchest',name:'Ellbogen waagerecht zur Brustmitte (hintere Schulter dehnen)',pose:{P:135,E:85,IR:60,elbow:100,pro:0},load:{F:[-30,0,0],label:'Gegenhand zieht 30 N nach innen'}},
- {id:'schuerzeUp',name:'Schürzengriff, Daumen oben',pose:{P:-53,E:43,IR:85,elbow:135,pro:-25}},
- {id:'sleeper',name:'Sleeper Stretch (Seitlage) ▶',pose:{P:90,E:90,IR:0,elbow:90,pro:0},sweep:{IR:65}},
- {id:'pendel',name:'Pendeln (Codman) ↻',pose:{P:-40,E:18,IR:0,elbow:0,pro:0},loop:{P:50,E:18}},
- {id:'row',name:'Ruderzug gegen Band ▶',pose:{P:90,E:55,IR:0,elbow:20,pro:0},sweep:{P:-45,E:35,elbow:105},load:{F:[0,0,40],label:'Band zieht 40 N nach vorn'}},
- {id:'pushplus',name:'Wand-Liegestütz plus (Serratus) ▶',pose:{P:90,E:60,IR:-45,elbow:70,pro:70},sweep:{E:90,elbow:0,IR:-10},load:{F:[0,0,-120],label:'Wandreaktion 120 N'}},
- {id:'ohp',name:'Überkopfdrücken 5 kg ▶',pose:{P:30,E:90,IR:-90,elbow:100,pro:60},sweep:{E:170,elbow:0,IR:-20},load:{F:[0,-50,0],label:'Hantel 5 kg'}},
- /* Neue Einträge nur ANHÄNGEN – die Position in dieser Liste steckt in Kurz-Links */
- {id:'sleeperMod',name:'Sleeper Stretch, modifiziert (30° zurückgerollt) ▶',pose:{P:60,E:90,IR:0,elbow:90,pro:0},sweep:{IR:65}},
- {id:'crossStretch',name:'Cross-Body-Dehnung (hintere Kapsel) ▶',pose:{P:95,E:75,IR:20,elbow:100,pro:0},sweep:{P:135}},
-];
+/* ---- Klinische Positionen, Übungen, Bewegungsabläufe: Definitionen im Modul (presets.js) ---- */
 const RUNNABLE={}; [...PRESETS,...ANIMS,...PHYSIO].forEach(x=>RUNNABLE[x.id]=x);
 const presetName=pr=>LANG==='en'?(PRESET_EN[pr.id]||pr.name):pr.name;
 const loadLabel=pr=>pr.load?(LANG==='en'?(LOAD_EN[pr.id]||pr.load.label):pr.load.label):'';
@@ -1640,8 +1776,8 @@ const layerName=(id,de)=>LANG==='en'?(LAYER_EN[id]||de):de;
     op.addEventListener('input',()=>{ GROUP_OPACITY[g.id]=+op.value; applyVisibility(); });
     d.appendChild(items); root.appendChild(d);
   }
-  $('btnLayersBones').addEventListener('click',()=>setAllLayers(id=>['thorax','clav','scap','hum','fore','labrum'].includes(id)));
-  $('btnLayersCuff').addEventListener('click',()=>setAllLayers(id=>['thorax','clav','scap','hum','fore','labrum','capsule','bursa','CAL','CHL','GHL','ACCC','supra','infra','tmin','subsc','bicLH'].includes(id)));
+  $('btnLayersBones').addEventListener('click',()=>setAllLayers(id=>LAYER_PRESETS.bones.includes(id)));
+  $('btnLayersCuff').addEventListener('click',()=>setAllLayers(id=>LAYER_PRESETS.cuff.includes(id)));
   $('btnLayersAll').addEventListener('click',()=>setAllLayers(()=>true));
   $('cbLabels').addEventListener('change',e=>setLabelsOn(e.target.checked));
   $('cbStrain').addEventListener('change',e=>setStrainOn(e.target.checked));
@@ -1654,99 +1790,62 @@ function setStrainOn(on){ UI.strain=!!on; $('cbStrain').checked=UI.strain; setPo
 function relabelLayers(){ for(const gid in LAYER_UI.groups){ const u=LAYER_UI.groups[gid]; u.lab.textContent=groupName(u.g); u.op.title=t('opT'); } for(const id in LAYER_UI.items){ const it=LAYER_UI.items[id]; it.tn.nodeValue=layerName(id,it.de); } }
 
 /* ---- Engstellen-Monitor ---- */
-const METRICS=[
- {id:'ahd',name:'Subakromialer Abstand',unit:'mm',get:M=>M.ahd*10,levels:[[7,'lvFree','ok'],[5,'lvContact','warn'],[3,'lvNarrow','bad'],[-99,'lvSevere','crit']],max:12,sub:'Schulterdach ↔ Humeruskopf/Tub. majus; hier laufen Supraspinatussehne und Bursa (Ruhe ≈ 9–10 mm)'},
- {id:'chd',name:'Subkorakoidaler Abstand',unit:'mm',get:M=>M.chd*10,levels:[[8,'lvFree','ok'],[6,'lvContact','warn'],[4,'lvNarrow','bad'],[-99,'lvSevere','crit']],max:14,sub:'Coracoid ↔ Tub. minus; Subscapularissehne, Rotatorenintervall, lange Bizepssehne'},
- {id:'psd',name:'Posterosuperiorer Pfannenrand ↔ Manschettenansatz',unit:'mm',get:M=>M.psd*10,levels:[[8,'lvFree','ok'],[4,'lvContact','warn'],[-99,'lvStop','bad']],max:20,sub:'Internes Impingement in der Wurfposition (Abduktion + Außenrotation)'},
- {id:'capAnt',name:'Kapsel vorn (SGHL · MGHL · IGHL)',unit:'%',get:M=>M.capAnt*100,levels:[[10,'lvEnd','bad'],[5,'lvTens','warn'],[0,'lvBears','ok'],[-99,'lvSlack','ok']],max:12,tension:true},
- {id:'capPost',name:'Kapsel hinten',unit:'%',get:M=>M.capPost*100,levels:[[10,'lvEnd','bad'],[5,'lvTens','warn'],[0,'lvBears','ok'],[-99,'lvSlack','ok']],max:12,tension:true},
- {id:'capInf',name:'Kapsel unten (Recessus axillaris)',unit:'%',get:M=>M.capInf*100,levels:[[10,'lvEnd','bad'],[5,'lvTens','warn'],[0,'lvBears','ok'],[-99,'lvSlack','ok']],max:12,tension:true},
- {id:'capSup',name:'Kapsel oben / Rotatorenintervall',unit:'%',get:M=>M.capSup*100,levels:[[10,'lvEnd','bad'],[5,'lvTens','warn'],[0,'lvBears','ok'],[-99,'lvSlack','ok']],max:12,tension:true},
- {id:'lbs',name:'Lange Bizepssehne: Umlenkung am Sulcuseingang',unit:'°',get:M=>M.lbsDeflRel,levels:[[40,'lvStrong','bad'],[15,'lvRaised','warn'],[-99,'lvRest','ok']],max:90,sub:'Zusatzknick gegenüber Ruhe (Innenrotation, Flexion); dazu Länge des intraartikulären Anteils'},
- {id:'nax',name:'N. axillaris (quadrilateraler Raum)',unit:'%',get:M=>M.axStrain*100,levels:[[8,'lvStretched','warn'],[-99,'lvRelaxed','ok']],max:12,tension:true},
- {id:'jrf',name:'Gelenkreaktionskraft (Kompression im Gelenk)',unit:'N',get:M=>M.jrf,levels:[[900,'lvVeryHigh','crit'],[500,'lvHigh','bad'],[200,'lvMod','warn'],[-1,'lvLow','ok']],max:1200,sub:'Schätzung aus Muskelzug, Armgewicht und äußerer Last (Band, Hantel, Wand)'},
-];
+/* METRICS und MONITOR (Reihenfolge, Spezialblock, Kapsel-Sammelzeile) definiert das Modul (monitor.js) */
 const metricName=m=>LANG==='en'&&METRIC_EN[m.id]?METRIC_EN[m.id].name:m.name;
 const metricSub=m=>LANG==='en'&&METRIC_EN[m.id]?(METRIC_EN[m.id].sub||''):(m.sub||'');
 const metricEls={};
-/* Reihenfolge nach klinischer Häufigkeit: subakromial (≈ Hälfte aller Schulterbeschwerden), Kapsel (Frozen Shoulder, GIRD, Instabilität),
-   lange Bizepssehne, Gelenkkraft – darunter eingeklappt die Spezialfälle (Wurfsport, selten). */
-const CAP_IDS=['capAnt','capPost','capInf','capSup'];
-const METRIC_TOP=['ahd','capsule','lbs','jrf'], METRIC_SPECIAL=['psd','chd','nax'];
 const MON={capOpen:false,specialOpen:false};
 const LEVEL_RANK={ok:0,warn:1,bad:2,crit:3};
 function metricRow(m,sub){ const d=document.createElement('div'); d.className='metric'+(sub?' sub':''); d.innerHTML=`<span class="mname"></span><span class="mval"><span class="v"></span><span class="stat ok"></span></span><div class="mbar"><i></i></div><span class="msub"></span>`;
   metricEls[m.id]={n:d.querySelector('.mname'),v:d.querySelector('.v'),s:d.querySelector('.stat'),b:d.querySelector('.mbar i'),sub:d.querySelector('.msub'),el:d}; return d; }
 const M_BY_ID={}; METRICS.forEach(m=>M_BY_ID[m.id]=m);
+const AGG=MONITOR.aggregate;   /* Sammelzeile (Kapsel): fasst mehrere Metriken zusammen, Regionen ausklappbar */
 (function buildMetrics(){
   const root=$('metrics');
-  for(const id of METRIC_TOP){
-    if(id==='capsule'){
+  for(const id of MONITOR.top){
+    if(id===AGG.id){
       const d=document.createElement('div'); d.className='metric'; d.innerHTML=`<span class="mname"></span><span class="mval"><span class="v"></span><span class="stat ok"></span></span><div class="mbar"><i></i></div><button type="button" class="mtgl msub" id="capTgl"></button>`;
-      metricEls.capsule={n:d.querySelector('.mname'),v:d.querySelector('.v'),s:d.querySelector('.stat'),b:d.querySelector('.mbar i'),el:d}; root.appendChild(d);
-      const subs=document.createElement('div'); subs.className='msubs'; subs.id='capSubs'; subs.hidden=true; CAP_IDS.forEach(cid=>subs.appendChild(metricRow(M_BY_ID[cid],true))); root.appendChild(subs);
+      metricEls[AGG.id]={n:d.querySelector('.mname'),v:d.querySelector('.v'),s:d.querySelector('.stat'),b:d.querySelector('.mbar i'),el:d}; root.appendChild(d);
+      const subs=document.createElement('div'); subs.className='msubs'; subs.id='capSubs'; subs.hidden=true; AGG.ids.forEach(cid=>subs.appendChild(metricRow(M_BY_ID[cid],true))); root.appendChild(subs);
       $('capTgl').addEventListener('click',()=>setCapOpen(!MON.capOpen));
     } else root.appendChild(metricRow(M_BY_ID[id]));
   }
   const acc=document.createElement('button'); acc.type='button'; acc.className='acc'; acc.id='monAcc'; acc.setAttribute('aria-expanded','false');
   acc.innerHTML=`<span class="acc-chev">▸</span><span class="acc-t"><span id="monAccT"></span><span class="acc-sub" id="monAccS"></span></span><span class="stat ok acc-badge" id="monBadge"></span>`; root.appendChild(acc);
-  const body=document.createElement('div'); body.className='acc-body'; body.id='monBody'; body.hidden=true; METRIC_SPECIAL.forEach(id=>body.appendChild(metricRow(M_BY_ID[id]))); root.appendChild(body);
+  const body=document.createElement('div'); body.className='acc-body'; body.id='monBody'; body.hidden=true; MONITOR.special.forEach(id=>body.appendChild(metricRow(M_BY_ID[id]))); root.appendChild(body);
   acc.addEventListener('click',()=>setSpecialOpen(!MON.specialOpen));
   relabelMetrics();
 })();
 function setCapOpen(on){ MON.capOpen=!!on; $('capSubs').hidden=!MON.capOpen; $('capTgl').textContent=t(MON.capOpen?'mCapHide':'mCapShow'); needsRender=true; }
 function setSpecialOpen(on){ MON.specialOpen=!!on; $('monBody').hidden=!MON.specialOpen; $('monAcc').setAttribute('aria-expanded',String(MON.specialOpen)); needsRender=true; }
 function relabelMetrics(){ for(const m of METRICS){ const e=metricEls[m.id]; e.n.textContent=metricName(m); const s=metricSub(m); e.sub.textContent=s; e.sub.style.display=s?'':'none'; }
-  metricEls.capsule.n.textContent=t('mCapsule'); $('capTgl').textContent=t(MON.capOpen?'mCapHide':'mCapShow'); $('monAccT').textContent=t('mgSpecial'); $('monAccS').textContent=t('mgSpecialSub'); }
+  metricEls[AGG.id].n.textContent=t(AGG.nameKey); $('capTgl').textContent=t(MON.capOpen?'mCapHide':'mCapShow'); $('monAccT').textContent=t('mgSpecial'); $('monAccS').textContent=t('mgSpecialSub'); }
 function levelOf(m,v){ for(const l of m.levels) if(v>=l[0]) return l; return m.levels[m.levels.length-1]; }
 const statColor={ok:'var(--green)',warn:'var(--amber)',bad:'var(--red)',crit:'var(--violet)'};
+/* Balkenfüllung: Spannungen laufen von −3 % bis max, Abstände/Kräfte von 0 bis max */
+const metricFill=(m,v)=>m.tension?clamp((v+3)/(m.max+3),0,1):clamp(v/m.max,0,1);
 function updateMetrics(M){
   const lv={};
   for(const m of METRICS){ const v=m.get(M); const l=levelOf(m,v); lv[m.id]={v,l}; const e=metricEls[m.id];
-    let txt; if(m.id==='lbs') txt=(v>=0?'+':'')+fmt(v)+'°'+(M.lbsStrain<-0.1?' · '+fmt(M.lbsStrain*100)+t('shorter'):M.lbsStrain>0.05?' · +'+fmt(M.lbsStrain*100)+t('longer'):'');
+    let txt; if(m.text) txt=m.text(v,M);
     else if(m.tension) txt=(v>=0?'+':'')+fmt(v)+' %'; else txt=fmt(v,1)+' '+m.unit;
     e.v.textContent=txt; e.s.textContent=t(l[1]); e.s.className='stat '+l[2];
-    const fill=m.tension?clamp((v+3)/(m.max+3),0,1):clamp(v/m.max,0,1); e.b.style.width=(fill*100).toFixed(1)+'%'; e.b.style.background=statColor[l[2]]; }
-  /* Kapsel-Sammelzeile: stärkster Anteil */
-  { const regKey={capAnt:'ant',capPost:'post',capInf:'inf',capSup:'sup_'}; let best=CAP_IDS[0]; for(const id of CAP_IDS) if(lv[id].v>lv[best].v) best=id;
-    const {v,l}=lv[best]; const e=metricEls.capsule; e.v.textContent=(v>=0?'+':'')+fmt(v)+' % '+t(regKey[best]); e.s.textContent=t(l[1]); e.s.className='stat '+l[2];
-    e.b.style.width=(clamp((v+3)/15,0,1)*100).toFixed(1)+'%'; e.b.style.background=statColor[l[2]]; }
+    e.b.style.width=(metricFill(m,v)*100).toFixed(1)+'%'; e.b.style.background=statColor[l[2]]; }
+  /* Sammelzeile: stärkster Anteil */
+  { let best=AGG.ids[0]; for(const id of AGG.ids) if(lv[id].v>lv[best].v) best=id;
+    const {v,l}=lv[best]; const e=metricEls[AGG.id]; e.v.textContent=AGG.text(v,best); e.s.textContent=t(l[1]); e.s.className='stat '+l[2];
+    e.b.style.width=(metricFill(AGG,v)*100).toFixed(1)+'%'; e.b.style.background=statColor[l[2]]; }
   /* Badge des eingeklappten Blocks: schlechtester Status und Anzahl auffälliger Zeilen */
-  { let worst=null, n=0; for(const id of METRIC_SPECIAL){ const {l}=lv[id]; if(l[2]!=='ok'){ n++; if(!worst||LEVEL_RANK[l[2]]>LEVEL_RANK[worst[2]]) worst=l; } }
+  { let worst=null, n=0; for(const id of MONITOR.special){ const {l}=lv[id]; if(l[2]!=='ok'){ n++; if(!worst||LEVEL_RANK[l[2]]>LEVEL_RANK[worst[2]]) worst=l; } }
     const b=$('monBadge'); if(n){ b.textContent=(n>1?n+'× ':'')+t(worst[1]); b.className='stat acc-badge '+worst[2]; } else { b.textContent=t('mgClear'); b.className='stat acc-badge ok'; } }
-  $('dv1val').textContent=fmt(M.ahd*10,1)+' mm'; $('dv2val').textContent=t('ant')+' '+fmt(M.capAnt*100)+' % · '+t('post')+' '+fmt(M.capPost*100)+' %'; $('dv3val').textContent=t('kink')+' '+(M.lbsDeflRel>=0?'+':'')+fmt(M.lbsDeflRel)+'°';
-  if(lastRh) $('dv4val').textContent=t('scapUp')+fmt(lastRh.UR)+'° · '+t('tilt')+' '+fmt(lastRh.PT)+'°';
+  /* Anzeigewerte unter den Detailfenstern */
+  for(const d of detailDefs){ if(!d.readout) continue; const s=d.readout(M,lastRh); if(s!==null&&s!==undefined) $(d.id+'val').textContent=s; }
 }
 
 /* ---- Belastete Strukturen ---- */
-const NAME=id=>{ const s=STRUCT_BY_ID[id]; if(s) return LANG==='en'?(STRUCT_EN[id]||s.name):s.name; const m={thorax:'nameThorax',clav:'nameClav',scap:'nameScap',hum:'nameHum',fore:'nameFore',labrum:'nameLabrum',bursa:'nameBursa',capsule:'nameCapsule'}; return m[id]?t(m[id]):id; };
+const NAME=id=>{ const s=STRUCT_BY_ID[id]; if(s) return LANG==='en'?(STRUCT_EN[id]||s.name):s.name; return BONE_NAME_KEYS[id]?t(BONE_NAME_KEYS[id]):id; };
 function structStrain(id){ const s=STRUCT_BY_ID[id]; if(!s) return 0; let mx=-9; s.fas.forEach((f,i)=>{ mx=Math.max(mx,EVAL.fas[fasKey(s,i)].strain); }); return mx; }
-function computeLoads(){
-  const M=EVAL.metrics; const out={};
-  const add=(id,score,label,col)=>{ const e=out[id]||(out[id]={score:0,labels:[],col}); if(score>e.score){ e.score=score; e.col=col; } e.labels.push(label); };
-  for(const s of STRUCT){ if(s.surface||s.static) continue; const st=structStrain(s.id);
-    if(s.kind==='muscle'){ if(st>0.08) add(s.id,st/0.35,t('stretched')+fmt(st*100)+' %','var(--red)');
-      const a=EVAL.act[s.id]||0; if(a>0.22) add(s.id,a*0.9,t('holding')+' '+fmt(Math.min(a,1.5)*100)+' %','var(--amber)'); }
-    else if(st>0.04) add(s.id,st/0.12,t('tensioned')+fmt(st*100)+' %','var(--red)');
-  }
-  const capMax=Math.max(M.capAnt,M.capPost,M.capInf,M.capSup); if(capMax>0.04){ const reg=[[t('ant'),M.capAnt],[t('post'),M.capPost],[t('inf'),M.capInf],[t('sup_'),M.capSup]].filter(r=>r[1]>0.04).map(r=>r[0]).join(', '); add('capsule',capMax/0.12,t('tensionedReg')+' '+reg+' +'+fmt(capMax*100)+' %','var(--red)'); }
-  if(M.bursaComp>0.05){ add('bursa',M.bursaComp+0.2,t('compressed')+fmt(M.ahd*10,1)+' mm)','var(--violet)'); add('supra',M.bursaComp+0.25,t('underArch')+fmt(M.ahd*10,1)+' mm)','var(--violet)'); }
-  if(M.corComp>0.05){ add('subsc',M.corComp+0.15,t('underCor')+fmt(M.chd*10,1)+' mm)','var(--violet)'); }
-  if(M.grooveComp>0.15){ add('bicLH',M.grooveComp+0.1,t('inGroove'),'var(--violet)'); }
-  if(M.psComp>0.05){ add('infra',M.psComp+0.15,t('postRim')+fmt(M.psd*10,1)+' mm)','var(--violet)'); }
-  return out;
-}
-/* Gruppen in fester klinischer Reihenfolge (häufigste Problemzonen oben), innerhalb alphabetisch; Zeilen mit Hysterese ein-/ausblenden, damit nichts springt.
-   Reihenfolge nie ändern – Gruppenindex steckt in Kurz-Links. */
-const LOAD_GROUPS=[
- {id:'cuff',key:'lgCuffB',ids:['supra','infra','tmin','subsc','bursa'],open:true},
- {id:'joint',key:'lgJointB',ids:['capsule','GHL','CHL'],open:true},
- {id:'arm',key:'lgArmB',ids:['bicLH','bicSH','corbr','triLH'],open:true},
- {id:'delt',key:'lgDeltB',ids:['deltA','deltM','deltP'],open:false},
- {id:'back',key:'lgBackB',ids:['trapU','trapM','trapL','rhomb','lev','serr','lat','tmaj'],open:false},
- {id:'chest',key:'lgChestB',ids:['pecM','pecMin'],open:false},
- {id:'nerve',key:'lgNerveB',ids:['nAx','nSS'],open:false},
-];
+/* computeLoads (Belastung je Struktur) und LOAD_GROUPS definiert das Modul (monitor.js) */
 const LOAD_EL={}, LG_EL={};
 (function buildLoadList(){
   const root=$('loadlist'); const known=new Set(LOAD_GROUPS.flatMap(g=>g.ids));
@@ -1787,12 +1886,7 @@ function liveInfo(id){
     if(s.kind==='muscle'){ rows.push([t('liLen'),(st>=0?'+':'')+fmt(st*100)+' % '+(st>0.03?t('liStretched'):st<-0.03?t('liShort'):'')]); const a=EVAL.act[s.id]; if(a!==undefined) rows.push([t('liHold'),'≈ '+fmt(a*100)+' % '+t('liOfMax')]); }
     else rows.push([t('liTension'),(st>=0?'+':'')+fmt(st*100)+' % '+(st>=0.1?t('liEnd'):st>=0.05?t('liTens'):st>=0?t('liBears'):t('liSlack'))]);
   }
-  if(id==='capsule') rows.push([t('liRegions'),[M.capAnt,M.capPost,M.capInf,M.capSup].map(v=>(v>=0?'+':'')+fmt(v*100)+' %').join(' · ')]);
-  if(id==='supra'||id==='bursa') rows.push([t('liAHD'),fmt(M.ahd*10,1)+' mm']);
-  if(id==='subsc') rows.push([t('liCHD'),fmt(M.chd*10,1)+' mm']);
-  if(id==='bicLH') rows.push([t('liDefl'),(M.lbsDeflRel>=0?'+':'')+fmt(M.lbsDeflRel)+'° '+t('liVsRest')],[t('liIntra'),(M.lbsStrain>=0?'+':'')+fmt(M.lbsStrain*100)+' % '+t('liLength')]);
-  if(id==='infra') rows.push([t('liPSD'),fmt(M.psd*10,1)+' mm']);
-  if(id==='nAx') rows.push([t('liStrain'),(M.axStrain>=0?'+':'')+fmt(M.axStrain*100)+' %']);
+  rows.push(...structReadouts(id,M));
   return rows;
 }
 function renderInfo(){
@@ -1805,14 +1899,7 @@ function setHighlight(id,on){ const ms=meshesOf(id); for(const m of ms){ const m
 function selectStructure(id,quiet){ if(selectedId) setHighlight(selectedId,false); selectedId=id; if(id) setHighlight(id,true); renderInfo(); if(isMobile()&&id&&!quiet) openTab('info'); }
 
 /* ---- Beschriftungen ---- */
-const LABELS=[
- {id:'scap',key:'lbAcr',lm:L('S',AN.acromionPath[3].clone().add(V3(0,0.5,0)))},{id:'scap',key:'lbCor',lm:L('S',AN.coracoidTip.clone().add(V3(0,0.4,0.4)))},
- {id:'clav',key:'nameClav',lm:L('C',V3(-9.5,5.4,6.0))},{id:'hum',key:'lbGT',lm:L('H',AN.GT.c.clone().add(V3(0.8,0.8,0)))},{id:'hum',key:'lbLT',lm:L('H',AN.LT.c.clone().add(V3(0,0.6,0.8)))},
- {id:'scap',key:'lbGlen',lm:L('S',AN.glenoid.c.clone().add(V3(0,-2.4,0)))},{id:'scap',key:'nameScap',lm:L('S',sc(-8,-6,0.8))},{id:'hum',key:'nameHum',lm:L('H',V3(1.5,-18,0))},
- {id:'fore',key:'lbRad',lm:L('R',V3(2.2,12,1.0))},{id:'fore',key:'lbUlna',lm:L('F',V3(-1.2,-12,-0.4))},{id:'thorax',key:'lbC7',lm:L('T',V3(AN.mid,6.5,spineBack(6)-0.5))},{id:'thorax',key:'lbStern',lm:L('T',V3(AN.mid,-2,sternumFront(-2)+0.5))},
-];
-STRUCT.forEach(s=>{ if(!s.surface) LABELS.push({id:s.id,struct:s}); });
-LABELS.push({id:'capsule',key:'lbCaps',lm:L('S',AN.glenoid.c.clone().add(V3(1.3,-2.6,0.2)))},{id:'bursa',key:'lbBursa',lm:AN.bursaCenter},{id:'labrum',key:'lbLab',lm:L('S',AN.glenoid.c.clone().add(V3(0,2.4,0)))});
+/* LABELS (Landmarken und Strukturen) definiert das Modul (interaction.js) */
 const labelText=l=>l.key?t(l.key):NAME(l.id).split(' – ')[0].split(',')[0];
 const labelRoot=$('labels'); const labelEls=LABELS.map(l=>{ const d=document.createElement('div'); d.className='lbl'; d.textContent=labelText(l); d.style.display='none'; labelRoot.appendChild(d); return d; });
 function relabel3D(){ LABELS.forEach((l,i)=>{ labelEls[i].textContent=labelText(l); }); }
@@ -1835,20 +1922,20 @@ function onPoseChanged(r,animating){
   const now=performance.now(); if(!animating||now-lastPanelUpdate>120){ refreshPanels(); lastPanelUpdate=now; }
 }
 function refreshPanels(){
-  panelDirty=false; const M=EVAL.metrics; const rh=lastRh||{UR:0,PT:0,ER:0,cEl:0,cRet:0};
+  panelDirty=false; const M=EVAL.metrics; const rh=lastRh||READOUT0;
   updateMetrics(M); updateLoads(); if(selectedId) renderInfo();
-  const rotAbbr=pose.IR<0?t('ER'):t('IR');
-  $('hudMini').textContent=`E ${fmt(pose.E)}° · ${rotAbbr} ${fmt(Math.abs(pose.IR))}° · ${fmt(M.ahd*10,1)} mm`;
-  $('hudBody').innerHTML=`${t('elev')} ${fmt(pose.E)}° · ${planeLabel(pose.P)} (${fmt(pose.P)}°)<br>${pose.IR<0?t('ERfull'):t('IRfull')} ${fmt(Math.abs(pose.IR))}° · ${t('elbow')} ${fmt(pose.elbow)}° · ${Math.abs(pose.pro)<3?t('foreNeutral'):(pose.pro<0?t('supination'):t('pronation'))+' '+fmt(Math.abs(pose.pro))+'°'}<span class="hud-more"><br>${t('scapUp')}${fmt(rh.UR)}° · ${t('tilt')} ${fmt(rh.PT)}° · ${rh.ER>=0?t('ER'):t('IR')} ${fmt(Math.abs(rh.ER))}° · GH ≈ ${fmt(Math.max(0,pose.E-rh.UR))}°</span><br>${t('subac')} ${fmt(M.ahd*10,1)} mm · ${t('subcor')} ${fmt(M.chd*10,1)} mm · ${t('jforce')} ${fmt(M.jrf)} N`+(EXT.F?`<span class="hload">${t('load')} ${EXT.src&&RUNNABLE[EXT.src]?loadLabel(RUNNABLE[EXT.src]):EXT.label}<button type="button" id="btnNoLoad">${t('removeLoad')}</button></span>`:'');
+  /* Texte liefert das Modul (hud.js); die Last-Zeile mit „entfernen“-Knopf ist Engine-Sache */
+  $('hudMini').textContent=hudMiniText(pose,M);
+  $('hudBody').innerHTML=hudBodyHTML(pose,rh,M)+(EXT.F?`<span class="hload">${t('load')} ${EXT.src&&RUNNABLE[EXT.src]?loadLabel(RUNNABLE[EXT.src]):EXT.label}<button type="button" id="btnNoLoad">${t('removeLoad')}</button></span>`:'');
   const bl=$('btnNoLoad'); if(bl) bl.addEventListener('click',()=>{ setLoad(null); stopAnim(); setPose({}); });
-  $('poseSummary').textContent=`E ${fmt(pose.E)}° / ${fmt(pose.P)}° / ${rotAbbr} ${fmt(Math.abs(pose.IR))}°`;
-  $('scapReadout').innerHTML=`${t('upRot')} ${fmt(rh.UR)}° · ${t('postTilt')} ${fmt(rh.PT)}° · ${rh.ER>=0?t('ERfull'):t('IRfull')} ${fmt(Math.abs(rh.ER))}°<br>${t('clav')}: ${t('elev')} ${fmt(rh.cEl)}° · ${rh.cRet>=0?t('retr'):t('protr')} ${fmt(Math.abs(rh.cRet))}°<br>${t('gh')} ${fmt(Math.max(0,pose.E-rh.UR))}° · ${t('st')} ${fmt(rh.UR)}°`;
+  $('poseSummary').textContent=poseSummaryText(pose);
+  $('scapReadout').innerHTML=scapReadoutHTML(pose,rh);
   updateLabels();
 }
 
 /* ---- Maus & Touch ---- */
 const raycaster=new THREE.Raycaster(); raycaster.layers.enableAll();
-const ARM_IDS=new Set(['hum','fore']); STRUCT.forEach(s=>{ if(!s.surface&&s.fas.some(f=>f.some(lm=>lm.f==='H'||lm.f==='F'||lm.f==='R'))) ARM_IDS.add(s.id); }); ARM_IDS.add('capsule');
+/* DRAG (greifbare Teile, Rotationsachsen, Ziehen → Pose) definiert das Modul (interaction.js) */
 function pick(cx,cy){ const r=mainView.getBoundingClientRect(); const nd={x:((cx-r.left)/r.width)*2-1,y:-((cy-r.top)/r.height)*2+1}; raycaster.setFromCamera(nd,mainCam);
   const objs=pickables.filter(m=>m.visible&&m.material.opacity>0.35&&m.material!==MAT.thorax); const hits=raycaster.intersectObjects(objs,false); return hits.length?hits[0]:null; }
 const ptrs=new Map(); let drag=null, pinch=null, hoverId=null;
@@ -1859,15 +1946,15 @@ mainView.addEventListener('pointerdown',e=>{
   if(ptrs.size===2){ const a=[...ptrs.values()]; pinch={d0:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y),dist0:orbit.dist,mx:(a[0].x+a[1].x)/2,my:(a[0].y+a[1].y)/2}; drag=null; return; }
   const hit=pick(e.clientX,e.clientY);
   drag={x0:e.clientX,y0:e.clientY,x:e.clientX,y:e.clientY,moved:false,hit,kind:'orbit',th0:orbit.theta,ph0:orbit.phi};
-  if(hit&&UI.mode!=='orbit'&&ARM_IDS.has(hit.object.userData.sid)&&!(e.button===2)){
+  if(hit&&UI.mode!=='orbit'&&DRAG.ids.has(hit.object.userData.sid)&&!(e.button===2)){
     stopAnim();
-    if(UI.mode==='rot'){ drag.kind='rot'; drag.ir0=pose.IR; drag.el0=pose.elbow; }
-    else { /* Greifpunkt im Knochen-Frame merken */
-      const sid=hit.object.userData.sid; const f=sid==='fore'?(hit.object.parent===G.R?'R':'F'):'H';
+    if(UI.mode==='rot') startRotDrag();
+    else { /* Greifpunkt im Knochen-Frame merken: Knochen hängen an ihrer Rahmen-Gruppe, Strukturen (an ROOT) am Standardrahmen des Moduls */
+      const f=frameOfMesh(hit.object)||DRAG.frame;
       const fr=frames[f]; const local=toR(hit.point).sub(fr.p).applyQuaternion(fr.q.clone().invert());
       drag.kind='arm'; drag.f=f; drag.local=local; drag.normal=mainCam.getWorldDirection(V3()); }
     mainView.classList.add('arm');
-  } else if(e.button===2&&hit&&ARM_IDS.has(hit.object.userData.sid)){ stopAnim(); drag.kind='rot'; drag.ir0=pose.IR; drag.el0=pose.elbow; }
+  } else if(e.button===2&&hit&&DRAG.ids.has(hit.object.userData.sid)){ stopAnim(); startRotDrag(); }
   else mainView.classList.add('grab');
 });
 mainView.addEventListener('contextmenu',e=>e.preventDefault());
@@ -1879,9 +1966,13 @@ mainView.addEventListener('pointermove',e=>{
   const dx=e.clientX-drag.x, dy=e.clientY-drag.y; drag.x=e.clientX; drag.y=e.clientY;
   if(Math.hypot(e.clientX-drag.x0,e.clientY-drag.y0)>4) drag.moved=true;
   if(drag.kind==='orbit'){ if(e.buttons===2||e.shiftKey) panCam(dx,dy); else { orbit.theta-=dx*0.008; orbit.phi=clamp(orbit.phi-dy*0.008,0.08,3.05); } updateMainCam(); markView(); needsRender=true; }
-  else if(drag.kind==='rot'){ setPose({IR:drag.ir0+(e.clientX-drag.x0)*0.45,elbow:drag.el0+(e.clientY-drag.y0)*0.45}); }
+  else if(drag.kind==='rot'){ const o={}; o[DRAG.rot.x]=drag.r0.x+(e.clientX-drag.x0)*0.45; o[DRAG.rot.y]=drag.r0.y+(e.clientY-drag.y0)*0.45; setPose(o); }
   else if(drag.kind==='arm'){ dragArm(e.clientX,e.clientY); }
 });
+/* Rotationsmodus: Ausgangswerte der beiden Pose-Achsen merken, die das Modul dem Ziehen zuordnet */
+function startRotDrag(){ drag.kind='rot'; drag.r0={x:pose[DRAG.rot.x],y:pose[DRAG.rot.y]}; }
+/* Rahmen, an dessen Gruppe ein Mesh hängt (Knochen) – null für Strukturen an ROOT */
+function frameOfMesh(obj){ for(const k in G) if(G[k]===obj.parent) return k; return null; }
 function endPtr(e){
   ptrs.delete(e.pointerId); if(ptrs.size<2) pinch=null;
   if(drag&&e.pointerId!==undefined){ if(!drag.moved&&e.type!=='pointercancel'){ const hit=drag.hit||pick(e.clientX,e.clientY); selectStructure(hit?hit.object.userData.sid:null); } drag=null; }
@@ -1897,11 +1988,7 @@ function dragArm(cx,cy){
   const fr=frames[drag.f]; const p0=drag.local.clone().applyQuaternion(fr.q).add(fr.p);   /* Modellkoordinaten */
   _plane.setFromNormalAndCoplanarPoint(drag.normal,toR(p0)); const p1r=V3(); if(!raycaster.ray.intersectPlane(_plane,p1r)) return;
   const p1=toR(p1r);
-  const GH=frames.H.p; const v0=p0.clone().sub(GH), v1=p1.clone().sub(GH); if(v0.length()<3||v1.length()<3) return;
-  const q=new THREE.Quaternion().setFromUnitVectors(v0.normalize(),v1.normalize());
-  const qH=q.multiply(frames.H.q); const d=V3(0,-1,0).applyQuaternion(qH);
-  const P=Math.atan2(d.z,d.x)/DEG, E=Math.acos(clamp(-d.y,-1,1))/DEG;
-  setPose({P:clamp(P,-90,150),E});
+  const patch=DRAG.pose(p0,p1,frames); if(patch) setPose(patch);   /* Griffpunkt-Versatz → Pose: Modulsache */
 }
 let hoverT=0;
 function hover(e){ const now=performance.now(); if(now-hoverT<40) return; hoverT=now;

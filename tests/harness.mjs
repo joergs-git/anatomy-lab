@@ -1,5 +1,5 @@
-/* Lädt Mathe, Anatomie und Kinematik eines Moduls ohne Browser (three.js aus node_modules) und
-   stellt Pose → Metriken als Funktionen bereit. Presets werden aus engine/ui.js herausgelöst. */
+/* Lädt Mathe, Anatomie, Kinematik und Presets eines Moduls ohne Browser (three.js aus node_modules) und
+   stellt Pose → Metriken als Funktionen bereit. */
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,10 +9,8 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = p => readFileSync(join(root, 'src', p), 'utf8');
 
 export function loadModel(moduleId = 'shoulder') {
-  const src = read('engine/math.js') + '\n' + read(`modules/${moduleId}/anatomy.js`) + '\n' + read(`modules/${moduleId}/kinematics.js`);
-  const ui = read('engine/ui.js');
-  const arr = name => { const m = ui.match(new RegExp(`const ${name}=\\[[\\s\\S]*?\\n\\];`)); if (!m) throw new Error(name + ' nicht gefunden'); return m[0]; };
-  const body = `${src}\n${arr('PRESETS')}\n${arr('ANIMS')}\n${arr('PHYSIO')}\n
+  const src = ['engine/math.js', `modules/${moduleId}/anatomy.js`, `modules/${moduleId}/kinematics.js`, `modules/${moduleId}/presets.js`].map(read).join('\n');
+  const body = `${src}\n
     const fr=mkFrames();
     function strainOf(id){ const s=STRUCT_BY_ID[id]; let mx=-9; s.fas.forEach((f,i)=>{ mx=Math.max(mx,EVAL.fas[fasKey(s,i)].strain); }); return mx; }
     function evalPose(ps,opts={}){

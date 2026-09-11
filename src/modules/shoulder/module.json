@@ -9,6 +9,12 @@
     "engine/i18n.js",
     "modules/shoulder/anatomy.js",
     "modules/shoulder/kinematics.js",
+    "modules/shoulder/presets.js",
+    "modules/shoulder/bones.js",
+    "modules/shoulder/views.js",
+    "modules/shoulder/monitor.js",
+    "modules/shoulder/hud.js",
+    "modules/shoulder/interaction.js",
     "engine/render.js",
     "engine/ui.js",
     "engine/share.js"
