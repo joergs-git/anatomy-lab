@@ -57,6 +57,7 @@ button{cursor:pointer}
 .seg button{border:0;background:transparent;padding:5px 10px;font-size:12px;color:var(--muted)}
 .seg button+button{border-left:1px solid var(--line)}
 .seg button.on{background:var(--accent);color:var(--accent-ink)}
+.seg[hidden]{display:none}
 .btn{border:1px solid var(--line);background:var(--panel-2);border-radius:6px;padding:5px 10px;font-size:12px;color:var(--ink)}
 .btn:hover{border-color:var(--accent)}
 .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
@@ -295,7 +296,8 @@ details.sub[open] summary::before{transform:rotate(90deg)}
 
 <div id="app">
   <header id="topbar">
-    <div class="brand"><span class="brand-name" data-i18n="title">Schulterlabor</span><span class="brand-sub" data-i18n="sub">Rechte Schulter · Bewegungs- und Engstellenmodell</span></div>
+    <div class="brand"><span class="brand-name" data-i18n="title"></span><span class="brand-sub" data-i18n="sub"></span></div>
+    <div class="seg" id="moduleSeg" aria-label="Modul" hidden></div>
     <div class="spacer"></div>
     <div class="seg" id="viewSeg" aria-label="Ansicht">
       <button data-view="front" data-i18n="vFront">Vorne</button><button data-view="side" data-i18n="vSide">Seite</button><button data-view="back" data-i18n="vBack">Hinten</button><button data-view="top" data-i18n="vTop">Oben</button>
@@ -310,15 +312,8 @@ details.sub[open] summary::before{transform:rotate(90deg)}
     <div class="sheet-handle" data-panel="left"><span class="grip"></span><span class="sh-title"></span><button class="sh-btn" data-act="peek" data-i18n-title="smallT" title="Bedienfeld klein machen – Modell sichtbar">Klein</button><button class="sh-btn" data-act="close" data-i18n-title="closeT" title="Bedienfeld schließen">✕</button></div>
     <section class="block" id="blk-move" data-tab="move">
       <h2><span data-i18n="hMove">Bewegung</span> <span class="h2r" id="poseSummary"></span></h2>
-      <div class="ctl"><label for="sElev" data-i18n="lElev">Elevation (Arm heben)</label><span class="val" id="vElev">0°</span><input type="range" id="sElev" min="0" max="180" value="0" step="1"><div class="ends"><span data-i18n="eHang">hängend</span><span data-i18n="eOver">über Kopf</span></div></div>
-      <div class="ctl"><label for="sPlane" data-i18n="lPlane">Bewegungsebene</label><span class="val" id="vPlane">0°</span><input type="range" id="sPlane" min="-90" max="150" value="0" step="1"><div class="ends"><span data-i18n="ePlaneL">Extension</span><span data-i18n="ePlaneR">Abduktion · Flexion · Adduktion</span></div></div>
-      <div class="ctl"><label for="sRot" data-i18n="lRot">Rotation Oberarm</label><span class="val" id="vRot">0°</span><input type="range" id="sRot" min="-110" max="110" value="0" step="1"><div class="ends"><span data-i18n="eER">Außenrotation</span><span data-i18n="eIR">Innenrotation</span></div></div>
-      <div class="ctl"><label for="sElbow" data-i18n="lElbow">Ellbogen</label><span class="val" id="vElbow">0°</span><input type="range" id="sElbow" min="0" max="145" value="0" step="1"><div class="ends"><span data-i18n="eExt">gestreckt</span><span data-i18n="eFlex">gebeugt</span></div></div>
-      <div class="ctl"><label for="sPro" data-i18n="lPro">Unterarm / Hand drehen</label><span class="val" id="vPro">0°</span><input type="range" id="sPro" min="-85" max="80" value="0" step="1"><div class="ends"><span data-i18n="eSup">Supination (Handfläche vor)</span><span data-i18n="ePro">Pronation</span></div></div>
-      <details class="sub" id="scapDetails"><summary data-i18n="scapSum">Skapula &amp; Klavikula (automatischer Rhythmus)</summary>
-        <div class="kvs" id="scapReadout" style="font-family:var(--mono);font-size:11.5px;color:var(--muted);line-height:1.6"></div>
-        <p class="note" data-i18n="scapNote">Skapulothorakaler Rhythmus ca. 2:1 (glenohumeral : skapulothorakal), mit posteriorer Kippung und Außenrotation bei Elevation, Protraktion bei Adduktion vor dem Körper.</p>
-      </details>
+      <!-- Pose-Regler und Kopplungs-Block erzeugt engine/boot.js aus MOD.poseParams / MOD.readout -->
+      <div id="poseCtls"></div>
     </section>
     <section class="block" id="blk-presets" data-tab="move">
       <h2 data-i18n="hPresets">Klinische Positionen &amp; Tests</h2>
@@ -333,35 +328,30 @@ details.sub[open] summary::before{transform:rotate(90deg)}
     </section>
     <section class="block" id="blk-patho" data-tab="move">
       <h2 data-i18n="hPatho">Pathologie simulieren</h2>
-      <div class="ctl"><label for="sMigr" data-i18n="lMigr">Humeruskopf-Hochstand (z. B. Manschettenruptur)</label><span class="val" id="vMigr">0 mm</span><input type="range" id="sMigr" min="0" max="6" step="0.5" value="0"></div>
-      <div class="ctl"><label for="sGird" data-i18n="lGird">Hintere Kapselverkürzung (GIRD)</label><span class="val" id="vGird">0 %</span><input type="range" id="sGird" min="0" max="100" step="5" value="0"></div>
-      <div class="ctl"><label for="sFrozen" data-i18n="lFrozen">Kapselschrumpfung gesamt (Frozen Shoulder)</label><span class="val" id="vFrozen">0 %</span><input type="range" id="sFrozen" min="0" max="100" step="5" value="0"></div>
-      <p class="note" data-i18n="pathoNote">Wirkt auf Bewegungsgrenzen, Kapselspannung und den subakromialen Abstand.</p>
+      <!-- Pathologie-Regler erzeugt engine/boot.js aus MOD.pathoParams -->
+      <div id="pathoCtls"></div>
+      <p class="note" data-i18n="pathoNote"></p>
     </section>
     <section class="block" id="blk-layers" data-tab="layers">
-      <h2><span data-i18n="hLayers">Schichten</span> <span class="h2r"><button class="btn" id="btnLayersBones" style="padding:2px 7px;font-size:11px" data-i18n="lyBones">nur Knochen</button> <button class="btn" id="btnLayersCuff" style="padding:2px 7px;font-size:11px" data-i18n="lyCuff">Manschette</button> <button class="btn" id="btnLayersAll" style="padding:2px 7px;font-size:11px" data-i18n="lyAll">alles</button></span></h2>
+      <h2><span data-i18n="hLayers">Schichten</span> <span class="h2r" id="layerPresets"></span></h2>
       <div id="layers"></div>
       <div class="legend mobile-legend"><span class="lg"><i style="background:var(--red)"></i><span data-i18n="lgStretched">gedehnt</span></span><span class="lg"><i style="background:#b5766a"></i><span data-i18n="lgNeutral">neutral</span></span><span class="lg"><i style="background:var(--green)"></i><span data-i18n="lgShort">verkürzt / entspannt</span></span><span class="lg"><i style="background:var(--violet)"></i><span data-i18n="lgImp">eingeengt</span></span><span class="lg"><i style="background:#e9dfcf"></i><span data-i18n="lgBone">Knochen</span></span><span class="lg"><i style="background:#efe7dc;border:1px solid #bbb"></i><span data-i18n="lgTendon">Sehne / Band</span></span><span class="lg"><i style="background:#8fd3ff"></i><span data-i18n="lgBursa">Bursa</span></span><span class="lg"><i style="background:#f4d35e"></i><span data-i18n="lgNerve">Nerv</span></span></div>
       <div class="row" style="margin-top:8px;gap:12px"><label style="display:inline-flex;gap:6px;align-items:center;font-size:12px"><input type="checkbox" id="cbLabels"> <span data-i18n="labels">Beschriftungen</span></label><label style="display:inline-flex;gap:6px;align-items:center;font-size:12px"><input type="checkbox" id="cbStrain" checked> <span data-i18n="strain">Dehnungsfarben</span></label></div>
     </section>
-    <div class="disclaimer no-mobile" data-i18n="disc1">Vereinfachtes biomechanisches Lehrmodell (Landmarken- und Fadenmodell, Wrapping um den Humeruskopf, skapulothorakaler Rhythmus). Kein Diagnoseinstrument – Beschwerden bitte ärztlich/physiotherapeutisch abklären.</div>
+    <div class="disclaimer no-mobile" data-i18n="disc1"></div>
     <div class="fill"></div>
   </aside>
 
   <main id="stage">
-    <div id="mainView" class="viewport" aria-label="3D-Ansicht der rechten Schulter" data-i18n-aria="aria3d"></div>
+    <div id="mainView" class="viewport" aria-label="3D-Ansicht" data-i18n-aria="aria3d"></div>
     <div id="labels"></div>
     <div id="hud"><div class="hudcard" id="hudPose"><b id="hudTitle" data-i18n-title="hudT" title="Antippen: ein-/ausklappen · Ziehen: verschieben"><span data-i18n="hudTitle">Position</span><span class="hud-mini" id="hudMini"></span><span class="hud-tgl">▾</span></b><div class="hud-body" id="hudBody"></div></div></div>
-    <div id="modeBar"><div class="seg" id="modeSeg"><button data-mode="arm" class="on" data-i18n="mArm" data-i18n-title="mArmT" title="Ziehen am Arm bewegt den Arm">Arm bewegen</button><button data-mode="rot" data-i18n="mRot" data-i18n-title="mRotT" title="Ziehen am Arm rotiert den Oberarm (Innen-/Außenrotation)">Rotieren</button><button data-mode="orbit" data-i18n="mCam" data-i18n-title="mCamT" title="Ziehen dreht nur die Kamera">Kamera</button></div></div>
-    <div id="hint" data-i18n="hint">Ziehen am Arm: bewegen · Ziehen im Leeren: Kamera drehen · Rad/Pinch: Zoom · Klick/Tipp: Struktur-Info</div>
+    <div id="modeBar"><div class="seg" id="modeSeg"><button data-mode="arm" class="on" data-i18n="mArm" data-i18n-title="mArmT"></button><button data-mode="rot" data-i18n="mRot" data-i18n-title="mRotT"></button><button data-mode="orbit" data-i18n="mCam" data-i18n-title="mCamT" title="Ziehen dreht nur die Kamera">Kamera</button></div></div>
+    <div id="hint" data-i18n="hint"></div>
     <div id="dock">
       <div class="dock-h"><span class="dock-t"><span data-i18n="dockT">Detailansichten</span><small data-i18n="dockSub">synchron zur Bewegung</small></span><div class="legend"><span class="lg"><i style="background:var(--red)"></i><span data-i18n="lgStretched">gedehnt</span></span><span class="lg"><i style="background:#b5766a"></i><span data-i18n="lgNeutral">neutral</span></span><span class="lg"><i style="background:var(--green)"></i><span data-i18n="lgShort">verkürzt / entspannt</span></span><span class="lg"><i style="background:var(--violet)"></i><span data-i18n="lgImp">eingeengt</span></span><span class="lg"><i style="background:#e9dfcf"></i><span data-i18n="lgBone">Knochen</span></span><span class="lg"><i style="background:#efe7dc;border:1px solid #bbb"></i><span data-i18n="lgTendon">Sehne / Band</span></span><span class="lg"><i style="background:#8fd3ff"></i><span data-i18n="lgBursa">Bursa</span></span><span class="lg"><i style="background:#f4d35e"></i><span data-i18n="lgNerve">Nerv</span></span></div><button class="btn mini" id="dockToggle" aria-expanded="true">Ausblenden</button></div>
-      <div class="dock-row">
-      <div class="dview"><div class="dcap"><b data-i18n="dv1">Subakromialraum</b><div class="dctl"><span class="peel"><button data-dv="dv1" data-d="1" title="weniger Schichten">−</button><span class="pl" id="dv1pl"></span><button data-dv="dv1" data-d="-1" title="mehr Schichten">+</button></span><span class="dval" id="dv1val"></span></div></div><div class="dvp viewport" id="dv1"></div><div class="dlabel" data-i18n="dv1l">Schulterdach · Supraspinatussehne · Bursa</div></div>
-      <div class="dview"><div class="dcap"><b data-i18n="dv2">Kapsel &amp; Labrum</b><div class="dctl"><span class="peel"><button data-dv="dv2" data-d="1" title="weniger Schichten">−</button><span class="pl" id="dv2pl"></span><button data-dv="dv2" data-d="-1" title="mehr Schichten">+</button></span><span class="dval" id="dv2val"></span></div></div><div class="dvp viewport" id="dv2"></div><div class="dlabel" data-i18n="dv2l">von lateral, Humeruskopf aufgeschnitten</div></div>
-      <div class="dview"><div class="dcap"><b data-i18n="dv3">Bizepssehne &amp; Intervall</b><div class="dctl"><span class="peel"><button data-dv="dv3" data-d="1" title="weniger Schichten">−</button><span class="pl" id="dv3pl"></span><button data-dv="dv3" data-d="-1" title="mehr Schichten">+</button></span><span class="dval" id="dv3val"></span></div></div><div class="dvp viewport" id="dv3"></div><div class="dlabel" data-i18n="dv3l">Sulcus · Coracoid · Subscapularis</div></div>
-      <div class="dview"><div class="dcap"><b data-i18n="dv4">Skapula &amp; Rücken</b><div class="dctl"><span class="peel"><button data-dv="dv4" data-d="1" title="weniger Schichten">−</button><span class="pl" id="dv4pl"></span><button data-dv="dv4" data-d="-1" title="mehr Schichten">+</button></span><span class="dval" id="dv4val"></span></div></div><div class="dvp viewport" id="dv4"></div><div class="dlabel" data-i18n="dv4l">Blick von hinten</div></div>
-      </div>
+      <!-- Detailfenster erzeugt engine/boot.js aus MOD.detailViews -->
+      <div class="dock-row" id="dockRow"></div>
     </div>
     <div id="tooltip"></div>
   </main>
@@ -369,7 +359,7 @@ details.sub[open] summary::before{transform:rotate(90deg)}
   <aside id="right" class="panel">
     <div class="sheet-handle" data-panel="right"><span class="grip"></span><span class="sh-title"></span><button class="sh-btn" data-act="peek" data-i18n-title="smallT" title="Bedienfeld klein machen – Modell sichtbar">Klein</button><button class="sh-btn" data-act="close" data-i18n-title="closeT" title="Bedienfeld schließen">✕</button></div>
     <section class="block" id="blk-metrics" data-tab="metrics">
-      <h2 data-i18n="hMetrics">Engstellen-Monitor</h2>
+      <h2 data-i18n="hMetrics"></h2>
       <div id="metrics"></div>
     </section>
     <section class="block" id="blk-load" data-tab="metrics">
@@ -382,12 +372,12 @@ details.sub[open] summary::before{transform:rotate(90deg)}
       <div id="info"><p class="empty">Klicke oder tippe auf einen Muskel, eine Sehne, ein Band oder einen Knochen.</p></div>
     </section>
     <div class="disclaimer" data-i18n="disc2">Vereinfachtes biomechanisches Lehrmodell. Kein Diagnoseinstrument.</div>
-    <div class="ver"><a href="https://github.com/joergs-git/anatomy-lab" target="_blank" rel="noopener">anatomy-lab</a> · Schulterlabor v0.9.1</div>
+    <div class="ver"><a href="https://github.com/joergs-git/anatomy-lab" target="_blank" rel="noopener">anatomy-lab</a> · <span id="verName"></span> v0.10.0</div>
     <div class="fill"></div>
   </aside>
 
   <nav id="tabbar" class="only-mobile">
-    <button data-tab="move" data-i18n="tabMove">Bewegung</button><button data-tab="layers" data-i18n="tabLayers">Schichten</button><button data-tab="metrics" data-i18n="tabMetrics">Engstellen</button><button data-tab="info" data-i18n="tabInfo">Info</button>
+    <button data-tab="move" data-i18n="tabMove">Bewegung</button><button data-tab="layers" data-i18n="tabLayers">Schichten</button><button data-tab="metrics" data-i18n="tabMetrics"></button><button data-tab="info" data-i18n="tabInfo">Info</button>
   </nav>
 </div>
 <div id="shareBox" hidden role="dialog" aria-labelledby="shareTitle">
@@ -562,184 +552,56 @@ function strainColor(base,strain,full,compress){
   return [_c1.r,_c1.g,_c1.b];
 }
 
-/* ===================== Sprache (Deutsch / English) ===================== */
+/* ===================== Sprache (Deutsch / English) =====================
+   Engine-Texte. Modulspezifische Schlüssel (Regler, Detailfenster, Monitor, Landmarken, …) liefert jedes Modul in seiner i18n.js;
+   engine/boot.js mischt sie beim Start in I18N. Statuswörter (lv*), Strukturlisten-Wortlaute und Struktur-Info-Zeilen sind gemeinsam. */
 let LANG='de';
 const I18N={
 de:{
- title:'Schulterlabor', sub:'Rechte Schulter · Bewegungs- und Engstellenmodell',
- vFront:'Vorne', vSide:'Seite', vBack:'Hinten', vTop:'Oben', neutral:'Neutral', neutralT:'Arm in Neutralstellung',
- pLeft:'◧ Bewegung', pRight:'Monitor ◨', pLeftT:'Linkes Bedienfeld ein-/ausblenden', pRightT:'Rechtes Bedienfeld ein-/ausblenden',
- share:'Link teilen', shareT:'Link zu genau dieser Einstellung kopieren oder teilen', langT:'Switch to English',
- small:'Klein', big:'Groß', smallT:'Bedienfeld klein machen – Modell sichtbar', closeT:'Bedienfeld schließen',
- hMove:'Bewegung', lElev:'Elevation (Arm heben)', eHang:'hängend', eOver:'über Kopf', lPlane:'Bewegungsebene', ePlaneL:'Extension', ePlaneR:'Abduktion · Flexion · Adduktion',
- lRot:'Rotation Oberarm', eER:'Außenrotation', eIR:'Innenrotation', lElbow:'Ellbogen', eExt:'gestreckt', eFlex:'gebeugt', lPro:'Unterarm / Hand drehen', eSup:'Supination (Handfläche vor)', ePro:'Pronation',
- scapSum:'Skapula & Klavikula (automatischer Rhythmus)',
- scapNote:'Skapulothorakaler Rhythmus ca. 2:1 (glenohumeral : skapulothorakal), mit posteriorer Kippung und Außenrotation bei Elevation, Protraktion bei Adduktion vor dem Körper.',
- hPresets:'Klinische Positionen & Tests', hPhysio:'Physiotherapie & Training',
- physioNote:'Mit Last (Band, Hantel, Wand) – die Kraft an der Hand fließt in Haltearbeit und Gelenkreaktionskraft ein. Ablaufpresets (▶) laufen einmal durch, Schleifen (↻) bis zum erneuten Antippen.',
- hAnims:'Bewegungsabläufe', loop:'Endlos wiederholen (gilt für alle Bewegungsabläufe ▶ ↻)', speed:'Tempo',
- hPatho:'Pathologie simulieren', lMigr:'Humeruskopf-Hochstand (z. B. Manschettenruptur)', lGird:'Hintere Kapselverkürzung (GIRD)', lFrozen:'Kapselschrumpfung gesamt (Frozen Shoulder)',
- pathoNote:'Wirkt auf Bewegungsgrenzen, Kapselspannung und den subakromialen Abstand.',
- hLayers:'Schichten', lyBones:'nur Knochen', lyCuff:'Manschette', lyAll:'alles', opT:'Transparenz',
- lgStretched:'gedehnt', lgNeutral:'neutral', lgShort:'verkürzt / entspannt', lgImp:'eingeengt', lgBone:'Knochen', lgTendon:'Sehne / Band', lgBursa:'Bursa', lgNerve:'Nerv',
- labels:'Beschriftungen', strain:'Dehnungsfarben',
- disc1:'Vereinfachtes biomechanisches Lehrmodell (Landmarken- und Fadenmodell, Wrapping um den Humeruskopf, skapulothorakaler Rhythmus). Kein Diagnoseinstrument – Beschwerden bitte ärztlich/physiotherapeutisch abklären.',
- disc2:'Vereinfachtes biomechanisches Lehrmodell. Kein Diagnoseinstrument.',
- aria3d:'3D-Ansicht der rechten Schulter', hudTitle:'Position', hudT:'Antippen: ein-/ausklappen · Ziehen: verschieben',
- mArm:'Arm bewegen', mArmT:'Ziehen am Arm bewegt den Arm', mRot:'Rotieren', mRotT:'Ziehen am Arm rotiert den Oberarm (Innen-/Außenrotation)', mCam:'Kamera', mCamT:'Ziehen dreht nur die Kamera',
- hint:'Ziehen am Arm: bewegen · Ziehen im Leeren: Kamera drehen · Rad/Pinch: Zoom · Klick/Tipp: Struktur-Info',
- dockT:'Detailansichten', dockSub:'synchron zur Bewegung', dockHide:'Ausblenden', dockShow:'Detailansichten einblenden',
- dv1:'Subakromialraum', dv1l:'Schulterdach · Supraspinatussehne · Bursa', dv2:'Kapsel & Labrum', dv2l:'von lateral, Humeruskopf aufgeschnitten',
- dv3:'Bizepssehne & Intervall', dv3l:'Sulcus · Coracoid · Subscapularis', dv4:'Skapula & Rücken', dv4l:'Blick von hinten',
- peelLess:'weniger Schichten', peelMore:'mehr Schichten',
- hMetrics:'Engstellen-Monitor', hLoad:'Belastete Strukturen in dieser Position',
+ vFront:'Vorne', vSide:'Seite', vBack:'Hinten', vTop:'Oben', neutral:'Neutral', neutralT:'Arm in Neutralstellung', pLeft:'◧ Bewegung', pRight:'Monitor ◨',
+ pLeftT:'Linkes Bedienfeld ein-/ausblenden', pRightT:'Rechtes Bedienfeld ein-/ausblenden', share:'Link teilen', shareT:'Link zu genau dieser Einstellung kopieren oder teilen',
+ langT:'Switch to English', small:'Klein', big:'Groß', smallT:'Bedienfeld klein machen – Modell sichtbar', closeT:'Bedienfeld schließen', hMove:'Bewegung',
+ hPresets:'Klinische Positionen & Tests', hPhysio:'Physiotherapie & Training', physioNote:'Mit Last (Band, Hantel, Wand) – die Kraft an der Hand fließt in Haltearbeit und Gelenkreaktionskraft ein. Ablaufpresets (▶) laufen einmal durch, Schleifen (↻) bis zum erneuten Antippen.',
+ hAnims:'Bewegungsabläufe', loop:'Endlos wiederholen (gilt für alle Bewegungsabläufe ▶ ↻)', speed:'Tempo', hPatho:'Pathologie simulieren', hLayers:'Schichten',
+ lyAll:'alles', opT:'Transparenz', lgStretched:'gedehnt', lgNeutral:'neutral', lgShort:'verkürzt / entspannt', lgImp:'eingeengt', lgBone:'Knochen', lgTendon:'Sehne / Band',
+ lgBursa:'Bursa', lgNerve:'Nerv', labels:'Beschriftungen', strain:'Dehnungsfarben', disc2:'Vereinfachtes biomechanisches Lehrmodell. Kein Diagnoseinstrument.',
+ hudTitle:'Position', hudT:'Antippen: ein-/ausklappen · Ziehen: verschieben', mCam:'Kamera', mCamT:'Ziehen dreht nur die Kamera', dockT:'Detailansichten',
+ dockSub:'synchron zur Bewegung', dockHide:'Ausblenden', dockShow:'Detailansichten einblenden', peelLess:'weniger Schichten', peelMore:'mehr Schichten', hLoad:'Belastete Strukturen in dieser Position',
  loadNote:'Gruppiert nach klinischer Relevanz (häufigste Problemzonen oben), innerhalb alphabetisch; Gruppen ohne nennenswerte Belastung werden ausgeblendet. Rot = gedehnt/gespannt, violett = eingeengt, gelb = Haltearbeit gegen Schwerkraft/Last (Schätzung).',
- mgSpecial:'Speziell: internes Impingement · subkorakoidal · N. axillaris', mgSpecialSub:'seltener, v. a. Wurf- und Überkopfsport', mgClear:'alles frei', mgN:'auffällig',
- mCapsule:'Kapsel (stärkster Anteil)', mCapShow:'4 Regionen anzeigen ▸', mCapHide:'Regionen ausblenden ▾',
- lgCuffB:'Manschette & Bursa', lgJointB:'Kapsel, Labrum & Bänder', lgArmB:'Bizeps & Oberarm', lgDeltB:'Deltoideus', lgBackB:'Schultergürtel & Rücken', lgChestB:'Brust', lgNerveB:'Nerven',
- hInfo:'Struktur', infoEmpty:'Klicke oder tippe auf einen Muskel, eine Sehne, ein Band oder einen Knochen.',
- tabMove:'Bewegung', tabLayers:'Schichten', tabMetrics:'Engstellen', tabInfo:'Info',
- shareTitle:'Link zu dieser Einstellung', copy:'Kopieren', copied:'Link kopiert', copyFail:'Bitte den Link markieren und kopieren', shareNative:'Teilen…', close:'Schließen',
- shareHint:'Der Link enthält alles, was vom Standard abweicht: Position bzw. laufender Ablauf, Last, Tempo, Schichten, Transparenz, Detailstufen, Kamera (Drehung, Zoom), Pathologie, Sprache. Wer ihn öffnet, sieht genau diese Ansicht.',
- shareNone:'Alles steht auf Standard – der Link öffnet die Startansicht.',
- shareTrunc:'Sehr viele Abweichungen – Nebensächliches (Modus, Beschriftungen, Bedienfelder) passt nicht mehr in den kurzen Link.',
- /* dynamisch */
- plane0:'Extension', plane1:'Extension / Abduktion', plane2:'Abduktion (Frontalebene)', plane3:'Skapulaebene', plane4:'Flexion (Sagittalebene)', plane5:'Adduktion vor dem Körper',
- ER:'AR', IR:'IR', ERfull:'Außenrotation', IRfull:'Innenrotation', sup:'Sup', pro:'Pro', neutralS:'neutral', elev:'Elevation', elbow:'Ellbogen', foreNeutral:'Unterarm neutral', supination:'Supination', pronation:'Pronation',
- scapUp:'Skapula ↑', tilt:'Kippung', subac:'Subakromial', subcor:'subkorakoidal', jforce:'Gelenkkraft ≈', load:'Last:', removeLoad:'entfernen',
- upRot:'Aufwärtsrotation', postTilt:'posteriore Kippung', clav:'Klavikula', retr:'Retraktion', protr:'Protraktion', gh:'glenohumeral ≈', st:'skapulothorakal ≈',
- ant:'vorn', post:'hinten', inf:'unten', sup_:'oben', kink:'Knick', shorter:' % kürzer', longer:' % länger',
- stretched:'gedehnt +', holding:'Haltearbeit ≈', tensioned:'gespannt +', tensionedReg:'gespannt', compressed:'komprimiert (', underArch:'Sehne unter dem Dach (', underCor:'unter dem Coracoid (', inGroove:'im Sulcus umgelenkt', postRim:'am hinteren Pfannenrand (',
- loadEmpty:'Keine Struktur nennenswert belastet – Mittelstellung.',
- liLen:'Länge vs. Neutral', liStretched:'(gedehnt)', liShort:'(verkürzt)', liHold:'Haltearbeit (Schätzung)', liOfMax:'der Maximalkraft', liTension:'Spannung', liEnd:'(endgradig)', liTens:'(gespannt)', liBears:'(trägt)', liSlack:'(locker)',
- liRegions:'vorn / hinten / unten / oben', liAHD:'Subakromialer Abstand', liCHD:'Subkorakoidaler Abstand', liDefl:'Umlenkung am Sulcus', liVsRest:'gegenüber Ruhe', liIntra:'Intraartikulärer Anteil', liLength:'Länge', liPSD:'Abstand zum hinteren Pfannenrand', liStrain:'Dehnung',
- fn:'Funktion:', probs:'Typische Probleme:', test:'Provokation / Test:',
- nameThorax:'Thorax & Wirbelsäule', nameClav:'Klavikula', nameScap:'Skapula', nameHum:'Humerus', nameFore:'Unterarm & Hand', nameLabrum:'Labrum glenoidale', nameBursa:'Bursa subacromialis', nameCapsule:'Gelenkkapsel',
- lbAcr:'Akromion', lbCor:'Proc. coracoideus', lbGT:'Tub. majus', lbLT:'Tub. minus', lbGlen:'Glenoid / Labrum', lbRad:'Radius', lbUlna:'Ulna', lbC7:'C7', lbStern:'Sternum', lbCaps:'Gelenkkapsel', lbBursa:'Bursa', lbLab:'Labrum',
- peel0:'alle Schichten', peel1:'ohne Deltoideus & Thorax', peel2:'ohne Rumpfmuskeln', peel3:'ohne Armmuskeln & Nerven', peel4:'ohne Manschette', peel5:'Kapsel & Knochen', peel6:'nur Knochen',
- lvFree:'frei', lvContact:'Kontakt', lvNarrow:'Enge', lvSevere:'stark eingeengt', lvStop:'Anschlag', lvEnd:'endgradig', lvTens:'gespannt', lvBears:'trägt', lvSlack:'locker', lvStrong:'stark', lvRaised:'erhöht', lvRest:'wie in Ruhe', lvStretched:'gedehnt', lvRelaxed:'entspannt', lvVeryHigh:'sehr hoch', lvHigh:'hoch', lvMod:'moderat', lvLow:'gering',
+ mgClear:'alles frei', mgN:'auffällig', hInfo:'Struktur', infoEmpty:'Klicke oder tippe auf einen Muskel, eine Sehne, ein Band oder einen Knochen.', tabMove:'Bewegung',
+ tabLayers:'Schichten', tabInfo:'Info', shareTitle:'Link zu dieser Einstellung', copy:'Kopieren', copied:'Link kopiert', copyFail:'Bitte den Link markieren und kopieren',
+ shareNative:'Teilen…', close:'Schließen', shareHint:'Der Link enthält alles, was vom Standard abweicht: Position bzw. laufender Ablauf, Last, Tempo, Schichten, Transparenz, Detailstufen, Kamera (Drehung, Zoom), Pathologie, Sprache. Wer ihn öffnet, sieht genau diese Ansicht.',
+ shareNone:'Alles steht auf Standard – der Link öffnet die Startansicht.', shareTrunc:'Sehr viele Abweichungen – Nebensächliches (Modus, Beschriftungen, Bedienfelder) passt nicht mehr in den kurzen Link.',
+ load:'Last:', removeLoad:'entfernen', stretched:'gedehnt +', holding:'Haltearbeit ≈', tensioned:'gespannt +', loadEmpty:'Keine Struktur nennenswert belastet – Mittelstellung.',
+ liLen:'Länge vs. Neutral', liStretched:'(gedehnt)', liShort:'(verkürzt)', liHold:'Haltearbeit (Schätzung)', liOfMax:'der Maximalkraft', liTension:'Spannung',
+ liEnd:'(endgradig)', liTens:'(gespannt)', liBears:'(trägt)', liSlack:'(locker)', fn:'Funktion:', probs:'Typische Probleme:', test:'Provokation / Test:',
+ lvFree:'frei', lvContact:'Kontakt', lvNarrow:'Enge', lvSevere:'stark eingeengt', lvStop:'Anschlag', lvEnd:'endgradig', lvTens:'gespannt', lvBears:'trägt',
+ lvSlack:'locker', lvStrong:'stark', lvRaised:'erhöht', lvRest:'wie in Ruhe', lvStretched:'gedehnt', lvRelaxed:'entspannt', lvVeryHigh:'sehr hoch', lvHigh:'hoch',
+ lvMod:'moderat', lvLow:'gering',
 },
 en:{
- title:'Shoulder Lab', sub:'Right shoulder · motion and impingement model',
- vFront:'Front', vSide:'Side', vBack:'Back', vTop:'Top', neutral:'Neutral', neutralT:'Arm in neutral position',
- pLeft:'◧ Movement', pRight:'Monitor ◨', pLeftT:'Show/hide left panel', pRightT:'Show/hide right panel',
- share:'Share link', shareT:'Copy or share a link to exactly this setup', langT:'Auf Deutsch umschalten',
- small:'Small', big:'Large', smallT:'Shrink the panel – model stays visible', closeT:'Close panel',
- hMove:'Movement', lElev:'Elevation (raise arm)', eHang:'hanging', eOver:'overhead', lPlane:'Plane of elevation', ePlaneL:'Extension', ePlaneR:'Abduction · Flexion · Adduction',
- lRot:'Humeral rotation', eER:'External rotation', eIR:'Internal rotation', lElbow:'Elbow', eExt:'extended', eFlex:'flexed', lPro:'Forearm / hand rotation', eSup:'Supination (palm forward)', ePro:'Pronation',
- scapSum:'Scapula & clavicle (automatic rhythm)',
- scapNote:'Scapulothoracic rhythm of about 2:1 (glenohumeral : scapulothoracic), with posterior tilt and external rotation during elevation and protraction during cross-body adduction.',
- hPresets:'Clinical positions & tests', hPhysio:'Physiotherapy & training',
+ vFront:'Front', vSide:'Side', vBack:'Back', vTop:'Top', neutral:'Neutral', neutralT:'Arm in neutral position', pLeft:'◧ Movement', pRight:'Monitor ◨', pLeftT:'Show/hide left panel',
+ pRightT:'Show/hide right panel', share:'Share link', shareT:'Copy or share a link to exactly this setup', langT:'Auf Deutsch umschalten', small:'Small',
+ big:'Large', smallT:'Shrink the panel – model stays visible', closeT:'Close panel', hMove:'Movement', hPresets:'Clinical positions & tests', hPhysio:'Physiotherapy & training',
  physioNote:'With load (band, dumbbell, wall) – the force at the hand feeds into holding effort and joint reaction force. Sequence presets (▶) run once, loops (↻) until tapped again.',
- hAnims:'Motion sequences', loop:'Repeat endlessly (applies to all sequences ▶ ↻)', speed:'Speed',
- hPatho:'Simulate pathology', lMigr:'Superior humeral head migration (e.g. cuff tear)', lGird:'Posterior capsule tightness (GIRD)', lFrozen:'Global capsular contracture (frozen shoulder)',
- pathoNote:'Affects range of motion, capsular tension and the subacromial distance.',
- hLayers:'Layers', lyBones:'bones only', lyCuff:'cuff', lyAll:'all', opT:'Transparency',
- lgStretched:'stretched', lgNeutral:'neutral', lgShort:'shortened / relaxed', lgImp:'impinged', lgBone:'bone', lgTendon:'tendon / ligament', lgBursa:'bursa', lgNerve:'nerve',
- labels:'Labels', strain:'Strain colours',
- disc1:'Simplified biomechanical teaching model (landmark and string model, wrapping around the humeral head, scapulothoracic rhythm). Not a diagnostic tool – please have complaints assessed by a physician or physiotherapist.',
- disc2:'Simplified biomechanical teaching model. Not a diagnostic tool.',
- aria3d:'3D view of the right shoulder', hudTitle:'Position', hudT:'Tap: collapse/expand · drag: move',
- mArm:'Move arm', mArmT:'Dragging the arm moves the arm', mRot:'Rotate', mRotT:'Dragging the arm rotates the humerus (internal/external rotation)', mCam:'Camera', mCamT:'Dragging only orbits the camera',
- hint:'Drag the arm: move · drag empty space: orbit · wheel/pinch: zoom · click/tap: structure info',
- dockT:'Detail views', dockSub:'synchronised with the movement', dockHide:'Hide', dockShow:'Show detail views',
- dv1:'Subacromial space', dv1l:'Acromial arch · supraspinatus tendon · bursa', dv2:'Capsule & labrum', dv2l:'from lateral, humeral head cut open',
- dv3:'Biceps tendon & interval', dv3l:'Groove · coracoid · subscapularis', dv4:'Scapula & back', dv4l:'View from behind',
- peelLess:'fewer layers', peelMore:'more layers',
- hMetrics:'Impingement monitor', hLoad:'Loaded structures in this position',
- loadNote:'Grouped by clinical relevance (most common problem zones first), alphabetical within groups; groups without appreciable load are hidden. Red = stretched/tensioned, violet = impinged, amber = holding effort against gravity/load (estimate).',
- mgSpecial:'Special: internal impingement · subcoracoid · axillary nerve', mgSpecialSub:'less common, mainly throwing and overhead sports', mgClear:'all clear', mgN:'flagged',
- mCapsule:'Capsule (most tensioned part)', mCapShow:'show 4 regions ▸', mCapHide:'hide regions ▾',
- lgCuffB:'Cuff & bursa', lgJointB:'Capsule, labrum & ligaments', lgArmB:'Biceps & upper arm', lgDeltB:'Deltoid', lgBackB:'Shoulder girdle & back', lgChestB:'Chest', lgNerveB:'Nerves',
- hInfo:'Structure', infoEmpty:'Click or tap a muscle, tendon, ligament or bone.',
- tabMove:'Movement', tabLayers:'Layers', tabMetrics:'Monitor', tabInfo:'Info',
- shareTitle:'Link to this setup', copy:'Copy', copied:'Link copied', copyFail:'Please select and copy the link', shareNative:'Share…', close:'Close',
+ hAnims:'Motion sequences', loop:'Repeat endlessly (applies to all sequences ▶ ↻)', speed:'Speed', hPatho:'Simulate pathology', hLayers:'Layers', lyAll:'all',
+ opT:'Transparency', lgStretched:'stretched', lgNeutral:'neutral', lgShort:'shortened / relaxed', lgImp:'impinged', lgBone:'bone', lgTendon:'tendon / ligament',
+ lgBursa:'bursa', lgNerve:'nerve', labels:'Labels', strain:'Strain colours', disc2:'Simplified biomechanical teaching model. Not a diagnostic tool.', hudTitle:'Position',
+ hudT:'Tap: collapse/expand · drag: move', mCam:'Camera', mCamT:'Dragging only orbits the camera', dockT:'Detail views', dockSub:'synchronised with the movement',
+ dockHide:'Hide', dockShow:'Show detail views', peelLess:'fewer layers', peelMore:'more layers', hLoad:'Loaded structures in this position', loadNote:'Grouped by clinical relevance (most common problem zones first), alphabetical within groups; groups without appreciable load are hidden. Red = stretched/tensioned, violet = impinged, amber = holding effort against gravity/load (estimate).',
+ mgClear:'all clear', mgN:'flagged', hInfo:'Structure', infoEmpty:'Click or tap a muscle, tendon, ligament or bone.', tabMove:'Movement', tabLayers:'Layers',
+ tabInfo:'Info', shareTitle:'Link to this setup', copy:'Copy', copied:'Link copied', copyFail:'Please select and copy the link', shareNative:'Share…', close:'Close',
  shareHint:'The link contains everything that differs from the defaults: position or running sequence, load, speed, layers, transparency, detail levels, camera (rotation, zoom), pathology, language. Whoever opens it sees exactly this view.',
- shareNone:'Everything is at its default – the link opens the start view.',
- shareTrunc:'Very many deviations – minor items (mode, labels, panels) no longer fit into the short link.',
- plane0:'Extension', plane1:'Extension / abduction', plane2:'Abduction (frontal plane)', plane3:'Scapular plane', plane4:'Flexion (sagittal plane)', plane5:'Cross-body adduction',
- ER:'ER', IR:'IR', ERfull:'External rotation', IRfull:'Internal rotation', sup:'Sup', pro:'Pro', neutralS:'neutral', elev:'Elevation', elbow:'Elbow', foreNeutral:'forearm neutral', supination:'Supination', pronation:'Pronation',
- scapUp:'Scapula ↑', tilt:'tilt', subac:'Subacromial', subcor:'subcoracoid', jforce:'joint force ≈', load:'Load:', removeLoad:'remove',
- upRot:'Upward rotation', postTilt:'posterior tilt', clav:'Clavicle', retr:'retraction', protr:'protraction', gh:'glenohumeral ≈', st:'scapulothoracic ≈',
- ant:'ant.', post:'post.', inf:'inf.', sup_:'sup.', kink:'kink', shorter:' % shorter', longer:' % longer',
- stretched:'stretched +', holding:'holding ≈', tensioned:'tensioned +', tensionedReg:'tensioned', compressed:'compressed (', underArch:'tendon under the arch (', underCor:'under the coracoid (', inGroove:'deflected in the groove', postRim:'at the posterior glenoid rim (',
- loadEmpty:'No structure under appreciable load – mid-range position.',
- liLen:'Length vs. neutral', liStretched:'(stretched)', liShort:'(shortened)', liHold:'Holding effort (estimate)', liOfMax:'of maximum force', liTension:'Tension', liEnd:'(end-range)', liTens:'(tensioned)', liBears:'(load-bearing)', liSlack:'(slack)',
- liRegions:'ant. / post. / inf. / sup.', liAHD:'Subacromial distance', liCHD:'Subcoracoid distance', liDefl:'Deflection at the groove', liVsRest:'vs. rest', liIntra:'Intra-articular portion', liLength:'length', liPSD:'Distance to posterior glenoid rim', liStrain:'Strain',
- fn:'Function:', probs:'Typical problems:', test:'Provocation / test:',
- nameThorax:'Thorax & spine', nameClav:'Clavicle', nameScap:'Scapula', nameHum:'Humerus', nameFore:'Forearm & hand', nameLabrum:'Glenoid labrum', nameBursa:'Subacromial bursa', nameCapsule:'Joint capsule',
- lbAcr:'Acromion', lbCor:'Coracoid process', lbGT:'Greater tubercle', lbLT:'Lesser tubercle', lbGlen:'Glenoid / labrum', lbRad:'Radius', lbUlna:'Ulna', lbC7:'C7', lbStern:'Sternum', lbCaps:'Joint capsule', lbBursa:'Bursa', lbLab:'Labrum',
- peel0:'all layers', peel1:'without deltoid & thorax', peel2:'without trunk muscles', peel3:'without arm muscles & nerves', peel4:'without cuff', peel5:'capsule & bones', peel6:'bones only',
- lvFree:'clear', lvContact:'contact', lvNarrow:'narrow', lvSevere:'severely narrowed', lvStop:'abutment', lvEnd:'end-range', lvTens:'tensioned', lvBears:'load-bearing', lvSlack:'slack', lvStrong:'marked', lvRaised:'increased', lvRest:'as at rest', lvStretched:'stretched', lvRelaxed:'relaxed', lvVeryHigh:'very high', lvHigh:'high', lvMod:'moderate', lvLow:'low',
+ shareNone:'Everything is at its default – the link opens the start view.', shareTrunc:'Very many deviations – minor items (mode, labels, panels) no longer fit into the short link.',
+ load:'Load:', removeLoad:'remove', stretched:'stretched +', holding:'holding ≈', tensioned:'tensioned +', loadEmpty:'No structure under appreciable load – mid-range position.',
+ liLen:'Length vs. neutral', liStretched:'(stretched)', liShort:'(shortened)', liHold:'Holding effort (estimate)', liOfMax:'of maximum force', liTension:'Tension',
+ liEnd:'(end-range)', liTens:'(tensioned)', liBears:'(load-bearing)', liSlack:'(slack)', fn:'Function:', probs:'Typical problems:', test:'Provocation / test:',
+ lvFree:'clear', lvContact:'contact', lvNarrow:'narrow', lvSevere:'severely narrowed', lvStop:'abutment', lvEnd:'end-range', lvTens:'tensioned', lvBears:'load-bearing',
+ lvSlack:'slack', lvStrong:'marked', lvRaised:'increased', lvRest:'as at rest', lvStretched:'stretched', lvRelaxed:'relaxed', lvVeryHigh:'very high', lvHigh:'high',
+ lvMod:'moderate', lvLow:'low',
 }};
 const t=k=>{ const d=I18N[LANG]; return (d&&d[k]!==undefined)?d[k]:(I18N.de[k]!==undefined?I18N.de[k]:k); };
 
-/* Englische Namen der Strukturen, Schichten und Presets (deutsche Namen stehen bei den Definitionen) */
-const STRUCT_EN={supra:'Supraspinatus',infra:'Infraspinatus',tmin:'Teres minor',subsc:'Subscapularis',
- deltA:'Deltoid, clavicular part (anterior)',deltM:'Deltoid, acromial part (middle)',deltP:'Deltoid, spinal part (posterior)',
- bicLH:'Biceps, long head – long head tendon (LHB)',bicSH:'Biceps, short head',corbr:'Coracobrachialis',triLH:'Triceps, long head',
- pecM:'Pectoralis major',pecMin:'Pectoralis minor',trapU:'Trapezius, descending part (upper)',trapM:'Trapezius, transverse part (middle)',trapL:'Trapezius, ascending part (lower)',
- rhomb:'Rhomboids (major & minor)',lev:'Levator scapulae',serr:'Serratus anterior',lat:'Latissimus dorsi',tmaj:'Teres major',
- CAL:'Coracoacromial ligament (acromial arch)',CHL:'Coracohumeral ligament',GHL:'Glenohumeral ligaments (SGHL · MGHL · IGHL)',ACCC:'AC joint · acromioclavicular & coracoclavicular ligaments',
- nAx:'Axillary nerve (quadrilateral space)',nSS:'Suprascapular nerve',capsule:'Joint capsule'};
-const GROUP_EN={bones:'Bones',joint:'Joint & ligaments',cuff:'Rotator cuff',delt:'Deltoid',arm:'Upper arm',chest:'Chest',back:'Back & shoulder girdle',nerve:'Nerves'};
-const LAYER_EN={thorax:'Thorax & spine',clav:'Clavicle',scap:'Scapula (acromion, coracoid, glenoid)',hum:'Humerus',fore:'Forearm & hand',
- capsule:'Joint capsule',labrum:'Labrum',GHL:'Glenohumeral ligaments',CHL:'Coracohumeral lig.',CAL:'Coracoacromial lig.',ACCC:'AC/CC ligaments',bursa:'Subacromial bursa',
- supra:'Supraspinatus',infra:'Infraspinatus',tmin:'Teres minor',subsc:'Subscapularis',deltA:'anterior (clavicular)',deltM:'middle (acromial)',deltP:'posterior (spinal)',
- bicLH:'Biceps long head + LHB',bicSH:'Biceps short head',corbr:'Coracobrachialis',triLH:'Triceps long head',pecM:'Pectoralis major',pecMin:'Pectoralis minor',
- trapU:'Trapezius upper',trapM:'Trapezius middle',trapL:'Trapezius lower',rhomb:'Rhomboids',lev:'Levator scapulae',serr:'Serratus anterior',lat:'Latissimus dorsi',tmaj:'Teres major',nAx:'Axillary nerve',nSS:'Suprascapular nerve'};
-const PRESET_EN={neutral:'Neutral',abd90:'Abduction 90° (frontal)',scap90:'Scapular plane 90°',flex90:'Flexion 90°',over:'Overhead 170°',jobe:'Jobe / Empty Can',fullcan:'Full Can',hawkins:'Hawkins-Kennedy ▶',neer:'Neer ▶',
- aber:'Throwing position / apprehension',cross:'Cross-body adduction',schuerze:'Hand behind back (lift-off)',nacken:'Hand behind neck',speed:'Speed test (biceps)',
- arc:'Painful arc (abduction 0–180°)',flexarc:'Flexion 0–180°',rot:'Rotation at 90° abduction',prosup:'Hand rotation (pro-/supination)',
- wall:'Isometric wall press',erband:'External rotation against band (elbow at side) ▶',irband:'Internal rotation against band (elbow at side) ▶',er90band:'External rotation at 90° abduction against band ▶',
- fullcanW:'Full Can with 2 kg ▶',latraise:'Lateral raise 3 kg – painful-arc check ▶',wallslide:'Wall slides ▶',elbowchest:'Elbow horizontal to mid-chest (posterior shoulder stretch)',
- schuerzeUp:'Hand behind back, thumb up',sleeper:'Sleeper stretch (side-lying) ▶',pendel:'Pendulum (Codman) ↻',row:'Row against band ▶',pushplus:'Wall push-up plus (serratus) ▶',ohp:'Overhead press 5 kg ▶',
- sleeperMod:'Sleeper stretch, modified (rolled back 30°) ▶',crossStretch:'Cross-body stretch (posterior capsule) ▶'};
-const LOAD_EN={wall:'Wall pushes back with 80 N',erband:'Band pulls 20 N inward, elbow at the side',irband:'Band pulls 20 N outward, elbow at the side',er90band:'Band pulls 25 N forward',fullcanW:'Dumbbell 2 kg',latraise:'Dumbbell 3 kg',
- wallslide:'Wall contact 15 N',elbowchest:'Opposite hand pulls 30 N inward',row:'Band pulls 40 N forward',pushplus:'Wall reaction 120 N',ohp:'Dumbbell 5 kg'};
-const METRIC_EN={ahd:{name:'Subacromial distance',sub:'Acromial arch ↔ humeral head/greater tubercle; the supraspinatus tendon and bursa run here (rest ≈ 9–10 mm)'},
- chd:{name:'Subcoracoid distance',sub:'Coracoid ↔ lesser tubercle; subscapularis tendon, rotator interval, long head of biceps'},
- psd:{name:'Posterosuperior glenoid rim ↔ cuff insertion',sub:'Internal impingement in the throwing position (abduction + external rotation)'},
- capAnt:{name:'Capsule anterior (SGHL · MGHL · IGHL)'},capPost:{name:'Capsule posterior'},capInf:{name:'Capsule inferior (axillary pouch)'},capSup:{name:'Capsule superior / rotator interval'},
- lbs:{name:'Long head of biceps: deflection at the groove entrance',sub:'Additional kink relative to rest (internal rotation, flexion); plus length of the intra-articular portion'},
- nax:{name:'Axillary nerve (quadrilateral space)'},jrf:{name:'Joint reaction force (compression in the joint)',sub:'Estimate from muscle pull, arm weight and external load (band, dumbbell, wall)'}};
-const INFO_EN={
- supra:{k:'Rotator cuff · muscle + tendon',f:'Initiates abduction and centres the humeral head against the upward pull of the deltoid (force couple). The tendon passes beneath the acromial arch to the greater tubercle.',p:'Tendinopathy, partial or full-thickness tear, calcific tendinitis, subacromial impingement; night pain when lying on the shoulder.',t:'Painful arc at 60–120° abduction, Jobe test (empty can), Neer and Hawkins-Kennedy tests.'},
- infra:{k:'Rotator cuff · muscle + tendon',f:'Strongest external rotator, posterior centring of the head, decelerates the arm after throwing (eccentric).',p:'Tendinopathy/tear in overhead sports, weakness → superior head migration; stretched during internal rotation and cross-body adduction (posterior cuff).',t:'External rotation against resistance (Patte), cross-body stretch, internal rotation at 90° abduction.'},
- tmin:{k:'Rotator cuff · muscle + tendon',f:'External rotator and lower part of the posterior cuff; forms the upper border of the quadrilateral space (axillary nerve).',p:'Rarely injured in isolation; tightness with posterior capsular stiffness; hornblower sign when torn.',t:'External rotation at 90° abduction against resistance.'},
- subsc:{k:'Rotator cuff · muscle + tendon',f:'Strongest internal rotator, anterior stabilisation of the head; the upper tendon forms the floor of the rotator interval and keeps the long head of biceps in its groove.',p:'Tear (often together with LHB instability), subcoracoid impingement in flexion + internal rotation + adduction, tightness → restricted external rotation.',t:'Lift-off test (hand behind back), belly press, bear hug; stretched in external rotation.'},
- deltA:{k:'Deltoid · anterior part',f:'Flexion, internal rotation and horizontal adduction of the arm.',p:'Overload in pressing exercises; with a tight pectoralis part of the “rounded shoulder” pattern.',t:'Flexion against resistance.'},
- deltM:{k:'Deltoid · middle part',f:'Main abductor from about 15–30°; pulls the head upward – needs the cuff as antagonist (centring).',p:'With cuff weakness or tear the deltoid pushes the head under the arch (impingement, superior migration).',t:'Abduction against resistance.'},
- deltP:{k:'Deltoid · posterior part',f:'Extension, external rotation, horizontal abduction.',p:'Tightness in overhead sports; stretched in cross-body adduction.',t:'Horizontal abduction against resistance.'},
- bicLH:{k:'Muscle + long head of biceps tendon (LHB)',f:'Originates at the supraglenoid tubercle/superior labrum (SLAP region), runs over the humeral head through the rotator interval into the bicipital groove. Flexes and supinates the forearm; stabilises the head anterosuperiorly.',p:'Tendinopathy in the groove, subluxation out of the groove (with subscapularis/pulley lesion), SLAP lesion, rupture (“Popeye”). The tendon is stretched in extension + external rotation and in the throwing position, and deflected at the groove entrance during internal rotation; pronation stretches the distal tendon.',t:'Speed test (flexion 90°, supinated, against resistance), Yergason (supination against resistance), O’Brien (SLAP).'},
- bicSH:{k:'Muscle + tendon',f:'From the coracoid process; shoulder flexion and adduction, elbow flexion, supination.',p:'Insertional tendinopathy at the coracoid, distal biceps tendon rupture (common insertion).',t:'Flexion against resistance, elbow flexion supinated.'},
- corbr:{k:'Muscle',f:'Flexion and adduction; from the coracoid to the medial mid-humerus, pierced by the musculocutaneous nerve.',p:'Rare; coracoid pain, nerve irritation.',t:'Flexion/adduction against resistance.'},
- triLH:{k:'Muscle + tendon',f:'Extends the elbow, adducts/extends the shoulder; medial border of the quadrilateral space.',p:'Stretched during elevation with a flexed elbow (limits overhead reach), insertional problems at the olecranon.',t:'Elbow extension overhead.'},
- pecM:{k:'Muscle + tendon',f:'Adduction, internal rotation, flexion (clavicular) and extension from elevation (sternal). The insertion is twisted: lower fibres insert higher on the lateral lip of the groove.',p:'Tightness → protraction/rounded shoulders → indirectly narrows the subacromial space; rupture during bench press; stretched in abduction + external rotation.',t:'Horizontal adduction against resistance, doorway stretch.'},
- pecMin:{k:'Muscle',f:'Ribs 3–5 → coracoid: pulls the scapula forward and downward (protraction, anterior tilt).',p:'Tightness promotes impingement (the arch tilts forward and down) and thoracic outlet symptoms (plexus/vessels beneath).',t:'Stretched in retraction + elevation; tenderness below the coracoid.'},
- trapU:{k:'Muscle',f:'Elevation and upward rotation of the scapula, neck stabilisation.',p:'Often overactive/tight (neck-shoulder pain), compensates for a weak lower trapezius/serratus.',t:'Shoulder shrug; stretched with lateral flexion of the head.'},
- trapM:{k:'Muscle',f:'Retraction (shoulder blades together), stabilises the scapula during elevation.',p:'Weakness → protraction, dyskinesis.',t:'Retraction against resistance.'},
- trapL:{k:'Muscle',f:'Depression and upward rotation of the scapula; force couple with serratus anterior during elevation.',p:'Weakness is a common factor in impingement and dyskinesis (the scapula rotates upward too little).',t:'Prone “Y” raise.'},
- rhomb:{k:'Muscle',f:'Retraction and downward rotation, holds the medial scapular border against the thorax.',p:'Tightness/pain between the shoulder blades, stretched in protraction (cross-body).',t:'Retraction against resistance.'},
- lev:{k:'Muscle',f:'Elevates the scapula (superior angle) and rotates it downward; lateral flexion of the cervical spine.',p:'Classic tension muscle (desk work, stress), pain at the superior angle of the scapula.',t:'Stretch: turn and flex the head to the opposite side.'},
- serr:{k:'Muscle',f:'Protraction and upward rotation, holds the scapula against the thorax; main rotator during elevation (with the trapezius).',p:'Weakness/long thoracic nerve lesion → scapular winging, reduced upward rotation → impingement.',t:'Push-up plus (protraction), wall slides.'},
- lat:{k:'Muscle + tendon',f:'Adduction, extension and internal rotation (pull-up, swimming); winds around teres major to the floor of the groove.',p:'Tightness limits elevation (compensated by lumbar hyperextension), stretched in overhead and hand-behind-neck positions.',t:'Elevation with external rotation, wall stretch.'},
- tmaj:{k:'Muscle + tendon',f:'“Little latissimus”: adduction, internal rotation, extension; lower border of the quadrilateral space.',p:'Tightness in overhead athletes, stretched in elevation/external rotation.',t:'Stretch in elevation + external rotation.'},
- CAL:{k:'Ligament',f:'Spans from the coracoid to the acromion and together with both forms the acromial arch (fornix humeri). Beneath it lie the supraspinatus tendon, bursa and rotator interval.',p:'Thickening/spur → narrowing of the subacromial space (outlet impingement). The ligament length does not change; it bounds the space from above.',t:'Compression of the underlying tendon in flexion + internal rotation (Hawkins).'},
- CHL:{k:'Ligament',f:'From the coracoid to both tubercles; reinforces the rotator interval, helps carry the weight of the hanging arm and limits external rotation with the arm at the side.',p:'Thickening/contracture in frozen shoulder (external rotation restricted first).',t:'External rotation with the arm at the side.'},
- GHL:{k:'Ligaments (capsular reinforcements)',f:'SGHL: inferior stabilisation with the arm hanging. MGHL: limits external rotation at 45° abduction. IGHL anterior band: holds the head in abduction + external rotation (throwing/apprehension) – tears in dislocation (Bankart). Posterior band: tensioned in flexion + internal rotation.',p:'Anterior instability, hyperlaxity, capsular contracture.',t:'Apprehension/relocation test (90° abduction + external rotation).'},
- ACCC:{k:'Joint + ligaments',f:'The AC joint connects clavicle and acromion; the acromioclavicular ligament holds horizontally, conoid and trapezoid (coracoclavicular) suspend the scapula from the clavicle.',p:'AC arthritis, AC separation (Rockwood), pain in cross-body adduction (joint compression) and overhead.',t:'Cross-body adduction, pressure on the AC joint.'},
- capsule:{k:'Joint capsule',f:'Wide and lax in mid-range (axillary pouch inferiorly), tensioned only at end-range. Anterior part tensioned in external rotation/ABER, posterior in internal rotation and cross-body adduction, inferior in elevation.',p:'Posterior tightness (GIRD) → the head shifts anterosuperiorly in flexion → impingement. Frozen shoulder = capsulitis with contracture (external rotation first), instability = capsule too lax.',t:'End-range movements in all directions (the colour shows which part bears load).'},
- labrum:{k:'Fibrocartilage ring',f:'Enlarges and deepens the socket (suction-cup effect); anchor of the long head of biceps superiorly (SLAP region) and of the IGHL anteroinferiorly (Bankart region).',p:'SLAP lesion (throwing sports, fall on the arm), Bankart lesion after dislocation, tears → clicking/locking.',t:'O’Brien test, crank test; throwing position (peel-back mechanism at the superior labrum).'},
- bursa:{k:'Bursa',f:'Gliding layer between the rotator cuff and acromion/deltoid (subacromial-subdeltoid).',p:'Bursitis with repeated compression under the arch: painful arc, night pain, pain on lateral raises; calcium leakage from the supraspinatus tendon.',t:'Abduction 60–120°, Neer test.'},
- nAx:{k:'Nerve',f:'From the posterior cord of the plexus, through the quadrilateral space around the surgical neck; supplies deltoid and teres minor and the skin over the shoulder.',p:'Lesion in dislocation/humeral fracture (deltoid palsy); quadrilateral space syndrome in abduction + external rotation (throwing sports).',t:'Abduction + external rotation (throwing position).'},
- nSS:{k:'Nerve',f:'Through the suprascapular notch into the supraspinous fossa, around the spine (spinoglenoid notch) into the infraspinous fossa; supplies supraspinatus and infraspinatus.',p:'Compression at the notch or spinoglenoid (ganglion, volleyball) → infraspinatus atrophy; stretched in protraction/cross-body.',t:'Cross-body adduction, pressure at the notch.'},
- thorax:{k:'Bone',f:'Rib cage and spine: origin for trapezius, rhomboids, latissimus, serratus and pectoralis; the scapula glides on ribs 2–7.',p:'Thoracic kyphosis (rounded back) tilts the scapula forward and narrows the subacromial space during elevation.',t:''},
- clav:{k:'Bone',f:'Strut between sternum and acromion; elevates, retracts and rotates (about 30° backward) during elevation. Attachment for deltoid (anterior), trapezius, pectoralis major, SC/AC joints.',p:'Fracture, AC/SC instability, distal clavicular osteolysis (weight training).',t:''},
- scap:{k:'Bone',f:'Shoulder blade with spine, acromion (arch), coracoid (anchor for pectoralis minor, biceps short head, coracobrachialis, ligaments) and glenoid (socket). Moves on the thorax through about 1/3 of total elevation.',p:'Dyskinesis (too little upward rotation/posterior tilt) → impingement; os acromiale, type III (hooked) acromion.',t:''},
- hum:{k:'Bone',f:'Head (sphere, about 24 mm radius, articular surface facing medially, upward and backward), greater tubercle (cuff insertions), lesser tubercle (subscapularis), between them the bicipital groove (LHB), deltoid insertion (tuberosity) and surgical neck (axillary nerve).',p:'The greater tubercle passes under the arch during abduction – with external rotation it clears, with internal rotation (Hawkins) it abuts against arch and ligament.',t:''},
- fore:{k:'Bone',f:'Ulna (elbow hinge, olecranon = triceps insertion) and radius (rotates around the ulna: pronation/supination, carries the hand; radial tuberosity = biceps insertion).',p:'Pronation wraps the biceps tendon around the radius (stretch, Yergason); supination relaxes it.',t:''},
-};
 /* URL-Parameter (Suchstring und/oder Hash) einmalig einlesen; erster Treffer je Schlüssel gilt */
 const URL_PARAMS=(function(){ const o={}; const add=s=>{ s=(s||'').replace(/^[?#!\/]+/,''); if(!/=/.test(s)) return; for(const part of s.split('&')){ if(!part) continue; const i=part.indexOf('='); let k,v; try{ k=decodeURIComponent(i<0?part:part.slice(0,i)); v=i<0?'':decodeURIComponent(part.slice(i+1).replace(/\+/g,' ')); }catch(_){ continue; } if(k.startsWith('__')) continue; /* Viewer-interne Parameter (__frame_v) ignorieren */ if(!(k in o)) o[k]=v; } }; try{ add(location.search); add(location.hash); }catch(_){ } return o; })();
 /* Kompakter Link-Token im Hash (nur A–Z a–z 0–9 . _ : ~ - , max. 128 Zeichen – so reicht ihn der claude.ai-Viewer an das eingebettete Modell durch) */
@@ -750,6 +612,10 @@ let LANG_EXPLICIT=false;
   if(!l){ try{ const s=localStorage.getItem('sl-lang'); if(s==='en'||s==='de'){ l=s; LANG_EXPLICIT=true; } }catch(_){ } }
   if(!l){ const nl=(navigator.language||'de').toLowerCase(); l=nl.startsWith('de')?'de':'en'; } LANG=l; NUM_LOCALE=LANG==='en'?'en-GB':'de-DE'; })();
 
+/* ---- Modul-Registry (Reihenfolge = Index im Kurz-Link, nur anhängen) und Fabriken; erzeugt von build.mjs ---- */
+const REGISTRY=[{"id":"shoulder","name":"Schulterlabor","nameEn":"Shoulder Lab","alias":"Schulterlabor"}];
+const MODULES={};
+MODULES["shoulder"]=function(){
 /* ===================== Anatomie der rechten Schulter =====================
    Einheiten cm. +X lateral (rechts vom Patienten), +Y kranial, +Z ventral.
    Ursprung = Zentrum des Humeruskopfes in Ruhe (Arm hängend). Landmarken nach Standard-Anatomie (Erwachsener). */
@@ -1267,9 +1133,12 @@ const PHYSIO=[
 
 /* ===================== Schulter: Knochengeometrie =====================
    Baut die Knochen je Rahmen (T Thorax, C Klavikula, S Skapula, H Humerus, F Ulna, R Radius/Hand) plus Labrum und Bursa.
-   ctx kommt aus engine/render.js: G (Gruppen je Rahmen), LAYER (Render-Layer), MAT (Materialien), boneMat(id), addBone(group,mesh,id,layer),
-   ell(center,radii,mat), pickables (Trefferliste), BONES (id → Meshes). Geometrie in Modellkoordinaten (cm, +X lateral, +Y kranial, +Z ventral). */
-function buildBones({G,LAYER,MAT,boneMat,addBone,ell,pickables,BONES}){
+   ctx kommt aus engine/render.js: G (Gruppen je Rahmen), MAT (Materialien: bone, context (durchscheinende Hülle, nicht anklickbar),
+   contextSolid, cart, bursa), boneMat(id), addBone(group,mesh,id,layer), ell(center,radii,mat), pickables (Trefferliste), BONES (id → Meshes).
+   Geometrie in Modellkoordinaten (cm, +X lateral, +Y kranial, +Z ventral). */
+/* three.js-Render-Layer: Strukturen tragen `layer` in anatomy.js (1 Deltoideus, 4 Rumpfmuskeln), Knochen bekommen sie hier */
+const LAYER={deltoid:1,thorax:2,arm:3,sheet:4};
+function buildBones({G,MAT,boneMat,addBone,ell,pickables,BONES}){
 /* ---- Thorax ---- */
 (function buildThorax(){
   const g=G.T, mat=boneMat('thorax');
@@ -1279,13 +1148,13 @@ function buildBones({G,LAYER,MAT,boneMat,addBone,ell,pickables,BONES}){
   ys.forEach((y,i)=>{ const s=thoraxSec(y); for(let j=0;j<N;j++){ const a=j/N*Math.PI*2; pos.push(AN.mid+s.rx*Math.cos(a),y,s.cz+s.rz*Math.sin(a)); } });
   for(let i=0;i<ys.length-1;i++) for(let j=0;j<N;j++){ const a=i*N+j,b=i*N+(j+1)%N,c=(i+1)*N+j,d=(i+1)*N+(j+1)%N; idx.push(a,b,c,b,d,c); }
   const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); geo.setIndex(idx); geo.computeVertexNormals();
-  const shell=new THREE.Mesh(geo,MAT.thorax); shell.renderOrder=-1; addBone(g,shell,'thorax',LAYER.thorax);
+  const shell=new THREE.Mesh(geo,MAT.context); shell.renderOrder=-1; addBone(g,shell,'thorax',LAYER.thorax);
   // Rippen (beidseits), nach vorn abfallend
   for(let i=0;i<10;i++){
     const yb=6-2.6*i;
     for(const side of [1,-1]){
       const pts=[]; for(let a=-95;a<=72;a+=12){ const y=yb-3.6*(a+95)/167; const s=thoraxSec(y); pts.push(V3(AN.mid+side*(s.rx+0.25)*Math.cos(a*DEG),y,s.cz+(s.rz+0.25)*Math.sin(a*DEG))); }
-      const rib=staticTube(pts,0.4,7,{material:MAT.ribs,rings:24}); addBone(g,rib,'thorax',LAYER.thorax);
+      const rib=staticTube(pts,0.4,7,{material:MAT.contextSolid,rings:24}); addBone(g,rib,'thorax',LAYER.thorax);
     }
   }
   // Sternum
@@ -1295,8 +1164,8 @@ function buildBones({G,LAYER,MAT,boneMat,addBone,ell,pickables,BONES}){
   const spine=staticTube(sp,1.5,10,{material:mat,rings:20}); addBone(g,spine,'thorax',LAYER.thorax);
   for(let y=6;y>=-26;y-=2.5){ const b=new THREE.Mesh(new THREE.BoxGeometry(1.0,0.8,2.4),mat); b.position.set(AN.mid,y,spineBack(y)+1.1); b.rotation.x=0.5; addBone(g,b,'thorax',LAYER.thorax); }
   // Hals & Kopf (nur Kontext)
-  const neck=new THREE.Mesh(new THREE.CylinderGeometry(4.6,5.2,10,24,1,true),MAT.thorax); neck.position.set(AN.mid,13.5,-1.4); addBone(g,neck,'thorax',LAYER.thorax);
-  const head=new THREE.Mesh(new THREE.SphereGeometry(8.6,24,18),MAT.thorax); head.position.set(AN.mid,25,-0.5); addBone(g,head,'thorax',LAYER.thorax);
+  const neck=new THREE.Mesh(new THREE.CylinderGeometry(4.6,5.2,10,24,1,true),MAT.context); neck.position.set(AN.mid,13.5,-1.4); addBone(g,neck,'thorax',LAYER.thorax);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(8.6,24,18),MAT.context); head.position.set(AN.mid,25,-0.5); addBone(g,head,'thorax',LAYER.thorax);
   // Halswirbel-Dornfortsätze für Trapezius/Levator
   for(let y=8;y<=15;y+=2.3){ const b=new THREE.Mesh(new THREE.BoxGeometry(1.0,0.9,2.0),mat); b.position.set(AN.mid,y,-7.6); addBone(g,b,'thorax',LAYER.thorax); }
 })();
@@ -1352,21 +1221,28 @@ function buildBones({G,LAYER,MAT,boneMat,addBone,ell,pickables,BONES}){
 })();
 }
 
+/* Render-Hooks der Engine: zones – Zonenmarker der Faszikel (z in anatomy.js) → Kompressionsmetrik für die violette Färbung;
+   afterPose – Bursa-Dicke folgt dem subakromialen Raum, Farbe der Kompression. */
+const RENDER={
+  zones:{1:'bursaComp',2:'corComp',3:'grooveComp',4:'psComp'},
+  afterPose(M,{BONES,COL}){ const bu=BONES.bursa[0]; const gap=clamp(M.ahd,0.15,1.2); bu.scale.y=0.12+0.22*gap; bu.material.color.copy(COL.bursa).lerp(COL.violet,M.bursaComp*0.85); },
+};
+
 /* ===================== Schulter: Kameras, Detailansichten, Schichtstufen =====================
    ORBIT0: Standardkamera (Bezug für geteilte Links). VIEWS: Ansichts-Schalter der Kopfzeile.
-   detailDefs: die vier Detailfenster (id = Element-ID in page.html) mit Kamera-Fit je Pose und Anzeigetext (readout).
+   detailDefs: die vier Detailfenster (id = Element-ID, title/label = i18n-Schlüssel; Markup erzeugt engine/boot.js) mit Kamera-Fit je Pose und Anzeigetext (readout).
    PEEL: Schichtstufen der Detailansichten – Reihenfolge nie ändern (Stufe steckt in Kurz-Links). */
 const ORBIT0={tx:6,ty:-8,tz:0,theta:-32,phi:74,dist:112};   // Standardkamera (Grad / cm), Bezug für geteilte Links
 const VIEWS={front:{theta:-12,phi:78},side:{theta:-92,phi:78},back:{theta:-186,phi:78},top:{theta:-35,phi:14}};
 
 const detailDefs=[
-  {id:'dv1',fov:26,level:2,readout:(M)=>fmt(M.ahd*10,1)+' mm',
+  {id:'dv1',title:'dv1',label:'dv1l',fov:26,level:2,readout:(M)=>fmt(M.ahd*10,1)+' mm',
    fit(fr){ const t=worldPt(fr,AN.bursaCenter).add(V3(0.3,-0.8,0)); const d=V3(0.95,0.5,0.8).normalize(); return {t,pos:t.clone().addScaledVector(d,16)}; }},
-  {id:'dv2',fov:26,level:4,clipX:0.55,readout:(M)=>t('ant')+' '+fmt(M.capAnt*100)+' % · '+t('post')+' '+fmt(M.capPost*100)+' %',
+  {id:'dv2',title:'dv2',label:'dv2l',fov:26,level:4,clipX:0.55,readout:(M)=>t('ant')+' '+fmt(M.capAnt*100)+' % · '+t('post')+' '+fmt(M.capPost*100)+' %',
    fit(fr){ const t=fr.H.p.clone().add(V3(-1.2,0,0)); const d=V3(1,0.28,0.32).normalize(); return {t,pos:t.clone().addScaledVector(d,14)}; }},
-  {id:'dv3',fov:26,level:2,readout:(M)=>t('kink')+' '+(M.lbsDeflRel>=0?'+':'')+fmt(M.lbsDeflRel)+'°',
+  {id:'dv3',title:'dv3',label:'dv3l',fov:26,level:2,readout:(M)=>t('kink')+' '+(M.lbsDeflRel>=0?'+':'')+fmt(M.lbsDeflRel)+'°',
    fit(fr){ const t=worldPt(fr,AN.grooveLm).add(V3(-0.5,-1.0,0)); const d=V3(0.45,0.55,0.75).normalize(); return {t,pos:t.clone().addScaledVector(d,15)}; }},
-  {id:'dv4',fov:28,level:0,readout:(M,rh)=>rh?t('scapUp')+fmt(rh.UR)+'° · '+t('tilt')+' '+fmt(rh.PT)+'°':null,
+  {id:'dv4',title:'dv4',label:'dv4l',fov:28,level:0,readout:(M,rh)=>rh?t('scapUp')+fmt(rh.UR)+'° · '+t('tilt')+' '+fmt(rh.PT)+'°':null,
    fit(fr){ const t=worldPt(fr,L('S',sc(-6,-4,0))).add(V3(-3,2,0)); const d=V3(-0.12,0.18,-1).normalize(); return {t,pos:t.clone().addScaledVector(d,52)}; }},
 ];
 
@@ -1430,8 +1306,11 @@ const LOAD_GROUPS=[
 
 /* Anzeigenamen der Teile, die keine Strukturen sind (Knochen, Labrum, Bursa, Kapsel) – Schlüssel in i18n.js */
 const BONE_NAME_KEYS={thorax:'nameThorax',clav:'nameClav',scap:'nameScap',hum:'nameHum',fore:'nameFore',labrum:'nameLabrum',bursa:'nameBursa',capsule:'nameCapsule'};
-/* Schnellwahl der Schichten (Buttons „nur Knochen“ / „Manschette“) */
-const LAYER_PRESETS={bones:['thorax','clav','scap','hum','fore','labrum'],cuff:['thorax','clav','scap','hum','fore','labrum','capsule','bursa','CAL','CHL','GHL','ACCC','supra','infra','tmin','subsc','bicLH']};
+/* Schnellwahl der Schichten (Knöpfe neben „Schichten“; key = i18n-Schlüssel; „alles“ ergänzt die Engine) */
+const LAYER_PRESETS=[
+ {id:'bones',key:'lyBones',ids:['thorax','clav','scap','hum','fore','labrum']},
+ {id:'cuff',key:'lyCuff',ids:['thorax','clav','scap','hum','fore','labrum','capsule','bursa','CAL','CHL','GHL','ACCC','supra','infra','tmin','subsc','bicLH']},
+];
 
 /* Zusatzzeilen im Struktur-Info: welche Engstellen-Werte zu welcher Struktur gehören */
 function structReadouts(id,M){
@@ -1489,6 +1368,221 @@ const DRAG={
   },
 };
 
+/* ===================== Schulter: Texte (Deutsch / English) =====================
+   Modulspezifische Schlüssel für Regler, Rhythmus-Block, Pathologie, Detailfenster, Monitor, HUD, Landmarken und Schichtstufen;
+   die Engine mischt sie beim Start in das gemeinsame Wörterbuch (t()). Darunter die englischen Namen der Strukturen, Schichten,
+   Presets, Lasten, Metriken und die englischen Infotexte (deutsche Namen stehen bei den Definitionen). */
+const I18N_MOD={
+de:{
+ title:'Schulterlabor', sub:'Rechte Schulter · Bewegungs- und Engstellenmodell', lElev:'Elevation (Arm heben)', eHang:'hängend', eOver:'über Kopf', lPlane:'Bewegungsebene',
+ ePlaneL:'Extension', ePlaneR:'Abduktion · Flexion · Adduktion', lRot:'Rotation Oberarm', eER:'Außenrotation', eIR:'Innenrotation', lElbow:'Ellbogen', eExt:'gestreckt',
+ eFlex:'gebeugt', lPro:'Unterarm / Hand drehen', eSup:'Supination (Handfläche vor)', ePro:'Pronation', scapSum:'Skapula & Klavikula (automatischer Rhythmus)',
+ scapNote:'Skapulothorakaler Rhythmus ca. 2:1 (glenohumeral : skapulothorakal), mit posteriorer Kippung und Außenrotation bei Elevation, Protraktion bei Adduktion vor dem Körper.',
+ lMigr:'Humeruskopf-Hochstand (z. B. Manschettenruptur)', lGird:'Hintere Kapselverkürzung (GIRD)', lFrozen:'Kapselschrumpfung gesamt (Frozen Shoulder)', pathoNote:'Wirkt auf Bewegungsgrenzen, Kapselspannung und den subakromialen Abstand.',
+ lyBones:'nur Knochen', lyCuff:'Manschette', disc1:'Vereinfachtes biomechanisches Lehrmodell (Landmarken- und Fadenmodell, Wrapping um den Humeruskopf, skapulothorakaler Rhythmus). Kein Diagnoseinstrument – Beschwerden bitte ärztlich/physiotherapeutisch abklären.',
+ aria3d:'3D-Ansicht der rechten Schulter', mArm:'Arm bewegen', mArmT:'Ziehen am Arm bewegt den Arm', mRot:'Rotieren', mRotT:'Ziehen am Arm rotiert den Oberarm (Innen-/Außenrotation)',
+ hint:'Ziehen am Arm: bewegen · Ziehen im Leeren: Kamera drehen · Rad/Pinch: Zoom · Klick/Tipp: Struktur-Info', dv1:'Subakromialraum', dv1l:'Schulterdach · Supraspinatussehne · Bursa',
+ dv2:'Kapsel & Labrum', dv2l:'von lateral, Humeruskopf aufgeschnitten', dv3:'Bizepssehne & Intervall', dv3l:'Sulcus · Coracoid · Subscapularis', dv4:'Skapula & Rücken',
+ dv4l:'Blick von hinten', hMetrics:'Engstellen-Monitor', mgSpecial:'Speziell: internes Impingement · subkorakoidal · N. axillaris', mgSpecialSub:'seltener, v. a. Wurf- und Überkopfsport',
+ mCapsule:'Kapsel (stärkster Anteil)', mCapShow:'4 Regionen anzeigen ▸', mCapHide:'Regionen ausblenden ▾', lgCuffB:'Manschette & Bursa', lgJointB:'Kapsel, Labrum & Bänder',
+ lgArmB:'Bizeps & Oberarm', lgDeltB:'Deltoideus', lgBackB:'Schultergürtel & Rücken', lgChestB:'Brust', lgNerveB:'Nerven', tabMetrics:'Engstellen', plane0:'Extension',
+ plane1:'Extension / Abduktion', plane2:'Abduktion (Frontalebene)', plane3:'Skapulaebene', plane4:'Flexion (Sagittalebene)', plane5:'Adduktion vor dem Körper',
+ ER:'AR', IR:'IR', ERfull:'Außenrotation', IRfull:'Innenrotation', sup:'Sup', pro:'Pro', neutralS:'neutral', elev:'Elevation', elbow:'Ellbogen', foreNeutral:'Unterarm neutral',
+ supination:'Supination', pronation:'Pronation', scapUp:'Skapula ↑', tilt:'Kippung', subac:'Subakromial', subcor:'subkorakoidal', jforce:'Gelenkkraft ≈',
+ upRot:'Aufwärtsrotation', postTilt:'posteriore Kippung', clav:'Klavikula', retr:'Retraktion', protr:'Protraktion', gh:'glenohumeral ≈', st:'skapulothorakal ≈',
+ ant:'vorn', post:'hinten', inf:'unten', sup_:'oben', kink:'Knick', shorter:' % kürzer', longer:' % länger', tensionedReg:'gespannt', compressed:'komprimiert (',
+ underArch:'Sehne unter dem Dach (', underCor:'unter dem Coracoid (', inGroove:'im Sulcus umgelenkt', postRim:'am hinteren Pfannenrand (', liRegions:'vorn / hinten / unten / oben',
+ liAHD:'Subakromialer Abstand', liCHD:'Subkorakoidaler Abstand', liDefl:'Umlenkung am Sulcus', liVsRest:'gegenüber Ruhe', liIntra:'Intraartikulärer Anteil',
+ liLength:'Länge', liPSD:'Abstand zum hinteren Pfannenrand', liStrain:'Dehnung', nameThorax:'Thorax & Wirbelsäule', nameClav:'Klavikula', nameScap:'Skapula',
+ nameHum:'Humerus', nameFore:'Unterarm & Hand', nameLabrum:'Labrum glenoidale', nameBursa:'Bursa subacromialis', nameCapsule:'Gelenkkapsel', lbAcr:'Akromion',
+ lbCor:'Proc. coracoideus', lbGT:'Tub. majus', lbLT:'Tub. minus', lbGlen:'Glenoid / Labrum', lbRad:'Radius', lbUlna:'Ulna', lbC7:'C7', lbStern:'Sternum',
+ lbCaps:'Gelenkkapsel', lbBursa:'Bursa', lbLab:'Labrum', peel0:'alle Schichten', peel1:'ohne Deltoideus & Thorax', peel2:'ohne Rumpfmuskeln', peel3:'ohne Armmuskeln & Nerven',
+ peel4:'ohne Manschette', peel5:'Kapsel & Knochen', peel6:'nur Knochen',
+},
+en:{
+ title:'Shoulder Lab', sub:'Right shoulder · motion and impingement model', lElev:'Elevation (raise arm)', eHang:'hanging', eOver:'overhead', lPlane:'Plane of elevation',
+ ePlaneL:'Extension', ePlaneR:'Abduction · Flexion · Adduction', lRot:'Humeral rotation', eER:'External rotation', eIR:'Internal rotation', lElbow:'Elbow',
+ eExt:'extended', eFlex:'flexed', lPro:'Forearm / hand rotation', eSup:'Supination (palm forward)', ePro:'Pronation', scapSum:'Scapula & clavicle (automatic rhythm)',
+ scapNote:'Scapulothoracic rhythm of about 2:1 (glenohumeral : scapulothoracic), with posterior tilt and external rotation during elevation and protraction during cross-body adduction.',
+ lMigr:'Superior humeral head migration (e.g. cuff tear)', lGird:'Posterior capsule tightness (GIRD)', lFrozen:'Global capsular contracture (frozen shoulder)',
+ pathoNote:'Affects range of motion, capsular tension and the subacromial distance.', lyBones:'bones only', lyCuff:'cuff', disc1:'Simplified biomechanical teaching model (landmark and string model, wrapping around the humeral head, scapulothoracic rhythm). Not a diagnostic tool – please have complaints assessed by a physician or physiotherapist.',
+ aria3d:'3D view of the right shoulder', mArm:'Move arm', mArmT:'Dragging the arm moves the arm', mRot:'Rotate', mRotT:'Dragging the arm rotates the humerus (internal/external rotation)',
+ hint:'Drag the arm: move · drag empty space: orbit · wheel/pinch: zoom · click/tap: structure info', dv1:'Subacromial space', dv1l:'Acromial arch · supraspinatus tendon · bursa',
+ dv2:'Capsule & labrum', dv2l:'from lateral, humeral head cut open', dv3:'Biceps tendon & interval', dv3l:'Groove · coracoid · subscapularis', dv4:'Scapula & back',
+ dv4l:'View from behind', hMetrics:'Impingement monitor', mgSpecial:'Special: internal impingement · subcoracoid · axillary nerve', mgSpecialSub:'less common, mainly throwing and overhead sports',
+ mCapsule:'Capsule (most tensioned part)', mCapShow:'show 4 regions ▸', mCapHide:'hide regions ▾', lgCuffB:'Cuff & bursa', lgJointB:'Capsule, labrum & ligaments',
+ lgArmB:'Biceps & upper arm', lgDeltB:'Deltoid', lgBackB:'Shoulder girdle & back', lgChestB:'Chest', lgNerveB:'Nerves', tabMetrics:'Monitor', plane0:'Extension',
+ plane1:'Extension / abduction', plane2:'Abduction (frontal plane)', plane3:'Scapular plane', plane4:'Flexion (sagittal plane)', plane5:'Cross-body adduction',
+ ER:'ER', IR:'IR', ERfull:'External rotation', IRfull:'Internal rotation', sup:'Sup', pro:'Pro', neutralS:'neutral', elev:'Elevation', elbow:'Elbow', foreNeutral:'forearm neutral',
+ supination:'Supination', pronation:'Pronation', scapUp:'Scapula ↑', tilt:'tilt', subac:'Subacromial', subcor:'subcoracoid', jforce:'joint force ≈', upRot:'Upward rotation',
+ postTilt:'posterior tilt', clav:'Clavicle', retr:'retraction', protr:'protraction', gh:'glenohumeral ≈', st:'scapulothoracic ≈', ant:'ant.', post:'post.',
+ inf:'inf.', sup_:'sup.', kink:'kink', shorter:' % shorter', longer:' % longer', tensionedReg:'tensioned', compressed:'compressed (', underArch:'tendon under the arch (',
+ underCor:'under the coracoid (', inGroove:'deflected in the groove', postRim:'at the posterior glenoid rim (', liRegions:'ant. / post. / inf. / sup.', liAHD:'Subacromial distance',
+ liCHD:'Subcoracoid distance', liDefl:'Deflection at the groove', liVsRest:'vs. rest', liIntra:'Intra-articular portion', liLength:'length', liPSD:'Distance to posterior glenoid rim',
+ liStrain:'Strain', nameThorax:'Thorax & spine', nameClav:'Clavicle', nameScap:'Scapula', nameHum:'Humerus', nameFore:'Forearm & hand', nameLabrum:'Glenoid labrum',
+ nameBursa:'Subacromial bursa', nameCapsule:'Joint capsule', lbAcr:'Acromion', lbCor:'Coracoid process', lbGT:'Greater tubercle', lbLT:'Lesser tubercle',
+ lbGlen:'Glenoid / labrum', lbRad:'Radius', lbUlna:'Ulna', lbC7:'C7', lbStern:'Sternum', lbCaps:'Joint capsule', lbBursa:'Bursa', lbLab:'Labrum', peel0:'all layers',
+ peel1:'without deltoid & thorax', peel2:'without trunk muscles', peel3:'without arm muscles & nerves', peel4:'without cuff', peel5:'capsule & bones', peel6:'bones only',
+}};
+
+/* Englische Namen der Strukturen, Schichten und Presets (deutsche Namen stehen bei den Definitionen) */
+const STRUCT_EN={supra:'Supraspinatus',infra:'Infraspinatus',tmin:'Teres minor',subsc:'Subscapularis',
+ deltA:'Deltoid, clavicular part (anterior)',deltM:'Deltoid, acromial part (middle)',deltP:'Deltoid, spinal part (posterior)',
+ bicLH:'Biceps, long head – long head tendon (LHB)',bicSH:'Biceps, short head',corbr:'Coracobrachialis',triLH:'Triceps, long head',
+ pecM:'Pectoralis major',pecMin:'Pectoralis minor',trapU:'Trapezius, descending part (upper)',trapM:'Trapezius, transverse part (middle)',trapL:'Trapezius, ascending part (lower)',
+ rhomb:'Rhomboids (major & minor)',lev:'Levator scapulae',serr:'Serratus anterior',lat:'Latissimus dorsi',tmaj:'Teres major',
+ CAL:'Coracoacromial ligament (acromial arch)',CHL:'Coracohumeral ligament',GHL:'Glenohumeral ligaments (SGHL · MGHL · IGHL)',ACCC:'AC joint · acromioclavicular & coracoclavicular ligaments',
+ nAx:'Axillary nerve (quadrilateral space)',nSS:'Suprascapular nerve',capsule:'Joint capsule'};
+const GROUP_EN={bones:'Bones',joint:'Joint & ligaments',cuff:'Rotator cuff',delt:'Deltoid',arm:'Upper arm',chest:'Chest',back:'Back & shoulder girdle',nerve:'Nerves'};
+const LAYER_EN={thorax:'Thorax & spine',clav:'Clavicle',scap:'Scapula (acromion, coracoid, glenoid)',hum:'Humerus',fore:'Forearm & hand',
+ capsule:'Joint capsule',labrum:'Labrum',GHL:'Glenohumeral ligaments',CHL:'Coracohumeral lig.',CAL:'Coracoacromial lig.',ACCC:'AC/CC ligaments',bursa:'Subacromial bursa',
+ supra:'Supraspinatus',infra:'Infraspinatus',tmin:'Teres minor',subsc:'Subscapularis',deltA:'anterior (clavicular)',deltM:'middle (acromial)',deltP:'posterior (spinal)',
+ bicLH:'Biceps long head + LHB',bicSH:'Biceps short head',corbr:'Coracobrachialis',triLH:'Triceps long head',pecM:'Pectoralis major',pecMin:'Pectoralis minor',
+ trapU:'Trapezius upper',trapM:'Trapezius middle',trapL:'Trapezius lower',rhomb:'Rhomboids',lev:'Levator scapulae',serr:'Serratus anterior',lat:'Latissimus dorsi',tmaj:'Teres major',nAx:'Axillary nerve',nSS:'Suprascapular nerve'};
+const PRESET_EN={neutral:'Neutral',abd90:'Abduction 90° (frontal)',scap90:'Scapular plane 90°',flex90:'Flexion 90°',over:'Overhead 170°',jobe:'Jobe / Empty Can',fullcan:'Full Can',hawkins:'Hawkins-Kennedy ▶',neer:'Neer ▶',
+ aber:'Throwing position / apprehension',cross:'Cross-body adduction',schuerze:'Hand behind back (lift-off)',nacken:'Hand behind neck',speed:'Speed test (biceps)',
+ arc:'Painful arc (abduction 0–180°)',flexarc:'Flexion 0–180°',rot:'Rotation at 90° abduction',prosup:'Hand rotation (pro-/supination)',
+ wall:'Isometric wall press',erband:'External rotation against band (elbow at side) ▶',irband:'Internal rotation against band (elbow at side) ▶',er90band:'External rotation at 90° abduction against band ▶',
+ fullcanW:'Full Can with 2 kg ▶',latraise:'Lateral raise 3 kg – painful-arc check ▶',wallslide:'Wall slides ▶',elbowchest:'Elbow horizontal to mid-chest (posterior shoulder stretch)',
+ schuerzeUp:'Hand behind back, thumb up',sleeper:'Sleeper stretch (side-lying) ▶',pendel:'Pendulum (Codman) ↻',row:'Row against band ▶',pushplus:'Wall push-up plus (serratus) ▶',ohp:'Overhead press 5 kg ▶',
+ sleeperMod:'Sleeper stretch, modified (rolled back 30°) ▶',crossStretch:'Cross-body stretch (posterior capsule) ▶'};
+const LOAD_EN={wall:'Wall pushes back with 80 N',erband:'Band pulls 20 N inward, elbow at the side',irband:'Band pulls 20 N outward, elbow at the side',er90band:'Band pulls 25 N forward',fullcanW:'Dumbbell 2 kg',latraise:'Dumbbell 3 kg',
+ wallslide:'Wall contact 15 N',elbowchest:'Opposite hand pulls 30 N inward',row:'Band pulls 40 N forward',pushplus:'Wall reaction 120 N',ohp:'Dumbbell 5 kg'};
+const METRIC_EN={ahd:{name:'Subacromial distance',sub:'Acromial arch ↔ humeral head/greater tubercle; the supraspinatus tendon and bursa run here (rest ≈ 9–10 mm)'},
+ chd:{name:'Subcoracoid distance',sub:'Coracoid ↔ lesser tubercle; subscapularis tendon, rotator interval, long head of biceps'},
+ psd:{name:'Posterosuperior glenoid rim ↔ cuff insertion',sub:'Internal impingement in the throwing position (abduction + external rotation)'},
+ capAnt:{name:'Capsule anterior (SGHL · MGHL · IGHL)'},capPost:{name:'Capsule posterior'},capInf:{name:'Capsule inferior (axillary pouch)'},capSup:{name:'Capsule superior / rotator interval'},
+ lbs:{name:'Long head of biceps: deflection at the groove entrance',sub:'Additional kink relative to rest (internal rotation, flexion); plus length of the intra-articular portion'},
+ nax:{name:'Axillary nerve (quadrilateral space)'},jrf:{name:'Joint reaction force (compression in the joint)',sub:'Estimate from muscle pull, arm weight and external load (band, dumbbell, wall)'}};
+const INFO_EN={
+ supra:{k:'Rotator cuff · muscle + tendon',f:'Initiates abduction and centres the humeral head against the upward pull of the deltoid (force couple). The tendon passes beneath the acromial arch to the greater tubercle.',p:'Tendinopathy, partial or full-thickness tear, calcific tendinitis, subacromial impingement; night pain when lying on the shoulder.',t:'Painful arc at 60–120° abduction, Jobe test (empty can), Neer and Hawkins-Kennedy tests.'},
+ infra:{k:'Rotator cuff · muscle + tendon',f:'Strongest external rotator, posterior centring of the head, decelerates the arm after throwing (eccentric).',p:'Tendinopathy/tear in overhead sports, weakness → superior head migration; stretched during internal rotation and cross-body adduction (posterior cuff).',t:'External rotation against resistance (Patte), cross-body stretch, internal rotation at 90° abduction.'},
+ tmin:{k:'Rotator cuff · muscle + tendon',f:'External rotator and lower part of the posterior cuff; forms the upper border of the quadrilateral space (axillary nerve).',p:'Rarely injured in isolation; tightness with posterior capsular stiffness; hornblower sign when torn.',t:'External rotation at 90° abduction against resistance.'},
+ subsc:{k:'Rotator cuff · muscle + tendon',f:'Strongest internal rotator, anterior stabilisation of the head; the upper tendon forms the floor of the rotator interval and keeps the long head of biceps in its groove.',p:'Tear (often together with LHB instability), subcoracoid impingement in flexion + internal rotation + adduction, tightness → restricted external rotation.',t:'Lift-off test (hand behind back), belly press, bear hug; stretched in external rotation.'},
+ deltA:{k:'Deltoid · anterior part',f:'Flexion, internal rotation and horizontal adduction of the arm.',p:'Overload in pressing exercises; with a tight pectoralis part of the “rounded shoulder” pattern.',t:'Flexion against resistance.'},
+ deltM:{k:'Deltoid · middle part',f:'Main abductor from about 15–30°; pulls the head upward – needs the cuff as antagonist (centring).',p:'With cuff weakness or tear the deltoid pushes the head under the arch (impingement, superior migration).',t:'Abduction against resistance.'},
+ deltP:{k:'Deltoid · posterior part',f:'Extension, external rotation, horizontal abduction.',p:'Tightness in overhead sports; stretched in cross-body adduction.',t:'Horizontal abduction against resistance.'},
+ bicLH:{k:'Muscle + long head of biceps tendon (LHB)',f:'Originates at the supraglenoid tubercle/superior labrum (SLAP region), runs over the humeral head through the rotator interval into the bicipital groove. Flexes and supinates the forearm; stabilises the head anterosuperiorly.',p:'Tendinopathy in the groove, subluxation out of the groove (with subscapularis/pulley lesion), SLAP lesion, rupture (“Popeye”). The tendon is stretched in extension + external rotation and in the throwing position, and deflected at the groove entrance during internal rotation; pronation stretches the distal tendon.',t:'Speed test (flexion 90°, supinated, against resistance), Yergason (supination against resistance), O’Brien (SLAP).'},
+ bicSH:{k:'Muscle + tendon',f:'From the coracoid process; shoulder flexion and adduction, elbow flexion, supination.',p:'Insertional tendinopathy at the coracoid, distal biceps tendon rupture (common insertion).',t:'Flexion against resistance, elbow flexion supinated.'},
+ corbr:{k:'Muscle',f:'Flexion and adduction; from the coracoid to the medial mid-humerus, pierced by the musculocutaneous nerve.',p:'Rare; coracoid pain, nerve irritation.',t:'Flexion/adduction against resistance.'},
+ triLH:{k:'Muscle + tendon',f:'Extends the elbow, adducts/extends the shoulder; medial border of the quadrilateral space.',p:'Stretched during elevation with a flexed elbow (limits overhead reach), insertional problems at the olecranon.',t:'Elbow extension overhead.'},
+ pecM:{k:'Muscle + tendon',f:'Adduction, internal rotation, flexion (clavicular) and extension from elevation (sternal). The insertion is twisted: lower fibres insert higher on the lateral lip of the groove.',p:'Tightness → protraction/rounded shoulders → indirectly narrows the subacromial space; rupture during bench press; stretched in abduction + external rotation.',t:'Horizontal adduction against resistance, doorway stretch.'},
+ pecMin:{k:'Muscle',f:'Ribs 3–5 → coracoid: pulls the scapula forward and downward (protraction, anterior tilt).',p:'Tightness promotes impingement (the arch tilts forward and down) and thoracic outlet symptoms (plexus/vessels beneath).',t:'Stretched in retraction + elevation; tenderness below the coracoid.'},
+ trapU:{k:'Muscle',f:'Elevation and upward rotation of the scapula, neck stabilisation.',p:'Often overactive/tight (neck-shoulder pain), compensates for a weak lower trapezius/serratus.',t:'Shoulder shrug; stretched with lateral flexion of the head.'},
+ trapM:{k:'Muscle',f:'Retraction (shoulder blades together), stabilises the scapula during elevation.',p:'Weakness → protraction, dyskinesis.',t:'Retraction against resistance.'},
+ trapL:{k:'Muscle',f:'Depression and upward rotation of the scapula; force couple with serratus anterior during elevation.',p:'Weakness is a common factor in impingement and dyskinesis (the scapula rotates upward too little).',t:'Prone “Y” raise.'},
+ rhomb:{k:'Muscle',f:'Retraction and downward rotation, holds the medial scapular border against the thorax.',p:'Tightness/pain between the shoulder blades, stretched in protraction (cross-body).',t:'Retraction against resistance.'},
+ lev:{k:'Muscle',f:'Elevates the scapula (superior angle) and rotates it downward; lateral flexion of the cervical spine.',p:'Classic tension muscle (desk work, stress), pain at the superior angle of the scapula.',t:'Stretch: turn and flex the head to the opposite side.'},
+ serr:{k:'Muscle',f:'Protraction and upward rotation, holds the scapula against the thorax; main rotator during elevation (with the trapezius).',p:'Weakness/long thoracic nerve lesion → scapular winging, reduced upward rotation → impingement.',t:'Push-up plus (protraction), wall slides.'},
+ lat:{k:'Muscle + tendon',f:'Adduction, extension and internal rotation (pull-up, swimming); winds around teres major to the floor of the groove.',p:'Tightness limits elevation (compensated by lumbar hyperextension), stretched in overhead and hand-behind-neck positions.',t:'Elevation with external rotation, wall stretch.'},
+ tmaj:{k:'Muscle + tendon',f:'“Little latissimus”: adduction, internal rotation, extension; lower border of the quadrilateral space.',p:'Tightness in overhead athletes, stretched in elevation/external rotation.',t:'Stretch in elevation + external rotation.'},
+ CAL:{k:'Ligament',f:'Spans from the coracoid to the acromion and together with both forms the acromial arch (fornix humeri). Beneath it lie the supraspinatus tendon, bursa and rotator interval.',p:'Thickening/spur → narrowing of the subacromial space (outlet impingement). The ligament length does not change; it bounds the space from above.',t:'Compression of the underlying tendon in flexion + internal rotation (Hawkins).'},
+ CHL:{k:'Ligament',f:'From the coracoid to both tubercles; reinforces the rotator interval, helps carry the weight of the hanging arm and limits external rotation with the arm at the side.',p:'Thickening/contracture in frozen shoulder (external rotation restricted first).',t:'External rotation with the arm at the side.'},
+ GHL:{k:'Ligaments (capsular reinforcements)',f:'SGHL: inferior stabilisation with the arm hanging. MGHL: limits external rotation at 45° abduction. IGHL anterior band: holds the head in abduction + external rotation (throwing/apprehension) – tears in dislocation (Bankart). Posterior band: tensioned in flexion + internal rotation.',p:'Anterior instability, hyperlaxity, capsular contracture.',t:'Apprehension/relocation test (90° abduction + external rotation).'},
+ ACCC:{k:'Joint + ligaments',f:'The AC joint connects clavicle and acromion; the acromioclavicular ligament holds horizontally, conoid and trapezoid (coracoclavicular) suspend the scapula from the clavicle.',p:'AC arthritis, AC separation (Rockwood), pain in cross-body adduction (joint compression) and overhead.',t:'Cross-body adduction, pressure on the AC joint.'},
+ capsule:{k:'Joint capsule',f:'Wide and lax in mid-range (axillary pouch inferiorly), tensioned only at end-range. Anterior part tensioned in external rotation/ABER, posterior in internal rotation and cross-body adduction, inferior in elevation.',p:'Posterior tightness (GIRD) → the head shifts anterosuperiorly in flexion → impingement. Frozen shoulder = capsulitis with contracture (external rotation first), instability = capsule too lax.',t:'End-range movements in all directions (the colour shows which part bears load).'},
+ labrum:{k:'Fibrocartilage ring',f:'Enlarges and deepens the socket (suction-cup effect); anchor of the long head of biceps superiorly (SLAP region) and of the IGHL anteroinferiorly (Bankart region).',p:'SLAP lesion (throwing sports, fall on the arm), Bankart lesion after dislocation, tears → clicking/locking.',t:'O’Brien test, crank test; throwing position (peel-back mechanism at the superior labrum).'},
+ bursa:{k:'Bursa',f:'Gliding layer between the rotator cuff and acromion/deltoid (subacromial-subdeltoid).',p:'Bursitis with repeated compression under the arch: painful arc, night pain, pain on lateral raises; calcium leakage from the supraspinatus tendon.',t:'Abduction 60–120°, Neer test.'},
+ nAx:{k:'Nerve',f:'From the posterior cord of the plexus, through the quadrilateral space around the surgical neck; supplies deltoid and teres minor and the skin over the shoulder.',p:'Lesion in dislocation/humeral fracture (deltoid palsy); quadrilateral space syndrome in abduction + external rotation (throwing sports).',t:'Abduction + external rotation (throwing position).'},
+ nSS:{k:'Nerve',f:'Through the suprascapular notch into the supraspinous fossa, around the spine (spinoglenoid notch) into the infraspinous fossa; supplies supraspinatus and infraspinatus.',p:'Compression at the notch or spinoglenoid (ganglion, volleyball) → infraspinatus atrophy; stretched in protraction/cross-body.',t:'Cross-body adduction, pressure at the notch.'},
+ thorax:{k:'Bone',f:'Rib cage and spine: origin for trapezius, rhomboids, latissimus, serratus and pectoralis; the scapula glides on ribs 2–7.',p:'Thoracic kyphosis (rounded back) tilts the scapula forward and narrows the subacromial space during elevation.',t:''},
+ clav:{k:'Bone',f:'Strut between sternum and acromion; elevates, retracts and rotates (about 30° backward) during elevation. Attachment for deltoid (anterior), trapezius, pectoralis major, SC/AC joints.',p:'Fracture, AC/SC instability, distal clavicular osteolysis (weight training).',t:''},
+ scap:{k:'Bone',f:'Shoulder blade with spine, acromion (arch), coracoid (anchor for pectoralis minor, biceps short head, coracobrachialis, ligaments) and glenoid (socket). Moves on the thorax through about 1/3 of total elevation.',p:'Dyskinesis (too little upward rotation/posterior tilt) → impingement; os acromiale, type III (hooked) acromion.',t:''},
+ hum:{k:'Bone',f:'Head (sphere, about 24 mm radius, articular surface facing medially, upward and backward), greater tubercle (cuff insertions), lesser tubercle (subscapularis), between them the bicipital groove (LHB), deltoid insertion (tuberosity) and surgical neck (axillary nerve).',p:'The greater tubercle passes under the arch during abduction – with external rotation it clears, with internal rotation (Hawkins) it abuts against arch and ligament.',t:''},
+ fore:{k:'Bone',f:'Ulna (elbow hinge, olecranon = triceps insertion) and radius (rotates around the ulna: pronation/supination, carries the hand; radial tuberosity = biceps insertion).',p:'Pronation wraps the biceps tendon around the radius (stretch, Yergason); supination relaxes it.',t:''},
+};
+
+/* ===================== Schulter: Schnittstelle zur Engine =====================
+   Letzte Datei des Moduls. Sammelt alles, was die Engine braucht, im Objekt MODULE – das ist der Rückgabewert der Modul-Fabrik
+   (siehe build.mjs) und wird in engine/boot.js aufgelöst. Die Engine kennt kein Gelenk beim Namen: Regler, Link-Codes,
+   Metriken, Detailfenster, Texte und Interaktion kommen von hier. Zielbild in docs/HANDOVER.md §9. */
+
+/* Pose-Regler in Anzeigereihenfolge. key = Feld in pose, url = lesbarer Link-Schlüssel, code = Kennbuchstabe im Kurz-Link
+   (Großbuchstabe, darf nicht mit den Engine-Buchstaben kollidieren – siehe engine/share.js), label/ends = i18n-Schlüssel,
+   text(ps) = Wertetext neben dem Regler, range(ps) = dynamische Grenzen aus den Bewegungsgrenzen. */
+const POSE_PARAMS=[
+ {key:'E',url:'E',code:'E',min:0,max:180,step:1,def:0,label:'lElev',ends:['eHang','eOver'],text:ps=>fmt(ps.E)+'°',range:ps=>({max:Emax(ps.P)})},
+ {key:'P',url:'P',code:'P',min:-90,max:150,step:1,def:0,label:'lPlane',ends:['ePlaneL','ePlaneR'],text:ps=>fmt(ps.P)+'° · '+planeLabel(ps.P)},
+ {key:'IR',url:'rot',code:'R',min:-110,max:110,step:1,def:0,label:'lRot',ends:['eER','eIR'],text:ps=>(ps.IR<0?t('ER'):t('IR'))+' '+fmt(Math.abs(ps.IR))+'°',
+  range:ps=>{ const rl=rotLimits(ps.E,ps.P); return {min:-rl.ER,max:rl.IR}; }},
+ {key:'elbow',url:'elbow',code:'B',min:0,max:145,step:1,def:0,label:'lElbow',ends:['eExt','eFlex'],text:ps=>fmt(ps.elbow)+'°'},
+ {key:'pro',url:'pro',code:'F',min:-85,max:80,step:1,def:0,label:'lPro',ends:['eSup','ePro'],text:ps=>Math.abs(ps.pro)<3?t('neutralS'):(ps.pro<0?t('sup'):t('pro'))+' '+fmt(Math.abs(ps.pro))+'°'},
+];
+/* Pathologie-Regler. Zustand in patho (migr in mm, gird/frozen 0…1); Regler und lesbarer Link in Anzeigeeinheit (sliderScale/urlScale),
+   Kurz-Link als ganze Zahl (compactScale): M30 = 3,0 mm, G50 = 50 %. */
+const PATHO_PARAMS=[
+ {key:'migr',url:'migr',code:'M',min:0,max:6,step:0.5,sliderScale:1,urlScale:1,compactScale:10,label:'lMigr',text:v=>fmt(v,1)+' mm'},
+ {key:'gird',url:'gird',code:'G',min:0,max:100,step:5,sliderScale:100,urlScale:100,compactScale:100,label:'lGird',text:v=>fmt(v*100)+' %'},
+ {key:'frozen',url:'frozen',code:'Z',min:0,max:100,step:5,sliderScale:100,urlScale:100,compactScale:100,label:'lFrozen',text:v=>fmt(v*100)+' %'},
+];
+
+const MODULE={
+  i18n:I18N_MOD,
+  names:{struct:STRUCT_EN,group:GROUP_EN,layer:LAYER_EN,preset:PRESET_EN,load:LOAD_EN,metric:METRIC_EN,info:INFO_EN},
+  /* Zustand und Rahmenkette */
+  pose,patho,frames,poseParams:POSE_PARAMS,pathoParams:PATHO_PARAMS,
+  intro:{P:30,E:70,IR:0,elbow:0,pro:0},          /* Startanimation: leicht angehobener Arm zeigt Farbcodierung und Rhythmus */
+  /* Anatomie und Kinematik */
+  anatomy:{AN,STRUCT,STRUCT_BY_ID,LAYER_GROUPS,INFO,LABELS},
+  kinematics:{worldPt,solvePose,clampPose,evaluate,EVAL,EXT,REF,fasKey},
+  /* Presets (RUN_LIST-Reihenfolge stabil) */
+  presets:PRESETS,anims:ANIMS,physio:PHYSIO,
+  /* Darstellung */
+  buildBones,render:RENDER,
+  camera:{orbit0:ORBIT0,views:VIEWS},detailViews:detailDefs,peel:PEEL,
+  /* Monitor und Strukturliste */
+  metrics:METRICS,monitor:MONITOR,loadGroups:LOAD_GROUPS,computeLoads,structReadouts,boneNameKeys:BONE_NAME_KEYS,layerPresets:LAYER_PRESETS,
+  /* Texte im 3D-Fenster und im Bewegungsblock */
+  hud:{mini:hudMiniText,body:hudBodyHTML,summary:poseSummaryText},
+  readout:{sum:'scapSum',note:'scapNote',html:scapReadoutHTML},readout0:READOUT0,
+  /* Ziehen am Körperteil */
+  drag:DRAG,
+};
+
+return MODULE;
+};
+/* ===================== Start: Modul wählen, instanziieren, Wörterbuch mischen, modulabhängiges Markup =====================
+   Vor diesem Teil stehen (aus build.mjs) REGISTRY = [{id,name,nameEn,alias}] in Link-Reihenfolge und MODULES = {id → Fabrik}.
+   Das Modul steht im Link als m=<id> (lesbar) oder x<Index Basis 36> (Kurz-Token); ohne Angabe gilt das erste der Registry. */
+const MODULE_LIST=REGISTRY.map(r=>r.id);
+const MODULE_META=(function(){
+  let id=URL_PARAMS.m;
+  if(!MODULES[id]&&COMPACT_TOKEN){ const f=COMPACT_TOKEN.split('_').find(x=>x[0]==='x'); if(f){ const i=parseInt(f.slice(1),36); if(!isNaN(i)&&REGISTRY[i]) id=REGISTRY[i].id; } }
+  return REGISTRY.find(r=>r.id===id)||REGISTRY[0];
+})();
+const MOD=MODULES[MODULE_META.id](); MOD.id=MODULE_META.id;
+/* Modul-Texte über das Engine-Wörterbuch legen (gleiche Schlüssel gewinnen im Modul) */
+for(const l in MOD.i18n){ I18N[l]=Object.assign(I18N[l]||{},MOD.i18n[l]); }
+
+/* Die Engine spricht das Modul über feste Namen an */
+const {pose,patho,frames,poseParams:POSE_PARAMS,pathoParams:PATHO_PARAMS}=MOD;
+const {AN,STRUCT,STRUCT_BY_ID,LAYER_GROUPS,INFO,LABELS}=MOD.anatomy;
+const {worldPt,solvePose,clampPose,evaluate,EVAL,EXT,REF,fasKey}=MOD.kinematics;
+const PRESETS=MOD.presets, ANIMS=MOD.anims, PHYSIO=MOD.physio;
+const {struct:STRUCT_EN,group:GROUP_EN,layer:LAYER_EN,preset:PRESET_EN,load:LOAD_EN,metric:METRIC_EN,info:INFO_EN}=MOD.names;
+const ORBIT0=MOD.camera.orbit0, VIEWS=MOD.camera.views, detailDefs=MOD.detailViews, PEEL=MOD.peel;
+const METRICS=MOD.metrics, MONITOR=MOD.monitor, LOAD_GROUPS=MOD.loadGroups, BONE_NAME_KEYS=MOD.boneNameKeys, LAYER_PRESETS=MOD.layerPresets;
+const {computeLoads,structReadouts,buildBones}=MOD;
+const RENDER=MOD.render||{}, DRAG=MOD.drag, READOUT0=MOD.readout0||{};
+
+const $=id=>document.getElementById(id);
+/* Markup, das vom Modul abhängt: Pose-Regler, Kopplungs-Block, Pathologie-Regler, Schicht-Schnellwahl, Detail-Dock, Umschalter, Fußzeile.
+   Texte bleiben leer und werden von applyLang() über data-i18n gefüllt. */
+(function buildModuleMarkup(){
+  const pc=$('poseCtls');
+  pc.innerHTML=POSE_PARAMS.map(p=>`<div class="ctl"><label for="ps_${p.key}" data-i18n="${p.label}"></label><span class="val" id="pv_${p.key}"></span><input type="range" id="ps_${p.key}" min="${p.min}" max="${p.max}" value="${p.def}" step="${p.step}"><div class="ends"><span data-i18n="${p.ends[0]}"></span><span data-i18n="${p.ends[1]}"></span></div></div>`).join('');
+  if(MOD.readout) pc.insertAdjacentHTML('beforeend',`<details class="sub" id="readoutDetails"><summary data-i18n="${MOD.readout.sum}"></summary><div class="kvs" id="readout" style="font-family:var(--mono);font-size:11.5px;color:var(--muted);line-height:1.6"></div><p class="note" data-i18n="${MOD.readout.note}"></p></details>`);
+  const pa=$('pathoCtls');
+  pa.innerHTML=PATHO_PARAMS.map(p=>`<div class="ctl"><label for="pp_${p.key}" data-i18n="${p.label}"></label><span class="val" id="pv2_${p.key}"></span><input type="range" id="pp_${p.key}" min="${p.min}" max="${p.max}" step="${p.step}" value="${patho[p.key]*p.sliderScale}"></div>`).join('');
+  if(!PATHO_PARAMS.length) $('blk-patho').hidden=true;
+  /* Schnellwahl-Knöpfe durch Leerzeichen getrennt (Inline-Abstand wie im ursprünglichen Markup) */
+  $('layerPresets').innerHTML=[...LAYER_PRESETS.map(lp=>`<button class="btn" data-lp="${lp.id}" style="padding:2px 7px;font-size:11px" data-i18n="${lp.key}"></button>`),`<button class="btn" id="btnLayersAll" style="padding:2px 7px;font-size:11px" data-i18n="lyAll"></button>`].join(' ');
+  $('dockRow').innerHTML=detailDefs.map(d=>`<div class="dview"><div class="dcap"><b data-i18n="${d.title}"></b><div class="dctl"><span class="peel"><button data-dv="${d.id}" data-d="1">−</button><span class="pl" id="${d.id}pl"></span><button data-dv="${d.id}" data-d="-1">+</button></span><span class="dval" id="${d.id}val"></span></div></div><div class="dvp viewport" id="${d.id}"></div><div class="dlabel" data-i18n="${d.label}"></div></div>`).join('');
+  const seg=$('moduleSeg');
+  seg.hidden=REGISTRY.length<2; if(!seg.hidden) seg.innerHTML=REGISTRY.map(r=>`<button data-module="${r.id}"${r.id===MOD.id?' class="on"':''}></button>`).join('');
+  $('verName').textContent=MODULE_META.name;
+})();
+
 /* ===================== Szene & Geometrie ===================== */
 const canvas=document.getElementById('gl');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
@@ -1499,7 +1593,6 @@ const keyLight=new THREE.DirectionalLight(0xffffff,0.75); keyLight.position.set(
 const fillLight=new THREE.DirectionalLight(0xdfe8ff,0.35); fillLight.position.set(-70,10,-50); scene.add(fillLight);
 const rimLight=new THREE.DirectionalLight(0xffffff,0.25); rimLight.position.set(60,-30,-60); scene.add(rimLight);
 
-const LAYER={deltoid:1,thorax:2,arm:3,sheet:4};
 /* Das Modell ist in anatomischen Koordinaten (+X lateral rechts, +Y kranial, +Z ventral) definiert – ein linkshändiges System.
    ROOT spiegelt es für die rechtshändige Darstellung (x → −x). Alle Umrechnungen Modell ↔ Darstellung laufen über toR(). */
 const ROOT=new THREE.Group(); ROOT.scale.x=-1; scene.add(ROOT);
@@ -1508,13 +1601,15 @@ const toR=v=>V3(-v.x,v.y,v.z);
 const G={}; for(const k in frames) G[k]=new THREE.Group();
 for(const k in G) ROOT.add(G[k]);
 
+/* Materialien für das Modul. userData: fixed = Transparenz/Highlight nie ändern (durchscheinende Kontexthülle), noPick = nicht anklickbar,
+   baseOpacity = Grunddeckkraft, auf die die Gruppen-Transparenz wirkt (Standard 1). */
 const MAT={
   bone:new THREE.MeshStandardMaterial({color:COL.bone,roughness:0.62,metalness:0.02}),
-  thorax:new THREE.MeshStandardMaterial({color:COL.bone,roughness:0.7,transparent:true,opacity:0.28,depthWrite:false}),
-  ribs:new THREE.MeshStandardMaterial({color:COL.bone,roughness:0.62,transparent:true,opacity:0.55}),
+  context:new THREE.MeshStandardMaterial({color:COL.bone,roughness:0.7,transparent:true,opacity:0.28,depthWrite:false,userData:{fixed:true,noPick:true}}),
+  contextSolid:new THREE.MeshStandardMaterial({color:COL.bone,roughness:0.62,transparent:true,opacity:0.55,userData:{fixed:true}}),
   cart:new THREE.MeshStandardMaterial({color:COL.cart,roughness:0.35}),
-  bursa:new THREE.MeshStandardMaterial({color:COL.bursa,roughness:0.3,transparent:true,opacity:0.65}),
-  capsule:new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.5,transparent:true,opacity:0.82,side:THREE.DoubleSide}),
+  bursa:new THREE.MeshStandardMaterial({color:COL.bursa,roughness:0.3,transparent:true,opacity:0.65,userData:{baseOpacity:0.65}}),
+  surface:new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.5,transparent:true,opacity:0.82,side:THREE.DoubleSide,userData:{baseOpacity:0.82}}),
 };
 const BONE_MATS={};  // pro Knochen eigene Kopie (Transparenz/Highlight)
 function boneMat(id){ if(!BONE_MATS[id]) BONE_MATS[id]=MAT.bone.clone(); return BONE_MATS[id]; }
@@ -1525,7 +1620,7 @@ function addBone(group,mesh,id,layer){ group.add(mesh); (BONES[id]||(BONES[id]=[
 const ell=(c,r,mat)=>{ const m=new THREE.Mesh(new THREE.SphereGeometry(1,20,14),mat); m.position.copy(c); m.scale.set(r.x,r.y,r.z); return m; };
 
 /* ---- Knochen: Geometrie kommt aus dem Modul (modules/shoulder/bones.js) ---- */
-buildBones({G,LAYER,MAT,boneMat,addBone,ell,pickables,BONES});
+buildBones({G,MAT,boneMat,addBone,ell,pickables,BONES});
 
 /* ---- Muskeln, Sehnen, Bänder, Nerven als Röhren ---- */
 const FMESH={};     // fasKey → Tube
@@ -1543,16 +1638,17 @@ for(const s of STRUCT){
     ROOT.add(tube.mesh); pickables.push(tube.mesh); FMESH[fasKey(s,i)]=tube; STRUCT_MESHES[s.id].push(tube.mesh);
   });
 }
-/* Kapsel als Fläche (24 Fasern × 9 Stützpunkte) */
-const CAPS_M=9;
-const capsuleMesh=(function(){
-  const geo=new THREE.BufferGeometry(); const nv=CAPS_N*CAPS_M;
+/* Flächen-Strukturen (surface, z. B. Gelenkkapsel): N Faszikel × SURF_M Stützpunkte als geschlossene Fläche mit Dehnungsfarbe je Faser */
+const SURF_M=9; const SURFACES=[];
+for(const s of STRUCT){
+  if(!s.surface) continue; const N=s.fas.length;
+  const geo=new THREE.BufferGeometry(); const nv=N*SURF_M;
   const pos=new Float32Array(nv*3), col=new Float32Array(nv*3);
   geo.setAttribute('position',new THREE.BufferAttribute(pos,3)); geo.setAttribute('color',new THREE.BufferAttribute(col,3));
-  const idx=[]; for(let k=0;k<CAPS_N;k++){ const k2=(k+1)%CAPS_N; for(let j=0;j<CAPS_M-1;j++){ const a=k*CAPS_M+j,b=k2*CAPS_M+j,c=k*CAPS_M+j+1,d=k2*CAPS_M+j+1; idx.push(a,b,c,b,d,c); } }
+  const idx=[]; for(let k=0;k<N;k++){ const k2=(k+1)%N; for(let j=0;j<SURF_M-1;j++){ const a=k*SURF_M+j,b=k2*SURF_M+j,c=k*SURF_M+j+1,d=k2*SURF_M+j+1; idx.push(a,b,c,b,d,c); } }
   geo.setIndex(idx);
-  const m=new THREE.Mesh(geo,MAT.capsule); m.userData.sid='capsule'; m.userData.kind='lig'; m.frustumCulled=false; ROOT.add(m); pickables.push(m); STRUCT_MESHES.capsule=[m]; return m;
-})();
+  const m=new THREE.Mesh(geo,MAT.surface.clone()); m.userData.sid=s.id; m.userData.kind=s.kind; m.frustumCulled=false; ROOT.add(m); pickables.push(m); STRUCT_MESHES[s.id]=[m]; SURFACES.push({s,mesh:m,N});
+}
 
 /* ---- Sichtbarkeit ---- */
 const VIS={};   // id → bool
@@ -1565,9 +1661,9 @@ function applyVisibility(){
   for(const id of allIds()){
     const ms=meshesOf(id); const gop=GROUP_OPACITY[groupOf(id)];
     for(const m of ms){ m.visible=!!VIS[id];
-      const mat=m.material; const base=(id==='thorax'&&(mat===MAT.thorax||mat===MAT.ribs))?mat.opacity:(id==='bursa'?0.65:id==='capsule'?0.82:1);
-      if(mat===MAT.thorax||mat===MAT.ribs) continue;
-      const op=base*gop; mat.opacity=op; mat.transparent=op<0.999||id==='bursa'||id==='capsule'; mat.depthWrite=op>0.5; }
+      const mat=m.material; if(mat.userData.fixed) continue;
+      const base=mat.userData.baseOpacity!==undefined?mat.userData.baseOpacity:1;
+      const op=base*gop; mat.opacity=op; mat.transparent=op<0.999||base<1; mat.depthWrite=op>0.5; }
   }
   needsRender=true;
 }
@@ -1593,7 +1689,7 @@ function fitDetailCams(){ for(const vp of viewports){ if(!vp.def) continue; cons
 
 /* ---- Pose anwenden ---- */
 let needsRender=true;
-const _cols=[];
+const _cols=[]; const ZONES=RENDER.zones||{};   /* Zonenmarker z → Kompressionsmetrik (aus dem Modul) */
 function applyPose(){
   clampPose(pose);
   const rh=solvePose(pose,frames);
@@ -1613,22 +1709,22 @@ function applyPose(){
         let rad=s.kind==='muscle'?tendonR+(s.r-tendonR)*r.w*(0.22+0.78*Math.pow(Math.sin(Math.PI*sN),0.7)):s.r;
         centers.push({p:r.p,r:rad});
         let bcol=base; if(s.kind==='muscle'){ bcol=_c2.copy(COL.tendon).lerp(COL.muscle,clamp(r.w,0,1)); }
-        let comp=0; const z=Math.round(r.z);
-        if(z===1) comp=M.bursaComp; else if(z===2) comp=M.corComp; else if(z===3) comp=M.grooveComp; else if(z===4) comp=M.psComp;
+        const zk=ZONES[Math.round(r.z)]; let comp=zk?M[zk]:0;
         if(r.z>0&&r.z<1) comp*=r.z;
         _cols.push(showStrain?strainColor(bcol,e.strain,full,comp):[bcol.r,bcol.g,bcol.b]);
       }
       tube.update(centers,_cols,null);
     });
   }
-  // Kapsel
-  { const pos=capsuleMesh.geometry.attributes.position, col=capsuleMesh.geometry.attributes.color;
-    for(let k=0;k<CAPS_N;k++){ const e=ev.fas['capsule#'+k]; const res=resamplePath(e.items,CAPS_M);
-      const c=showStrain?strainColor(COL.lig,e.strain,0.12,0):[COL.lig.r,COL.lig.g,COL.lig.b];
-      for(let j=0;j<CAPS_M;j++){ const v=(k*CAPS_M+j); pos.setXYZ(v,res[j].p.x,res[j].p.y,res[j].p.z); col.setXYZ(v,c[0],c[1],c[2]); } }
-    pos.needsUpdate=true; col.needsUpdate=true; capsuleMesh.geometry.computeVertexNormals(); capsuleMesh.geometry.computeBoundingSphere(); }
-  // Bursa: Dicke & Farbe
-  { const bu=BONES.bursa[0]; const gap=clamp(M.ahd,0.15,1.2); bu.scale.y=0.12+0.22*gap; _c1.copy(COL.bursa).lerp(COL.violet,M.bursaComp*0.85); bu.material.color.copy(_c1); }
+  // Flächen-Strukturen
+  for(const {s,mesh,N} of SURFACES){ const geo=mesh.geometry; const pos=geo.attributes.position, col=geo.attributes.color;
+    const full=s.kind==='muscle'?0.45:0.12, base=s.kind==='muscle'?COL.muscle:s.kind==='nerve'?COL.nerve:COL.lig;
+    for(let k=0;k<N;k++){ const e=ev.fas[fasKey(s,k)]; const res=resamplePath(e.items,SURF_M);
+      const c=showStrain?strainColor(base,e.strain,full,0):[base.r,base.g,base.b];
+      for(let j=0;j<SURF_M;j++){ const v=(k*SURF_M+j); pos.setXYZ(v,res[j].p.x,res[j].p.y,res[j].p.z); col.setXYZ(v,c[0],c[1],c[2]); } }
+    pos.needsUpdate=true; col.needsUpdate=true; geo.computeVertexNormals(); geo.computeBoundingSphere(); }
+  // Modul-Hook (z. B. Bursa-Dicke aus dem Abstand)
+  if(RENDER.afterPose) RENDER.afterPose(M,{BONES,COL});
   fitDetailCams();
   needsRender=true;
   return {rh,ev};
@@ -1670,28 +1766,23 @@ ROOT.traverse(o=>{ if(o.isMesh) o.frustumCulled=false; });
 
 /* ===================== Bedienung ===================== */
 const UI={strain:true,labels:false,mode:'arm',speed:1,loopSweeps:true,langExplicit:LANG_EXPLICIT};
-const $=id=>document.getElementById(id);
-const SL={E:$('sElev'),P:$('sPlane'),IR:$('sRot'),elbow:$('sElbow'),pro:$('sPro')};
-const VL={E:$('vElev'),P:$('vPlane'),IR:$('vRot'),elbow:$('vElbow'),pro:$('vPro')};
+/* Pose-Regler (Markup aus engine/boot.js nach MOD.poseParams): Wert, Wertetext und dynamische Grenzen je Parameter */
+const SL={},VL={}; for(const p of POSE_PARAMS){ SL[p.key]=$('ps_'+p.key); VL[p.key]=$('pv_'+p.key); }
 let syncing=false;
 function syncSliders(){
   syncing=true;
-  for(const k in SL){ const v=Math.round(pose[k]); if(+SL[k].value!==v) SL[k].value=v; }
-  VL.E.textContent=fmt(pose.E)+'°'; VL.P.textContent=fmt(pose.P)+'° · '+planeLabel(pose.P);
-  VL.IR.textContent=(pose.IR<0?t('ER'):t('IR'))+' '+fmt(Math.abs(pose.IR))+'°'; VL.elbow.textContent=fmt(pose.elbow)+'°';
-  VL.pro.textContent=Math.abs(pose.pro)<3?t('neutralS'):(pose.pro<0?t('sup'):t('pro'))+' '+fmt(Math.abs(pose.pro))+'°';
-  const rl=rotLimits(pose.E,pose.P); SL.IR.min=Math.round(-rl.ER); SL.IR.max=Math.round(rl.IR); SL.E.max=Math.round(Emax(pose.P));
+  for(const p of POSE_PARAMS){ const el=SL[p.key]; const v=Math.round(pose[p.key]); if(+el.value!==v) el.value=v; }
+  for(const p of POSE_PARAMS){ VL[p.key].textContent=p.text(pose); }
+  for(const p of POSE_PARAMS){ if(!p.range) continue; const r=p.range(pose); const el=SL[p.key]; if(r.min!==undefined) el.min=Math.round(r.min); if(r.max!==undefined) el.max=Math.round(r.max); }
   syncing=false;
 }
-for(const k in SL){ SL[k].addEventListener('input',()=>{ if(syncing) return; stopAnim(); const o={}; o[k]=+SL[k].value; setPose(o); }); }
+for(const p of POSE_PARAMS){ SL[p.key].addEventListener('input',()=>{ if(syncing) return; stopAnim(); const o={}; o[p.key]=+SL[p.key].value; setPose(o); }); }
 $('btnNeutral').addEventListener('click',()=>runPreset(PRESETS[0]));
-// Pathologie
-const PL={migr:$('sMigr'),gird:$('sGird'),frozen:$('sFrozen')};
-function syncPathoLabels(){ $('vMigr').textContent=fmt(patho.migr,1)+' mm'; $('vGird').textContent=fmt(patho.gird*100)+' %'; $('vFrozen').textContent=fmt(patho.frozen*100)+' %'; }
-function setPatho(p){ Object.assign(patho,p); PL.migr.value=patho.migr; PL.gird.value=Math.round(patho.gird*100); PL.frozen.value=Math.round(patho.frozen*100); syncPathoLabels(); setPose({}); }
-PL.migr.addEventListener('input',()=>setPatho({migr:+PL.migr.value}));
-PL.gird.addEventListener('input',()=>setPatho({gird:+PL.gird.value/100}));
-PL.frozen.addEventListener('input',()=>setPatho({frozen:+PL.frozen.value/100}));
+// Pathologie (Regler in Anzeigeeinheit, Zustand in Modelleinheit: sliderScale)
+const PL={}; for(const p of PATHO_PARAMS) PL[p.key]=$('pp_'+p.key);
+function syncPathoLabels(){ for(const p of PATHO_PARAMS) $('pv2_'+p.key).textContent=p.text(patho[p.key]); }
+function setPatho(pa){ Object.assign(patho,pa); for(const p of PATHO_PARAMS) PL[p.key].value=Math.round(patho[p.key]*p.sliderScale*1000)/1000; syncPathoLabels(); setPose({}); }
+for(const p of PATHO_PARAMS) PL[p.key].addEventListener('input',()=>{ const o={}; o[p.key]=+PL[p.key].value/p.sliderScale; setPatho(o); });
 function syncSpeedLabel(){ $('vSpeed').textContent=fmt(UI.speed,2).replace(/[.,]?0+$/,'')+'×'; }
 function setSpeed(v){ UI.speed=clamp(v,0.25,2); $('sSpeed').value=UI.speed; syncSpeedLabel(); }
 $('sSpeed').addEventListener('input',e=>setSpeed(+e.target.value));
@@ -1718,7 +1809,7 @@ function stepAnim(now){
   if(!poseAnim) return false;
   const a=poseAnim; let t_=(now-a.t0)/(a.dur/UI.speed);
   if(a.loop){ t_=t_%2; if(t_>1) t_=2-t_; } else t_=clamp(t_,0,1);
-  const s=smooth(t_); const p={}; for(const k of ['P','E','IR','elbow','pro']) p[k]=lerp(a.from[k],a.to[k],s);
+  const s=smooth(t_); const p={}; for(const pp of POSE_PARAMS) p[pp.key]=lerp(a.from[pp.key],a.to[pp.key],s);
   Object.assign(pose,p); const r=applyPose(); onPoseChanged(r,true);
   if(!a.loop&&t_>=1){ poseAnim=null; if(a.then) a.then(); else releaseChip(); }
   return true;
@@ -1776,8 +1867,7 @@ const layerName=(id,de)=>LANG==='en'?(LAYER_EN[id]||de):de;
     op.addEventListener('input',()=>{ GROUP_OPACITY[g.id]=+op.value; applyVisibility(); });
     d.appendChild(items); root.appendChild(d);
   }
-  $('btnLayersBones').addEventListener('click',()=>setAllLayers(id=>LAYER_PRESETS.bones.includes(id)));
-  $('btnLayersCuff').addEventListener('click',()=>setAllLayers(id=>LAYER_PRESETS.cuff.includes(id)));
+  document.querySelectorAll('#layerPresets [data-lp]').forEach(b=>{ const lp=LAYER_PRESETS.find(x=>x.id===b.dataset.lp); b.addEventListener('click',()=>setAllLayers(id=>lp.ids.includes(id))); });
   $('btnLayersAll').addEventListener('click',()=>setAllLayers(()=>true));
   $('cbLabels').addEventListener('change',e=>setLabelsOn(e.target.checked));
   $('cbStrain').addEventListener('change',e=>setStrainOn(e.target.checked));
@@ -1895,7 +1985,7 @@ function renderInfo(){
   root.innerHTML=`<h3>${NAME(selectedId)}</h3><div class="kind">${inf.k||''}</div>`+(rows.length?`<div class="kv">${rows.map(r=>`<span>${r[0]}</span><span>${r[1]}</span>`).join('')}</div>`:'')+
     (inf.f?`<p><b>${t('fn')}</b> ${inf.f}</p>`:'')+(inf.p?`<p><b>${t('probs')}</b> ${inf.p}</p>`:'')+(inf.t?`<p><b>${t('test')}</b> ${inf.t}</p>`:'');
 }
-function setHighlight(id,on){ const ms=meshesOf(id); for(const m of ms){ const mat=m.material; if(mat===MAT.thorax||mat===MAT.ribs) continue; mat.emissive=mat.emissive||new THREE.Color(0); mat.emissive.setHex(on?0x4a3a2a:0x000000); } needsRender=true; }
+function setHighlight(id,on){ const ms=meshesOf(id); for(const m of ms){ const mat=m.material; if(mat.userData.fixed) continue; mat.emissive=mat.emissive||new THREE.Color(0); mat.emissive.setHex(on?0x4a3a2a:0x000000); } needsRender=true; }
 function selectStructure(id,quiet){ if(selectedId) setHighlight(selectedId,false); selectedId=id; if(id) setHighlight(id,true); renderInfo(); if(isMobile()&&id&&!quiet) openTab('info'); }
 
 /* ---- Beschriftungen ---- */
@@ -1924,12 +2014,12 @@ function onPoseChanged(r,animating){
 function refreshPanels(){
   panelDirty=false; const M=EVAL.metrics; const rh=lastRh||READOUT0;
   updateMetrics(M); updateLoads(); if(selectedId) renderInfo();
-  /* Texte liefert das Modul (hud.js); die Last-Zeile mit „entfernen“-Knopf ist Engine-Sache */
-  $('hudMini').textContent=hudMiniText(pose,M);
-  $('hudBody').innerHTML=hudBodyHTML(pose,rh,M)+(EXT.F?`<span class="hload">${t('load')} ${EXT.src&&RUNNABLE[EXT.src]?loadLabel(RUNNABLE[EXT.src]):EXT.label}<button type="button" id="btnNoLoad">${t('removeLoad')}</button></span>`:'');
+  /* Texte liefert das Modul; die Last-Zeile mit „entfernen“-Knopf ist Engine-Sache */
+  $('hudMini').textContent=MOD.hud.mini(pose,M);
+  $('hudBody').innerHTML=MOD.hud.body(pose,rh,M)+(EXT.F?`<span class="hload">${t('load')} ${EXT.src&&RUNNABLE[EXT.src]?loadLabel(RUNNABLE[EXT.src]):EXT.label}<button type="button" id="btnNoLoad">${t('removeLoad')}</button></span>`:'');
   const bl=$('btnNoLoad'); if(bl) bl.addEventListener('click',()=>{ setLoad(null); stopAnim(); setPose({}); });
-  $('poseSummary').textContent=poseSummaryText(pose);
-  $('scapReadout').innerHTML=scapReadoutHTML(pose,rh);
+  $('poseSummary').textContent=MOD.hud.summary(pose);
+  if(MOD.readout) $('readout').innerHTML=MOD.readout.html(pose,rh);
   updateLabels();
 }
 
@@ -1937,7 +2027,7 @@ function refreshPanels(){
 const raycaster=new THREE.Raycaster(); raycaster.layers.enableAll();
 /* DRAG (greifbare Teile, Rotationsachsen, Ziehen → Pose) definiert das Modul (interaction.js) */
 function pick(cx,cy){ const r=mainView.getBoundingClientRect(); const nd={x:((cx-r.left)/r.width)*2-1,y:-((cy-r.top)/r.height)*2+1}; raycaster.setFromCamera(nd,mainCam);
-  const objs=pickables.filter(m=>m.visible&&m.material.opacity>0.35&&m.material!==MAT.thorax); const hits=raycaster.intersectObjects(objs,false); return hits.length?hits[0]:null; }
+  const objs=pickables.filter(m=>m.visible&&m.material.opacity>0.35&&!m.material.userData.noPick); const hits=raycaster.intersectObjects(objs,false); return hits.length?hits[0]:null; }
 const ptrs=new Map(); let drag=null, pinch=null, hoverId=null;
 const tooltip=$('tooltip');
 function isMobile(){ return window.matchMedia('(max-width: 980px)').matches; }
@@ -2082,6 +2172,7 @@ function applyLang(){
   document.querySelectorAll('[data-i18n-title]').forEach(e=>{ e.title=t(e.dataset.i18nTitle); });
   document.querySelectorAll('[data-i18n-aria]').forEach(e=>{ e.setAttribute('aria-label',t(e.dataset.i18nAria)); });
   const bl=$('btnLang'); bl.textContent=LANG==='de'?'EN':'DE'; bl.title=t('langT');
+  document.querySelectorAll('#moduleSeg button').forEach(b=>{ const r=REGISTRY.find(x=>x.id===b.dataset.module); b.textContent=LANG==='en'?(r.nameEn||r.name):r.name; });
   relabelChips(); relabelLayers(); relabelMetrics(); sortLoadList(); relabel3D(); updatePeelLabels();
   $('dockToggle').textContent=dock.classList.contains('collapsed')?t('dockShow'):t('dockHide');
   document.querySelectorAll('.panel').forEach(peekLabel);
@@ -2107,36 +2198,46 @@ function loop(now){
 /* ---- Start ---- */
 let skipIntro=false;
 applyVisibility();
-setPose({P:0,E:0,IR:0,elbow:0,pro:0});
+{ const p0={}; for(const p of POSE_PARAMS) p0[p.key]=p.def; setPose(p0); }
 applyLang();
 layoutDock(); setTimeout(layoutDock,400);
 requestAnimationFrame(loop);
-/* Startansicht: leicht angehobener Arm zeigt Farbcodierung und Rhythmus */
-setTimeout(()=>{ if(!skipIntro) animateTo({P:30,E:70,IR:0,elbow:0,pro:0},1400); },300);
-window.Schulterlabor={setPose,runPreset,runAnim,runById,PRESETS,PHYSIO,ANIMS,EVAL,pose,patho,frames,selectStructure,openTab,stopAnim,setView,setLoad,detailDefs,PEEL,getAnim:()=>poseAnim,UI,setLang,get lang(){ return LANG; },MON,LOAD_GROUPS,LG_EL,setCapOpen,setSpecialOpen,setLoadGroupOpen};
+/* Startansicht: das Modul nennt die Zielpose der Startanimation */
+setTimeout(()=>{ if(!skipIntro&&MOD.intro) animateTo(MOD.intro,1400); },300);
+/* Testschnittstelle (tests/shots.mjs); der Modul-Alias (z. B. window.Schulterlabor) bleibt für ältere Skripte */
+window.AnatomyLab={module:MOD.id,REGISTRY,setPose,runPreset,runAnim,runById,PRESETS,PHYSIO,ANIMS,EVAL,pose,patho,frames,selectStructure,openTab,stopAnim,setView,setLoad,detailDefs,PEEL,getAnim:()=>poseAnim,UI,setLang,get lang(){ return LANG; },MON,LOAD_GROUPS,LG_EL,setCapOpen,setSpecialOpen,setLoadGroupOpen};
+if(MODULE_META.alias) window[MODULE_META.alias]=window.AnatomyLab;
 
 /* ===================== Geteilte Links: Zustand ⇄ URL-Parameter =====================
    Nur Abweichungen vom Standard landen im Link. Schlüssel:
-   lang · run (laufender Ablauf) · E P rot elbow pro (Pose) · load · speed · loop · migr gird frozen ·
+   m (Modul, wenn nicht das erste der Registry) · lang · run (laufender Ablauf) · Pose-Parameter (url-Schlüssel des Moduls, z. B. E P rot elbow pro) ·
+   load · speed · loop · Pathologie-Parameter des Moduls (z. B. migr gird frozen) ·
    hide/show (Schichten) · op (Gruppen-Transparenz) · peel (Detailstufen) · cam (Drehung, Zoom, Ziel) ·
    mode · strain · labels · sel · dock · hud · pl · pr · mon (Spezialblock offen) · cap (Kapselregionen offen) · lgt (umgeschaltete Strukturgruppen) */
 const ARTIFACT_URL='https://claude.ai/code/artifact/2cc1f47c-4a88-4fc4-b328-7706d1a9f7ca';
 const IN_FRAME=(()=>{ try{ return window.self!==window.top; }catch(_){ return true; } })();
 const PEEL_DEF=detailDefs.map(d=>d.level);
-const POSE_KEYS=[['E','E'],['P','P'],['IR','rot'],['elbow','elbow'],['pro','pro']];
+const POSE_KEYS=POSE_PARAMS.map(p=>[p.key,p.url]);
+/* Lesbare Schlüssel und Kurz-Link-Buchstaben der Modul-Parameter; Engine-Buchstaben sind reserviert (siehe compactField) */
+const POSE_BY_URL={}, PATHO_BY_URL={}, CODE_MAP={};
+POSE_PARAMS.forEach(p=>{ POSE_BY_URL[p.url]=p; CODE_MAP[p.code]={pose:p}; });
+PATHO_PARAMS.forEach(p=>{ PATHO_BY_URL[p.url]=p; CODE_MAP[p.code]={patho:p}; });
+const ENGINE_CODES='NAWSQHVOLCIXTUDKYJmkgx';
+for(const c in CODE_MAP) if(ENGINE_CODES.includes(c)) console.warn('Kurz-Link: Kennbuchstabe '+c+' des Moduls kollidiert mit der Engine');
 const numStr=(v,d=1)=>{ const f=Math.pow(10,d); return String(Math.round(v*f)/f); };
 const normAng=a=>((a+180)%360+360)%360-180;
 const angDiff=(a,b)=>Math.abs(normAng(a-b));
 function narrowFactor(){ return narrowAdj?1.35:1; }
 function currentState(){
   const p=[]; const add=(k,v)=>p.push([k,v]);
+  if(MOD.id!==REGISTRY[0].id) add('m',MOD.id);
   if(UI.langExplicit) add('lang',LANG);
   if(activeRunId) add('run',activeRunId);
   else for(const [k,key] of POSE_KEYS){ if(Math.abs(pose[k])>=0.05) add(key,numStr(pose[k])); }
   if(EXT.F&&EXT.src&&EXT.src!==activeRunId) add('load',EXT.src);
   if(Math.abs(UI.speed-1)>0.001) add('speed',numStr(UI.speed,2));
   if(!UI.loopSweeps) add('loop','0');
-  if(patho.migr>0) add('migr',numStr(patho.migr)); if(patho.gird>0) add('gird',String(Math.round(patho.gird*100))); if(patho.frozen>0) add('frozen',String(Math.round(patho.frozen*100)));
+  for(const pp of PATHO_PARAMS){ if(patho[pp.key]>0) add(pp.url,numStr(patho[pp.key]*pp.urlScale)); }
   const ids=allIds(); const hidden=ids.filter(id=>!VIS[id]);
   if(hidden.length){ if(hidden.length<=ids.length/2) add('hide',hidden.join(',')); else add('show',ids.filter(id=>VIS[id]).join(',')); }
   const ops=LAYER_GROUPS.filter(g=>Math.abs(GROUP_OPACITY[g.id]-1)>0.001).map(g=>g.id+':'+numStr(GROUP_OPACITY[g.id],2)); if(ops.length) add('op',ops.join(','));
@@ -2164,13 +2265,14 @@ const COMPACT_MAX=120, OPTIONAL_KEYS=new Set(['mode','labels','dock','hud','pl',
 const LG_LIST=LOAD_GROUPS.map(g=>g.id);
 function compactField(k,v){
   const n=x=>String(Math.round(+x));
+  if(POSE_BY_URL[k]) return POSE_BY_URL[k].code+n(v);
+  if(PATHO_BY_URL[k]){ const p=PATHO_BY_URL[k]; return p.code+Math.round(+v*p.compactScale/p.urlScale); }
   switch(k){
+    case 'm': { const c=ix(MODULE_LIST,v); return c?'x'+c:null; }
     case 'lang': return 'N'+(v==='en'?'e':'d');
     case 'run': { const c=ix(RUN_LIST,v); return c?'A'+c:null; }
     case 'load': { const c=ix(RUN_LIST,v); return c?'W'+c:null; }
-    case 'E': return 'E'+n(v); case 'P': return 'P'+n(v); case 'rot': return 'R'+n(v); case 'elbow': return 'B'+n(v); case 'pro': return 'F'+n(v);
     case 'speed': return 'S'+Math.round(+v*100); case 'loop': return 'Q0';
-    case 'migr': return 'M'+Math.round(+v*10); case 'gird': return 'G'+n(v); case 'frozen': return 'Z'+n(v);
     case 'hide': case 'show': { const cs=v.split(',').map(id=>ix(ID_LIST,id)).filter(Boolean).join(''); return cs?(k==='hide'?'H':'V')+cs:null; }
     case 'op': { const cs=v.split(',').map(pair=>{ const [g,o]=pair.split(':'); const c=ix(GROUP_LIST,g); return c?c+String(clamp(Math.round(+o*100),10,99)).padStart(2,'0'):''; }).join(''); return cs?'O'+cs:null; }
     case 'peel': return 'L'+v.split(',').map(x=>String(clamp(Math.round(+x),0,9))).join('');
@@ -2197,13 +2299,14 @@ function compactEncode(pairs){
 function compactDecode(tok){
   const o={}; const un=(list,c)=>list[B36.indexOf(c)];
   for(const f of tok.split('_')){ if(!f) continue; const k=f[0], v=f.slice(1);
+    const cm=CODE_MAP[k];
+    if(cm){ if(cm.pose) o[cm.pose.url]=v; else o[cm.patho.url]=String(+v*cm.patho.urlScale/cm.patho.compactScale); continue; }
     switch(k){
+      case 'x': { const id=un(MODULE_LIST,v); if(id) o.m=id; break; }
       case 'N': o.lang=v==='e'?'en':'de'; break;
       case 'A': { const id=un(RUN_LIST,v); if(id) o.run=id; break; }
       case 'W': { const id=un(RUN_LIST,v); if(id) o.load=id; break; }
-      case 'E': o.E=v; break; case 'P': o.P=v; break; case 'R': o.rot=v; break; case 'B': o.elbow=v; break; case 'F': o.pro=v; break;
       case 'S': o.speed=String(+v/100); break; case 'Q': o.loop=v; break;
-      case 'M': o.migr=String(+v/10); break; case 'G': o.gird=v; break; case 'Z': o.frozen=v; break;
       case 'H': case 'V': { const ids=[...v].map(c=>un(ID_LIST,c)).filter(Boolean); o[k==='H'?'hide':'show']=ids.join(','); break; }
       case 'O': { const parts=[]; for(let i=0;i+2<v.length;i+=3){ const g=un(GROUP_LIST,v[i]); const val=parseInt(v.slice(i+1,i+3),10); if(g&&!isNaN(val)) parts.push(g+':'+(val/100)); } if(parts.length) o.op=parts.join(','); break; }
       case 'L': o.peel=[...v].join(','); break;
@@ -2232,7 +2335,7 @@ function applyURLState(){
   const q=URL_PARAMS; if(!Object.keys(q).length) return false;
   const num=k=>{ if(!(k in q)) return null; const v=parseFloat(String(q[k]).replace(',','.')); return isNaN(v)?null:v; };
   let v;
-  const pa={}; if((v=num('migr'))!==null) pa.migr=clamp(v,0,6); if((v=num('gird'))!==null) pa.gird=clamp(v,0,100)/100; if((v=num('frozen'))!==null) pa.frozen=clamp(v,0,100)/100; if(Object.keys(pa).length) setPatho(pa);
+  const pa={}; for(const pp of PATHO_PARAMS){ if((v=num(pp.url))!==null) pa[pp.key]=clamp(v,pp.min,pp.max)/pp.urlScale; } if(Object.keys(pa).length) setPatho(pa);
   if((v=num('speed'))!==null) setSpeed(v);
   if(q.loop==='0') setLoop(false);
   if('show' in q){ const s=new Set(q.show.split(',')); setAllLayers(id=>s.has(id)); } else if('hide' in q){ const h=new Set(q.hide.split(',')); setAllLayers(id=>!h.has(id)); }
@@ -2257,6 +2360,16 @@ function applyURLState(){
 applyURLState();
 /* Hash von Hand geändert (z. B. anderer Link in die Adresszeile eingefügt): Seite mit dem neuen Zustand neu laden */
 window.addEventListener('hashchange',()=>{ if(!IN_FRAME) location.reload(); });
+
+/* ---- Modul wechseln: Seite mit dem Modul-Feld (und ggf. Sprache) neu laden; alles andere startet im Standardzustand ---- */
+function switchModule(id){
+  if(id===MOD.id||!REGISTRY.some(r=>r.id===id)) return;
+  const pairs=[]; if(id!==REGISTRY[0].id) pairs.push(['m',id]); if(UI.langExplicit) pairs.push(['lang',LANG]);
+  const base=location.href.split(/[?#]/)[0];
+  if(IS_ARTIFACT||location.protocol==='file:'){ const c=IS_ARTIFACT?compactEncode(pairs).token:serialize(pairs); location.replace(base+(c?'#'+c:'')); location.reload(); }
+  else location.href=base+(pairs.length?'?'+serialize(pairs):'');
+}
+document.querySelectorAll('#moduleSeg button').forEach(b=>b.addEventListener('click',()=>switchModule(b.dataset.module)));
 
 /* ---- Adresszeile laufend aktualisieren (eigenständige Seite; nicht im eingebetteten Viewer) ---- */
 let lastURLq=null, lastURLt=0, urlSyncOK=!IN_FRAME&&!!(window.history&&history.replaceState);
@@ -2286,7 +2399,7 @@ $('shareCopy').addEventListener('click',async()=>{
 $('shareNative').addEventListener('click',async()=>{ try{ await navigator.share({title:t('title'),url:$('shareUrl').value}); }catch(e){ if(e&&e.name!=='AbortError'){ shareNativeOK=false; $('shareNative').hidden=true; } } });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!shareBox.hidden) shareBox.hidden=true; });
 document.addEventListener('pointerdown',e=>{ if(!shareBox.hidden&&!shareBox.contains(e.target)&&!$('btnShare').contains(e.target)) shareBox.hidden=true; });
-Object.assign(window.Schulterlabor,{currentState,buildShareURL,applyURLState,URL_PARAMS,compactEncode,compactDecode});
+Object.assign(window.AnatomyLab,{currentState,buildShareURL,applyURLState,URL_PARAMS,compactEncode,compactDecode,switchModule});
 
 })();
 </script>

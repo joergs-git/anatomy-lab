@@ -1,27 +1,22 @@
 /* ===================== Bedienung ===================== */
 const UI={strain:true,labels:false,mode:'arm',speed:1,loopSweeps:true,langExplicit:LANG_EXPLICIT};
-const $=id=>document.getElementById(id);
-const SL={E:$('sElev'),P:$('sPlane'),IR:$('sRot'),elbow:$('sElbow'),pro:$('sPro')};
-const VL={E:$('vElev'),P:$('vPlane'),IR:$('vRot'),elbow:$('vElbow'),pro:$('vPro')};
+/* Pose-Regler (Markup aus engine/boot.js nach MOD.poseParams): Wert, Wertetext und dynamische Grenzen je Parameter */
+const SL={},VL={}; for(const p of POSE_PARAMS){ SL[p.key]=$('ps_'+p.key); VL[p.key]=$('pv_'+p.key); }
 let syncing=false;
 function syncSliders(){
   syncing=true;
-  for(const k in SL){ const v=Math.round(pose[k]); if(+SL[k].value!==v) SL[k].value=v; }
-  VL.E.textContent=fmt(pose.E)+'°'; VL.P.textContent=fmt(pose.P)+'° · '+planeLabel(pose.P);
-  VL.IR.textContent=(pose.IR<0?t('ER'):t('IR'))+' '+fmt(Math.abs(pose.IR))+'°'; VL.elbow.textContent=fmt(pose.elbow)+'°';
-  VL.pro.textContent=Math.abs(pose.pro)<3?t('neutralS'):(pose.pro<0?t('sup'):t('pro'))+' '+fmt(Math.abs(pose.pro))+'°';
-  const rl=rotLimits(pose.E,pose.P); SL.IR.min=Math.round(-rl.ER); SL.IR.max=Math.round(rl.IR); SL.E.max=Math.round(Emax(pose.P));
+  for(const p of POSE_PARAMS){ const el=SL[p.key]; const v=Math.round(pose[p.key]); if(+el.value!==v) el.value=v; }
+  for(const p of POSE_PARAMS){ VL[p.key].textContent=p.text(pose); }
+  for(const p of POSE_PARAMS){ if(!p.range) continue; const r=p.range(pose); const el=SL[p.key]; if(r.min!==undefined) el.min=Math.round(r.min); if(r.max!==undefined) el.max=Math.round(r.max); }
   syncing=false;
 }
-for(const k in SL){ SL[k].addEventListener('input',()=>{ if(syncing) return; stopAnim(); const o={}; o[k]=+SL[k].value; setPose(o); }); }
+for(const p of POSE_PARAMS){ SL[p.key].addEventListener('input',()=>{ if(syncing) return; stopAnim(); const o={}; o[p.key]=+SL[p.key].value; setPose(o); }); }
 $('btnNeutral').addEventListener('click',()=>runPreset(PRESETS[0]));
-// Pathologie
-const PL={migr:$('sMigr'),gird:$('sGird'),frozen:$('sFrozen')};
-function syncPathoLabels(){ $('vMigr').textContent=fmt(patho.migr,1)+' mm'; $('vGird').textContent=fmt(patho.gird*100)+' %'; $('vFrozen').textContent=fmt(patho.frozen*100)+' %'; }
-function setPatho(p){ Object.assign(patho,p); PL.migr.value=patho.migr; PL.gird.value=Math.round(patho.gird*100); PL.frozen.value=Math.round(patho.frozen*100); syncPathoLabels(); setPose({}); }
-PL.migr.addEventListener('input',()=>setPatho({migr:+PL.migr.value}));
-PL.gird.addEventListener('input',()=>setPatho({gird:+PL.gird.value/100}));
-PL.frozen.addEventListener('input',()=>setPatho({frozen:+PL.frozen.value/100}));
+// Pathologie (Regler in Anzeigeeinheit, Zustand in Modelleinheit: sliderScale)
+const PL={}; for(const p of PATHO_PARAMS) PL[p.key]=$('pp_'+p.key);
+function syncPathoLabels(){ for(const p of PATHO_PARAMS) $('pv2_'+p.key).textContent=p.text(patho[p.key]); }
+function setPatho(pa){ Object.assign(patho,pa); for(const p of PATHO_PARAMS) PL[p.key].value=Math.round(patho[p.key]*p.sliderScale*1000)/1000; syncPathoLabels(); setPose({}); }
+for(const p of PATHO_PARAMS) PL[p.key].addEventListener('input',()=>{ const o={}; o[p.key]=+PL[p.key].value/p.sliderScale; setPatho(o); });
 function syncSpeedLabel(){ $('vSpeed').textContent=fmt(UI.speed,2).replace(/[.,]?0+$/,'')+'×'; }
 function setSpeed(v){ UI.speed=clamp(v,0.25,2); $('sSpeed').value=UI.speed; syncSpeedLabel(); }
 $('sSpeed').addEventListener('input',e=>setSpeed(+e.target.value));
@@ -48,7 +43,7 @@ function stepAnim(now){
   if(!poseAnim) return false;
   const a=poseAnim; let t_=(now-a.t0)/(a.dur/UI.speed);
   if(a.loop){ t_=t_%2; if(t_>1) t_=2-t_; } else t_=clamp(t_,0,1);
-  const s=smooth(t_); const p={}; for(const k of ['P','E','IR','elbow','pro']) p[k]=lerp(a.from[k],a.to[k],s);
+  const s=smooth(t_); const p={}; for(const pp of POSE_PARAMS) p[pp.key]=lerp(a.from[pp.key],a.to[pp.key],s);
   Object.assign(pose,p); const r=applyPose(); onPoseChanged(r,true);
   if(!a.loop&&t_>=1){ poseAnim=null; if(a.then) a.then(); else releaseChip(); }
   return true;
@@ -106,8 +101,7 @@ const layerName=(id,de)=>LANG==='en'?(LAYER_EN[id]||de):de;
     op.addEventListener('input',()=>{ GROUP_OPACITY[g.id]=+op.value; applyVisibility(); });
     d.appendChild(items); root.appendChild(d);
   }
-  $('btnLayersBones').addEventListener('click',()=>setAllLayers(id=>LAYER_PRESETS.bones.includes(id)));
-  $('btnLayersCuff').addEventListener('click',()=>setAllLayers(id=>LAYER_PRESETS.cuff.includes(id)));
+  document.querySelectorAll('#layerPresets [data-lp]').forEach(b=>{ const lp=LAYER_PRESETS.find(x=>x.id===b.dataset.lp); b.addEventListener('click',()=>setAllLayers(id=>lp.ids.includes(id))); });
   $('btnLayersAll').addEventListener('click',()=>setAllLayers(()=>true));
   $('cbLabels').addEventListener('change',e=>setLabelsOn(e.target.checked));
   $('cbStrain').addEventListener('change',e=>setStrainOn(e.target.checked));
@@ -225,7 +219,7 @@ function renderInfo(){
   root.innerHTML=`<h3>${NAME(selectedId)}</h3><div class="kind">${inf.k||''}</div>`+(rows.length?`<div class="kv">${rows.map(r=>`<span>${r[0]}</span><span>${r[1]}</span>`).join('')}</div>`:'')+
     (inf.f?`<p><b>${t('fn')}</b> ${inf.f}</p>`:'')+(inf.p?`<p><b>${t('probs')}</b> ${inf.p}</p>`:'')+(inf.t?`<p><b>${t('test')}</b> ${inf.t}</p>`:'');
 }
-function setHighlight(id,on){ const ms=meshesOf(id); for(const m of ms){ const mat=m.material; if(mat===MAT.thorax||mat===MAT.ribs) continue; mat.emissive=mat.emissive||new THREE.Color(0); mat.emissive.setHex(on?0x4a3a2a:0x000000); } needsRender=true; }
+function setHighlight(id,on){ const ms=meshesOf(id); for(const m of ms){ const mat=m.material; if(mat.userData.fixed) continue; mat.emissive=mat.emissive||new THREE.Color(0); mat.emissive.setHex(on?0x4a3a2a:0x000000); } needsRender=true; }
 function selectStructure(id,quiet){ if(selectedId) setHighlight(selectedId,false); selectedId=id; if(id) setHighlight(id,true); renderInfo(); if(isMobile()&&id&&!quiet) openTab('info'); }
 
 /* ---- Beschriftungen ---- */
@@ -254,12 +248,12 @@ function onPoseChanged(r,animating){
 function refreshPanels(){
   panelDirty=false; const M=EVAL.metrics; const rh=lastRh||READOUT0;
   updateMetrics(M); updateLoads(); if(selectedId) renderInfo();
-  /* Texte liefert das Modul (hud.js); die Last-Zeile mit „entfernen“-Knopf ist Engine-Sache */
-  $('hudMini').textContent=hudMiniText(pose,M);
-  $('hudBody').innerHTML=hudBodyHTML(pose,rh,M)+(EXT.F?`<span class="hload">${t('load')} ${EXT.src&&RUNNABLE[EXT.src]?loadLabel(RUNNABLE[EXT.src]):EXT.label}<button type="button" id="btnNoLoad">${t('removeLoad')}</button></span>`:'');
+  /* Texte liefert das Modul; die Last-Zeile mit „entfernen“-Knopf ist Engine-Sache */
+  $('hudMini').textContent=MOD.hud.mini(pose,M);
+  $('hudBody').innerHTML=MOD.hud.body(pose,rh,M)+(EXT.F?`<span class="hload">${t('load')} ${EXT.src&&RUNNABLE[EXT.src]?loadLabel(RUNNABLE[EXT.src]):EXT.label}<button type="button" id="btnNoLoad">${t('removeLoad')}</button></span>`:'');
   const bl=$('btnNoLoad'); if(bl) bl.addEventListener('click',()=>{ setLoad(null); stopAnim(); setPose({}); });
-  $('poseSummary').textContent=poseSummaryText(pose);
-  $('scapReadout').innerHTML=scapReadoutHTML(pose,rh);
+  $('poseSummary').textContent=MOD.hud.summary(pose);
+  if(MOD.readout) $('readout').innerHTML=MOD.readout.html(pose,rh);
   updateLabels();
 }
 
@@ -267,7 +261,7 @@ function refreshPanels(){
 const raycaster=new THREE.Raycaster(); raycaster.layers.enableAll();
 /* DRAG (greifbare Teile, Rotationsachsen, Ziehen → Pose) definiert das Modul (interaction.js) */
 function pick(cx,cy){ const r=mainView.getBoundingClientRect(); const nd={x:((cx-r.left)/r.width)*2-1,y:-((cy-r.top)/r.height)*2+1}; raycaster.setFromCamera(nd,mainCam);
-  const objs=pickables.filter(m=>m.visible&&m.material.opacity>0.35&&m.material!==MAT.thorax); const hits=raycaster.intersectObjects(objs,false); return hits.length?hits[0]:null; }
+  const objs=pickables.filter(m=>m.visible&&m.material.opacity>0.35&&!m.material.userData.noPick); const hits=raycaster.intersectObjects(objs,false); return hits.length?hits[0]:null; }
 const ptrs=new Map(); let drag=null, pinch=null, hoverId=null;
 const tooltip=$('tooltip');
 function isMobile(){ return window.matchMedia('(max-width: 980px)').matches; }
@@ -412,6 +406,7 @@ function applyLang(){
   document.querySelectorAll('[data-i18n-title]').forEach(e=>{ e.title=t(e.dataset.i18nTitle); });
   document.querySelectorAll('[data-i18n-aria]').forEach(e=>{ e.setAttribute('aria-label',t(e.dataset.i18nAria)); });
   const bl=$('btnLang'); bl.textContent=LANG==='de'?'EN':'DE'; bl.title=t('langT');
+  document.querySelectorAll('#moduleSeg button').forEach(b=>{ const r=REGISTRY.find(x=>x.id===b.dataset.module); b.textContent=LANG==='en'?(r.nameEn||r.name):r.name; });
   relabelChips(); relabelLayers(); relabelMetrics(); sortLoadList(); relabel3D(); updatePeelLabels();
   $('dockToggle').textContent=dock.classList.contains('collapsed')?t('dockShow'):t('dockHide');
   document.querySelectorAll('.panel').forEach(peekLabel);
@@ -437,10 +432,12 @@ function loop(now){
 /* ---- Start ---- */
 let skipIntro=false;
 applyVisibility();
-setPose({P:0,E:0,IR:0,elbow:0,pro:0});
+{ const p0={}; for(const p of POSE_PARAMS) p0[p.key]=p.def; setPose(p0); }
 applyLang();
 layoutDock(); setTimeout(layoutDock,400);
 requestAnimationFrame(loop);
-/* Startansicht: leicht angehobener Arm zeigt Farbcodierung und Rhythmus */
-setTimeout(()=>{ if(!skipIntro) animateTo({P:30,E:70,IR:0,elbow:0,pro:0},1400); },300);
-window.Schulterlabor={setPose,runPreset,runAnim,runById,PRESETS,PHYSIO,ANIMS,EVAL,pose,patho,frames,selectStructure,openTab,stopAnim,setView,setLoad,detailDefs,PEEL,getAnim:()=>poseAnim,UI,setLang,get lang(){ return LANG; },MON,LOAD_GROUPS,LG_EL,setCapOpen,setSpecialOpen,setLoadGroupOpen};
+/* Startansicht: das Modul nennt die Zielpose der Startanimation */
+setTimeout(()=>{ if(!skipIntro&&MOD.intro) animateTo(MOD.intro,1400); },300);
+/* Testschnittstelle (tests/shots.mjs); der Modul-Alias (z. B. window.Schulterlabor) bleibt für ältere Skripte */
+window.AnatomyLab={module:MOD.id,REGISTRY,setPose,runPreset,runAnim,runById,PRESETS,PHYSIO,ANIMS,EVAL,pose,patho,frames,selectStructure,openTab,stopAnim,setView,setLoad,detailDefs,PEEL,getAnim:()=>poseAnim,UI,setLang,get lang(){ return LANG; },MON,LOAD_GROUPS,LG_EL,setCapOpen,setSpecialOpen,setLoadGroupOpen};
+if(MODULE_META.alias) window[MODULE_META.alias]=window.AnatomyLab;

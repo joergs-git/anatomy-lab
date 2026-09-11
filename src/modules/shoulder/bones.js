@@ -1,8 +1,11 @@
 /* ===================== Schulter: Knochengeometrie =====================
    Baut die Knochen je Rahmen (T Thorax, C Klavikula, S Skapula, H Humerus, F Ulna, R Radius/Hand) plus Labrum und Bursa.
-   ctx kommt aus engine/render.js: G (Gruppen je Rahmen), LAYER (Render-Layer), MAT (Materialien), boneMat(id), addBone(group,mesh,id,layer),
-   ell(center,radii,mat), pickables (Trefferliste), BONES (id → Meshes). Geometrie in Modellkoordinaten (cm, +X lateral, +Y kranial, +Z ventral). */
-function buildBones({G,LAYER,MAT,boneMat,addBone,ell,pickables,BONES}){
+   ctx kommt aus engine/render.js: G (Gruppen je Rahmen), MAT (Materialien: bone, context (durchscheinende Hülle, nicht anklickbar),
+   contextSolid, cart, bursa), boneMat(id), addBone(group,mesh,id,layer), ell(center,radii,mat), pickables (Trefferliste), BONES (id → Meshes).
+   Geometrie in Modellkoordinaten (cm, +X lateral, +Y kranial, +Z ventral). */
+/* three.js-Render-Layer: Strukturen tragen `layer` in anatomy.js (1 Deltoideus, 4 Rumpfmuskeln), Knochen bekommen sie hier */
+const LAYER={deltoid:1,thorax:2,arm:3,sheet:4};
+function buildBones({G,MAT,boneMat,addBone,ell,pickables,BONES}){
 /* ---- Thorax ---- */
 (function buildThorax(){
   const g=G.T, mat=boneMat('thorax');
@@ -12,13 +15,13 @@ function buildBones({G,LAYER,MAT,boneMat,addBone,ell,pickables,BONES}){
   ys.forEach((y,i)=>{ const s=thoraxSec(y); for(let j=0;j<N;j++){ const a=j/N*Math.PI*2; pos.push(AN.mid+s.rx*Math.cos(a),y,s.cz+s.rz*Math.sin(a)); } });
   for(let i=0;i<ys.length-1;i++) for(let j=0;j<N;j++){ const a=i*N+j,b=i*N+(j+1)%N,c=(i+1)*N+j,d=(i+1)*N+(j+1)%N; idx.push(a,b,c,b,d,c); }
   const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); geo.setIndex(idx); geo.computeVertexNormals();
-  const shell=new THREE.Mesh(geo,MAT.thorax); shell.renderOrder=-1; addBone(g,shell,'thorax',LAYER.thorax);
+  const shell=new THREE.Mesh(geo,MAT.context); shell.renderOrder=-1; addBone(g,shell,'thorax',LAYER.thorax);
   // Rippen (beidseits), nach vorn abfallend
   for(let i=0;i<10;i++){
     const yb=6-2.6*i;
     for(const side of [1,-1]){
       const pts=[]; for(let a=-95;a<=72;a+=12){ const y=yb-3.6*(a+95)/167; const s=thoraxSec(y); pts.push(V3(AN.mid+side*(s.rx+0.25)*Math.cos(a*DEG),y,s.cz+(s.rz+0.25)*Math.sin(a*DEG))); }
-      const rib=staticTube(pts,0.4,7,{material:MAT.ribs,rings:24}); addBone(g,rib,'thorax',LAYER.thorax);
+      const rib=staticTube(pts,0.4,7,{material:MAT.contextSolid,rings:24}); addBone(g,rib,'thorax',LAYER.thorax);
     }
   }
   // Sternum
@@ -28,8 +31,8 @@ function buildBones({G,LAYER,MAT,boneMat,addBone,ell,pickables,BONES}){
   const spine=staticTube(sp,1.5,10,{material:mat,rings:20}); addBone(g,spine,'thorax',LAYER.thorax);
   for(let y=6;y>=-26;y-=2.5){ const b=new THREE.Mesh(new THREE.BoxGeometry(1.0,0.8,2.4),mat); b.position.set(AN.mid,y,spineBack(y)+1.1); b.rotation.x=0.5; addBone(g,b,'thorax',LAYER.thorax); }
   // Hals & Kopf (nur Kontext)
-  const neck=new THREE.Mesh(new THREE.CylinderGeometry(4.6,5.2,10,24,1,true),MAT.thorax); neck.position.set(AN.mid,13.5,-1.4); addBone(g,neck,'thorax',LAYER.thorax);
-  const head=new THREE.Mesh(new THREE.SphereGeometry(8.6,24,18),MAT.thorax); head.position.set(AN.mid,25,-0.5); addBone(g,head,'thorax',LAYER.thorax);
+  const neck=new THREE.Mesh(new THREE.CylinderGeometry(4.6,5.2,10,24,1,true),MAT.context); neck.position.set(AN.mid,13.5,-1.4); addBone(g,neck,'thorax',LAYER.thorax);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(8.6,24,18),MAT.context); head.position.set(AN.mid,25,-0.5); addBone(g,head,'thorax',LAYER.thorax);
   // Halswirbel-Dornfortsätze für Trapezius/Levator
   for(let y=8;y<=15;y+=2.3){ const b=new THREE.Mesh(new THREE.BoxGeometry(1.0,0.9,2.0),mat); b.position.set(AN.mid,y,-7.6); addBone(g,b,'thorax',LAYER.thorax); }
 })();
@@ -84,3 +87,10 @@ function buildBones({G,LAYER,MAT,boneMat,addBone,ell,pickables,BONES}){
   const th=staticTube([V3(1.2,-3.0,3.6),V3(1.35,-5.8,5.6),V3(1.45,-8.6,6.8)],[0.85,0.7,0.5],7,{material:mat,rings:10}); addBone(G.R,th,'fore',L);
 })();
 }
+
+/* Render-Hooks der Engine: zones – Zonenmarker der Faszikel (z in anatomy.js) → Kompressionsmetrik für die violette Färbung;
+   afterPose – Bursa-Dicke folgt dem subakromialen Raum, Farbe der Kompression. */
+const RENDER={
+  zones:{1:'bursaComp',2:'corComp',3:'grooveComp',4:'psComp'},
+  afterPose(M,{BONES,COL}){ const bu=BONES.bursa[0]; const gap=clamp(M.ahd,0.15,1.2); bu.scale.y=0.12+0.22*gap; bu.material.color.copy(COL.bursa).lerp(COL.violet,M.bursaComp*0.85); },
+};

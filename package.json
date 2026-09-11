@@ -1,6 +1,6 @@
 {
   "name": "anatomy-lab",
-  "version": "0.9.1",
+  "version": "0.10.0",
   "description": "Interaktive biomechanische Lehrmodelle im Browser – Schulterlabor (weitere Körperregionen folgen)",
   "private": true,
   "type": "module",

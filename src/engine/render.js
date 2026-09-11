@@ -8,7 +8,6 @@ const keyLight=new THREE.DirectionalLight(0xffffff,0.75); keyLight.position.set(
 const fillLight=new THREE.DirectionalLight(0xdfe8ff,0.35); fillLight.position.set(-70,10,-50); scene.add(fillLight);
 const rimLight=new THREE.DirectionalLight(0xffffff,0.25); rimLight.position.set(60,-30,-60); scene.add(rimLight);
 
-const LAYER={deltoid:1,thorax:2,arm:3,sheet:4};
 /* Das Modell ist in anatomischen Koordinaten (+X lateral rechts, +Y kranial, +Z ventral) definiert – ein linkshändiges System.
    ROOT spiegelt es für die rechtshändige Darstellung (x → −x). Alle Umrechnungen Modell ↔ Darstellung laufen über toR(). */
 const ROOT=new THREE.Group(); ROOT.scale.x=-1; scene.add(ROOT);
@@ -17,13 +16,15 @@ const toR=v=>V3(-v.x,v.y,v.z);
 const G={}; for(const k in frames) G[k]=new THREE.Group();
 for(const k in G) ROOT.add(G[k]);
 
+/* Materialien für das Modul. userData: fixed = Transparenz/Highlight nie ändern (durchscheinende Kontexthülle), noPick = nicht anklickbar,
+   baseOpacity = Grunddeckkraft, auf die die Gruppen-Transparenz wirkt (Standard 1). */
 const MAT={
   bone:new THREE.MeshStandardMaterial({color:COL.bone,roughness:0.62,metalness:0.02}),
-  thorax:new THREE.MeshStandardMaterial({color:COL.bone,roughness:0.7,transparent:true,opacity:0.28,depthWrite:false}),
-  ribs:new THREE.MeshStandardMaterial({color:COL.bone,roughness:0.62,transparent:true,opacity:0.55}),
+  context:new THREE.MeshStandardMaterial({color:COL.bone,roughness:0.7,transparent:true,opacity:0.28,depthWrite:false,userData:{fixed:true,noPick:true}}),
+  contextSolid:new THREE.MeshStandardMaterial({color:COL.bone,roughness:0.62,transparent:true,opacity:0.55,userData:{fixed:true}}),
   cart:new THREE.MeshStandardMaterial({color:COL.cart,roughness:0.35}),
-  bursa:new THREE.MeshStandardMaterial({color:COL.bursa,roughness:0.3,transparent:true,opacity:0.65}),
-  capsule:new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.5,transparent:true,opacity:0.82,side:THREE.DoubleSide}),
+  bursa:new THREE.MeshStandardMaterial({color:COL.bursa,roughness:0.3,transparent:true,opacity:0.65,userData:{baseOpacity:0.65}}),
+  surface:new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.5,transparent:true,opacity:0.82,side:THREE.DoubleSide,userData:{baseOpacity:0.82}}),
 };
 const BONE_MATS={};  // pro Knochen eigene Kopie (Transparenz/Highlight)
 function boneMat(id){ if(!BONE_MATS[id]) BONE_MATS[id]=MAT.bone.clone(); return BONE_MATS[id]; }
@@ -34,7 +35,7 @@ function addBone(group,mesh,id,layer){ group.add(mesh); (BONES[id]||(BONES[id]=[
 const ell=(c,r,mat)=>{ const m=new THREE.Mesh(new THREE.SphereGeometry(1,20,14),mat); m.position.copy(c); m.scale.set(r.x,r.y,r.z); return m; };
 
 /* ---- Knochen: Geometrie kommt aus dem Modul (modules/shoulder/bones.js) ---- */
-buildBones({G,LAYER,MAT,boneMat,addBone,ell,pickables,BONES});
+buildBones({G,MAT,boneMat,addBone,ell,pickables,BONES});
 
 /* ---- Muskeln, Sehnen, Bänder, Nerven als Röhren ---- */
 const FMESH={};     // fasKey → Tube
@@ -52,16 +53,17 @@ for(const s of STRUCT){
     ROOT.add(tube.mesh); pickables.push(tube.mesh); FMESH[fasKey(s,i)]=tube; STRUCT_MESHES[s.id].push(tube.mesh);
   });
 }
-/* Kapsel als Fläche (24 Fasern × 9 Stützpunkte) */
-const CAPS_M=9;
-const capsuleMesh=(function(){
-  const geo=new THREE.BufferGeometry(); const nv=CAPS_N*CAPS_M;
+/* Flächen-Strukturen (surface, z. B. Gelenkkapsel): N Faszikel × SURF_M Stützpunkte als geschlossene Fläche mit Dehnungsfarbe je Faser */
+const SURF_M=9; const SURFACES=[];
+for(const s of STRUCT){
+  if(!s.surface) continue; const N=s.fas.length;
+  const geo=new THREE.BufferGeometry(); const nv=N*SURF_M;
   const pos=new Float32Array(nv*3), col=new Float32Array(nv*3);
   geo.setAttribute('position',new THREE.BufferAttribute(pos,3)); geo.setAttribute('color',new THREE.BufferAttribute(col,3));
-  const idx=[]; for(let k=0;k<CAPS_N;k++){ const k2=(k+1)%CAPS_N; for(let j=0;j<CAPS_M-1;j++){ const a=k*CAPS_M+j,b=k2*CAPS_M+j,c=k*CAPS_M+j+1,d=k2*CAPS_M+j+1; idx.push(a,b,c,b,d,c); } }
+  const idx=[]; for(let k=0;k<N;k++){ const k2=(k+1)%N; for(let j=0;j<SURF_M-1;j++){ const a=k*SURF_M+j,b=k2*SURF_M+j,c=k*SURF_M+j+1,d=k2*SURF_M+j+1; idx.push(a,b,c,b,d,c); } }
   geo.setIndex(idx);
-  const m=new THREE.Mesh(geo,MAT.capsule); m.userData.sid='capsule'; m.userData.kind='lig'; m.frustumCulled=false; ROOT.add(m); pickables.push(m); STRUCT_MESHES.capsule=[m]; return m;
-})();
+  const m=new THREE.Mesh(geo,MAT.surface.clone()); m.userData.sid=s.id; m.userData.kind=s.kind; m.frustumCulled=false; ROOT.add(m); pickables.push(m); STRUCT_MESHES[s.id]=[m]; SURFACES.push({s,mesh:m,N});
+}
 
 /* ---- Sichtbarkeit ---- */
 const VIS={};   // id → bool
@@ -74,9 +76,9 @@ function applyVisibility(){
   for(const id of allIds()){
     const ms=meshesOf(id); const gop=GROUP_OPACITY[groupOf(id)];
     for(const m of ms){ m.visible=!!VIS[id];
-      const mat=m.material; const base=(id==='thorax'&&(mat===MAT.thorax||mat===MAT.ribs))?mat.opacity:(id==='bursa'?0.65:id==='capsule'?0.82:1);
-      if(mat===MAT.thorax||mat===MAT.ribs) continue;
-      const op=base*gop; mat.opacity=op; mat.transparent=op<0.999||id==='bursa'||id==='capsule'; mat.depthWrite=op>0.5; }
+      const mat=m.material; if(mat.userData.fixed) continue;
+      const base=mat.userData.baseOpacity!==undefined?mat.userData.baseOpacity:1;
+      const op=base*gop; mat.opacity=op; mat.transparent=op<0.999||base<1; mat.depthWrite=op>0.5; }
   }
   needsRender=true;
 }
@@ -102,7 +104,7 @@ function fitDetailCams(){ for(const vp of viewports){ if(!vp.def) continue; cons
 
 /* ---- Pose anwenden ---- */
 let needsRender=true;
-const _cols=[];
+const _cols=[]; const ZONES=RENDER.zones||{};   /* Zonenmarker z → Kompressionsmetrik (aus dem Modul) */
 function applyPose(){
   clampPose(pose);
   const rh=solvePose(pose,frames);
@@ -122,22 +124,22 @@ function applyPose(){
         let rad=s.kind==='muscle'?tendonR+(s.r-tendonR)*r.w*(0.22+0.78*Math.pow(Math.sin(Math.PI*sN),0.7)):s.r;
         centers.push({p:r.p,r:rad});
         let bcol=base; if(s.kind==='muscle'){ bcol=_c2.copy(COL.tendon).lerp(COL.muscle,clamp(r.w,0,1)); }
-        let comp=0; const z=Math.round(r.z);
-        if(z===1) comp=M.bursaComp; else if(z===2) comp=M.corComp; else if(z===3) comp=M.grooveComp; else if(z===4) comp=M.psComp;
+        const zk=ZONES[Math.round(r.z)]; let comp=zk?M[zk]:0;
         if(r.z>0&&r.z<1) comp*=r.z;
         _cols.push(showStrain?strainColor(bcol,e.strain,full,comp):[bcol.r,bcol.g,bcol.b]);
       }
       tube.update(centers,_cols,null);
     });
   }
-  // Kapsel
-  { const pos=capsuleMesh.geometry.attributes.position, col=capsuleMesh.geometry.attributes.color;
-    for(let k=0;k<CAPS_N;k++){ const e=ev.fas['capsule#'+k]; const res=resamplePath(e.items,CAPS_M);
-      const c=showStrain?strainColor(COL.lig,e.strain,0.12,0):[COL.lig.r,COL.lig.g,COL.lig.b];
-      for(let j=0;j<CAPS_M;j++){ const v=(k*CAPS_M+j); pos.setXYZ(v,res[j].p.x,res[j].p.y,res[j].p.z); col.setXYZ(v,c[0],c[1],c[2]); } }
-    pos.needsUpdate=true; col.needsUpdate=true; capsuleMesh.geometry.computeVertexNormals(); capsuleMesh.geometry.computeBoundingSphere(); }
-  // Bursa: Dicke & Farbe
-  { const bu=BONES.bursa[0]; const gap=clamp(M.ahd,0.15,1.2); bu.scale.y=0.12+0.22*gap; _c1.copy(COL.bursa).lerp(COL.violet,M.bursaComp*0.85); bu.material.color.copy(_c1); }
+  // Flächen-Strukturen
+  for(const {s,mesh,N} of SURFACES){ const geo=mesh.geometry; const pos=geo.attributes.position, col=geo.attributes.color;
+    const full=s.kind==='muscle'?0.45:0.12, base=s.kind==='muscle'?COL.muscle:s.kind==='nerve'?COL.nerve:COL.lig;
+    for(let k=0;k<N;k++){ const e=ev.fas[fasKey(s,k)]; const res=resamplePath(e.items,SURF_M);
+      const c=showStrain?strainColor(base,e.strain,full,0):[base.r,base.g,base.b];
+      for(let j=0;j<SURF_M;j++){ const v=(k*SURF_M+j); pos.setXYZ(v,res[j].p.x,res[j].p.y,res[j].p.z); col.setXYZ(v,c[0],c[1],c[2]); } }
+    pos.needsUpdate=true; col.needsUpdate=true; geo.computeVertexNormals(); geo.computeBoundingSphere(); }
+  // Modul-Hook (z. B. Bursa-Dicke aus dem Abstand)
+  if(RENDER.afterPose) RENDER.afterPose(M,{BONES,COL});
   fitDetailCams();
   needsRender=true;
   return {rh,ev};

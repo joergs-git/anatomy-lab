@@ -54,8 +54,11 @@ const LOAD_GROUPS=[
 
 /* Anzeigenamen der Teile, die keine Strukturen sind (Knochen, Labrum, Bursa, Kapsel) – Schlüssel in i18n.js */
 const BONE_NAME_KEYS={thorax:'nameThorax',clav:'nameClav',scap:'nameScap',hum:'nameHum',fore:'nameFore',labrum:'nameLabrum',bursa:'nameBursa',capsule:'nameCapsule'};
-/* Schnellwahl der Schichten (Buttons „nur Knochen“ / „Manschette“) */
-const LAYER_PRESETS={bones:['thorax','clav','scap','hum','fore','labrum'],cuff:['thorax','clav','scap','hum','fore','labrum','capsule','bursa','CAL','CHL','GHL','ACCC','supra','infra','tmin','subsc','bicLH']};
+/* Schnellwahl der Schichten (Knöpfe neben „Schichten“; key = i18n-Schlüssel; „alles“ ergänzt die Engine) */
+const LAYER_PRESETS=[
+ {id:'bones',key:'lyBones',ids:['thorax','clav','scap','hum','fore','labrum']},
+ {id:'cuff',key:'lyCuff',ids:['thorax','clav','scap','hum','fore','labrum','capsule','bursa','CAL','CHL','GHL','ACCC','supra','infra','tmin','subsc','bicLH']},
+];
 
 /* Zusatzzeilen im Struktur-Info: welche Engstellen-Werte zu welcher Struktur gehören */
 function structReadouts(id,M){

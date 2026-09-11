@@ -1,4 +1,4 @@
-<title>Schulterlabor</title>
+<title>__TITLE__</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -51,6 +51,7 @@ button{cursor:pointer}
 .seg button{border:0;background:transparent;padding:5px 10px;font-size:12px;color:var(--muted)}
 .seg button+button{border-left:1px solid var(--line)}
 .seg button.on{background:var(--accent);color:var(--accent-ink)}
+.seg[hidden]{display:none}
 .btn{border:1px solid var(--line);background:var(--panel-2);border-radius:6px;padding:5px 10px;font-size:12px;color:var(--ink)}
 .btn:hover{border-color:var(--accent)}
 .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
@@ -287,7 +288,8 @@ details.sub[open] summary::before{transform:rotate(90deg)}
 
 <div id="app">
   <header id="topbar">
-    <div class="brand"><span class="brand-name" data-i18n="title">Schulterlabor</span><span class="brand-sub" data-i18n="sub">Rechte Schulter · Bewegungs- und Engstellenmodell</span></div>
+    <div class="brand"><span class="brand-name" data-i18n="title"></span><span class="brand-sub" data-i18n="sub"></span></div>
+    <div class="seg" id="moduleSeg" aria-label="Modul" hidden></div>
     <div class="spacer"></div>
     <div class="seg" id="viewSeg" aria-label="Ansicht">
       <button data-view="front" data-i18n="vFront">Vorne</button><button data-view="side" data-i18n="vSide">Seite</button><button data-view="back" data-i18n="vBack">Hinten</button><button data-view="top" data-i18n="vTop">Oben</button>
@@ -302,15 +304,8 @@ details.sub[open] summary::before{transform:rotate(90deg)}
     <div class="sheet-handle" data-panel="left"><span class="grip"></span><span class="sh-title"></span><button class="sh-btn" data-act="peek" data-i18n-title="smallT" title="Bedienfeld klein machen – Modell sichtbar">Klein</button><button class="sh-btn" data-act="close" data-i18n-title="closeT" title="Bedienfeld schließen">✕</button></div>
     <section class="block" id="blk-move" data-tab="move">
       <h2><span data-i18n="hMove">Bewegung</span> <span class="h2r" id="poseSummary"></span></h2>
-      <div class="ctl"><label for="sElev" data-i18n="lElev">Elevation (Arm heben)</label><span class="val" id="vElev">0°</span><input type="range" id="sElev" min="0" max="180" value="0" step="1"><div class="ends"><span data-i18n="eHang">hängend</span><span data-i18n="eOver">über Kopf</span></div></div>
-      <div class="ctl"><label for="sPlane" data-i18n="lPlane">Bewegungsebene</label><span class="val" id="vPlane">0°</span><input type="range" id="sPlane" min="-90" max="150" value="0" step="1"><div class="ends"><span data-i18n="ePlaneL">Extension</span><span data-i18n="ePlaneR">Abduktion · Flexion · Adduktion</span></div></div>
-      <div class="ctl"><label for="sRot" data-i18n="lRot">Rotation Oberarm</label><span class="val" id="vRot">0°</span><input type="range" id="sRot" min="-110" max="110" value="0" step="1"><div class="ends"><span data-i18n="eER">Außenrotation</span><span data-i18n="eIR">Innenrotation</span></div></div>
-      <div class="ctl"><label for="sElbow" data-i18n="lElbow">Ellbogen</label><span class="val" id="vElbow">0°</span><input type="range" id="sElbow" min="0" max="145" value="0" step="1"><div class="ends"><span data-i18n="eExt">gestreckt</span><span data-i18n="eFlex">gebeugt</span></div></div>
-      <div class="ctl"><label for="sPro" data-i18n="lPro">Unterarm / Hand drehen</label><span class="val" id="vPro">0°</span><input type="range" id="sPro" min="-85" max="80" value="0" step="1"><div class="ends"><span data-i18n="eSup">Supination (Handfläche vor)</span><span data-i18n="ePro">Pronation</span></div></div>
-      <details class="sub" id="scapDetails"><summary data-i18n="scapSum">Skapula &amp; Klavikula (automatischer Rhythmus)</summary>
-        <div class="kvs" id="scapReadout" style="font-family:var(--mono);font-size:11.5px;color:var(--muted);line-height:1.6"></div>
-        <p class="note" data-i18n="scapNote">Skapulothorakaler Rhythmus ca. 2:1 (glenohumeral : skapulothorakal), mit posteriorer Kippung und Außenrotation bei Elevation, Protraktion bei Adduktion vor dem Körper.</p>
-      </details>
+      <!-- Pose-Regler und Kopplungs-Block erzeugt engine/boot.js aus MOD.poseParams / MOD.readout -->
+      <div id="poseCtls"></div>
     </section>
     <section class="block" id="blk-presets" data-tab="move">
       <h2 data-i18n="hPresets">Klinische Positionen &amp; Tests</h2>
@@ -325,35 +320,30 @@ details.sub[open] summary::before{transform:rotate(90deg)}
     </section>
     <section class="block" id="blk-patho" data-tab="move">
       <h2 data-i18n="hPatho">Pathologie simulieren</h2>
-      <div class="ctl"><label for="sMigr" data-i18n="lMigr">Humeruskopf-Hochstand (z. B. Manschettenruptur)</label><span class="val" id="vMigr">0 mm</span><input type="range" id="sMigr" min="0" max="6" step="0.5" value="0"></div>
-      <div class="ctl"><label for="sGird" data-i18n="lGird">Hintere Kapselverkürzung (GIRD)</label><span class="val" id="vGird">0 %</span><input type="range" id="sGird" min="0" max="100" step="5" value="0"></div>
-      <div class="ctl"><label for="sFrozen" data-i18n="lFrozen">Kapselschrumpfung gesamt (Frozen Shoulder)</label><span class="val" id="vFrozen">0 %</span><input type="range" id="sFrozen" min="0" max="100" step="5" value="0"></div>
-      <p class="note" data-i18n="pathoNote">Wirkt auf Bewegungsgrenzen, Kapselspannung und den subakromialen Abstand.</p>
+      <!-- Pathologie-Regler erzeugt engine/boot.js aus MOD.pathoParams -->
+      <div id="pathoCtls"></div>
+      <p class="note" data-i18n="pathoNote"></p>
     </section>
     <section class="block" id="blk-layers" data-tab="layers">
-      <h2><span data-i18n="hLayers">Schichten</span> <span class="h2r"><button class="btn" id="btnLayersBones" style="padding:2px 7px;font-size:11px" data-i18n="lyBones">nur Knochen</button> <button class="btn" id="btnLayersCuff" style="padding:2px 7px;font-size:11px" data-i18n="lyCuff">Manschette</button> <button class="btn" id="btnLayersAll" style="padding:2px 7px;font-size:11px" data-i18n="lyAll">alles</button></span></h2>
+      <h2><span data-i18n="hLayers">Schichten</span> <span class="h2r" id="layerPresets"></span></h2>
       <div id="layers"></div>
       <div class="legend mobile-legend"><span class="lg"><i style="background:var(--red)"></i><span data-i18n="lgStretched">gedehnt</span></span><span class="lg"><i style="background:#b5766a"></i><span data-i18n="lgNeutral">neutral</span></span><span class="lg"><i style="background:var(--green)"></i><span data-i18n="lgShort">verkürzt / entspannt</span></span><span class="lg"><i style="background:var(--violet)"></i><span data-i18n="lgImp">eingeengt</span></span><span class="lg"><i style="background:#e9dfcf"></i><span data-i18n="lgBone">Knochen</span></span><span class="lg"><i style="background:#efe7dc;border:1px solid #bbb"></i><span data-i18n="lgTendon">Sehne / Band</span></span><span class="lg"><i style="background:#8fd3ff"></i><span data-i18n="lgBursa">Bursa</span></span><span class="lg"><i style="background:#f4d35e"></i><span data-i18n="lgNerve">Nerv</span></span></div>
       <div class="row" style="margin-top:8px;gap:12px"><label style="display:inline-flex;gap:6px;align-items:center;font-size:12px"><input type="checkbox" id="cbLabels"> <span data-i18n="labels">Beschriftungen</span></label><label style="display:inline-flex;gap:6px;align-items:center;font-size:12px"><input type="checkbox" id="cbStrain" checked> <span data-i18n="strain">Dehnungsfarben</span></label></div>
     </section>
-    <div class="disclaimer no-mobile" data-i18n="disc1">Vereinfachtes biomechanisches Lehrmodell (Landmarken- und Fadenmodell, Wrapping um den Humeruskopf, skapulothorakaler Rhythmus). Kein Diagnoseinstrument – Beschwerden bitte ärztlich/physiotherapeutisch abklären.</div>
+    <div class="disclaimer no-mobile" data-i18n="disc1"></div>
     <div class="fill"></div>
   </aside>
 
   <main id="stage">
-    <div id="mainView" class="viewport" aria-label="3D-Ansicht der rechten Schulter" data-i18n-aria="aria3d"></div>
+    <div id="mainView" class="viewport" aria-label="3D-Ansicht" data-i18n-aria="aria3d"></div>
     <div id="labels"></div>
     <div id="hud"><div class="hudcard" id="hudPose"><b id="hudTitle" data-i18n-title="hudT" title="Antippen: ein-/ausklappen · Ziehen: verschieben"><span data-i18n="hudTitle">Position</span><span class="hud-mini" id="hudMini"></span><span class="hud-tgl">▾</span></b><div class="hud-body" id="hudBody"></div></div></div>
-    <div id="modeBar"><div class="seg" id="modeSeg"><button data-mode="arm" class="on" data-i18n="mArm" data-i18n-title="mArmT" title="Ziehen am Arm bewegt den Arm">Arm bewegen</button><button data-mode="rot" data-i18n="mRot" data-i18n-title="mRotT" title="Ziehen am Arm rotiert den Oberarm (Innen-/Außenrotation)">Rotieren</button><button data-mode="orbit" data-i18n="mCam" data-i18n-title="mCamT" title="Ziehen dreht nur die Kamera">Kamera</button></div></div>
-    <div id="hint" data-i18n="hint">Ziehen am Arm: bewegen · Ziehen im Leeren: Kamera drehen · Rad/Pinch: Zoom · Klick/Tipp: Struktur-Info</div>
+    <div id="modeBar"><div class="seg" id="modeSeg"><button data-mode="arm" class="on" data-i18n="mArm" data-i18n-title="mArmT"></button><button data-mode="rot" data-i18n="mRot" data-i18n-title="mRotT"></button><button data-mode="orbit" data-i18n="mCam" data-i18n-title="mCamT" title="Ziehen dreht nur die Kamera">Kamera</button></div></div>
+    <div id="hint" data-i18n="hint"></div>
     <div id="dock">
       <div class="dock-h"><span class="dock-t"><span data-i18n="dockT">Detailansichten</span><small data-i18n="dockSub">synchron zur Bewegung</small></span><div class="legend"><span class="lg"><i style="background:var(--red)"></i><span data-i18n="lgStretched">gedehnt</span></span><span class="lg"><i style="background:#b5766a"></i><span data-i18n="lgNeutral">neutral</span></span><span class="lg"><i style="background:var(--green)"></i><span data-i18n="lgShort">verkürzt / entspannt</span></span><span class="lg"><i style="background:var(--violet)"></i><span data-i18n="lgImp">eingeengt</span></span><span class="lg"><i style="background:#e9dfcf"></i><span data-i18n="lgBone">Knochen</span></span><span class="lg"><i style="background:#efe7dc;border:1px solid #bbb"></i><span data-i18n="lgTendon">Sehne / Band</span></span><span class="lg"><i style="background:#8fd3ff"></i><span data-i18n="lgBursa">Bursa</span></span><span class="lg"><i style="background:#f4d35e"></i><span data-i18n="lgNerve">Nerv</span></span></div><button class="btn mini" id="dockToggle" aria-expanded="true">Ausblenden</button></div>
-      <div class="dock-row">
-      <div class="dview"><div class="dcap"><b data-i18n="dv1">Subakromialraum</b><div class="dctl"><span class="peel"><button data-dv="dv1" data-d="1" title="weniger Schichten">−</button><span class="pl" id="dv1pl"></span><button data-dv="dv1" data-d="-1" title="mehr Schichten">+</button></span><span class="dval" id="dv1val"></span></div></div><div class="dvp viewport" id="dv1"></div><div class="dlabel" data-i18n="dv1l">Schulterdach · Supraspinatussehne · Bursa</div></div>
-      <div class="dview"><div class="dcap"><b data-i18n="dv2">Kapsel &amp; Labrum</b><div class="dctl"><span class="peel"><button data-dv="dv2" data-d="1" title="weniger Schichten">−</button><span class="pl" id="dv2pl"></span><button data-dv="dv2" data-d="-1" title="mehr Schichten">+</button></span><span class="dval" id="dv2val"></span></div></div><div class="dvp viewport" id="dv2"></div><div class="dlabel" data-i18n="dv2l">von lateral, Humeruskopf aufgeschnitten</div></div>
-      <div class="dview"><div class="dcap"><b data-i18n="dv3">Bizepssehne &amp; Intervall</b><div class="dctl"><span class="peel"><button data-dv="dv3" data-d="1" title="weniger Schichten">−</button><span class="pl" id="dv3pl"></span><button data-dv="dv3" data-d="-1" title="mehr Schichten">+</button></span><span class="dval" id="dv3val"></span></div></div><div class="dvp viewport" id="dv3"></div><div class="dlabel" data-i18n="dv3l">Sulcus · Coracoid · Subscapularis</div></div>
-      <div class="dview"><div class="dcap"><b data-i18n="dv4">Skapula &amp; Rücken</b><div class="dctl"><span class="peel"><button data-dv="dv4" data-d="1" title="weniger Schichten">−</button><span class="pl" id="dv4pl"></span><button data-dv="dv4" data-d="-1" title="mehr Schichten">+</button></span><span class="dval" id="dv4val"></span></div></div><div class="dvp viewport" id="dv4"></div><div class="dlabel" data-i18n="dv4l">Blick von hinten</div></div>
-      </div>
+      <!-- Detailfenster erzeugt engine/boot.js aus MOD.detailViews -->
+      <div class="dock-row" id="dockRow"></div>
     </div>
     <div id="tooltip"></div>
   </main>
@@ -361,7 +351,7 @@ details.sub[open] summary::before{transform:rotate(90deg)}
   <aside id="right" class="panel">
     <div class="sheet-handle" data-panel="right"><span class="grip"></span><span class="sh-title"></span><button class="sh-btn" data-act="peek" data-i18n-title="smallT" title="Bedienfeld klein machen – Modell sichtbar">Klein</button><button class="sh-btn" data-act="close" data-i18n-title="closeT" title="Bedienfeld schließen">✕</button></div>
     <section class="block" id="blk-metrics" data-tab="metrics">
-      <h2 data-i18n="hMetrics">Engstellen-Monitor</h2>
+      <h2 data-i18n="hMetrics"></h2>
       <div id="metrics"></div>
     </section>
     <section class="block" id="blk-load" data-tab="metrics">
@@ -374,12 +364,12 @@ details.sub[open] summary::before{transform:rotate(90deg)}
       <div id="info"><p class="empty">Klicke oder tippe auf einen Muskel, eine Sehne, ein Band oder einen Knochen.</p></div>
     </section>
     <div class="disclaimer" data-i18n="disc2">Vereinfachtes biomechanisches Lehrmodell. Kein Diagnoseinstrument.</div>
-    <div class="ver"><a href="https://github.com/joergs-git/anatomy-lab" target="_blank" rel="noopener">anatomy-lab</a> · Schulterlabor v__VERSION__</div>
+    <div class="ver"><a href="https://github.com/joergs-git/anatomy-lab" target="_blank" rel="noopener">anatomy-lab</a> · <span id="verName"></span> v__VERSION__</div>
     <div class="fill"></div>
   </aside>
 
   <nav id="tabbar" class="only-mobile">
-    <button data-tab="move" data-i18n="tabMove">Bewegung</button><button data-tab="layers" data-i18n="tabLayers">Schichten</button><button data-tab="metrics" data-i18n="tabMetrics">Engstellen</button><button data-tab="info" data-i18n="tabInfo">Info</button>
+    <button data-tab="move" data-i18n="tabMove">Bewegung</button><button data-tab="layers" data-i18n="tabLayers">Schichten</button><button data-tab="metrics" data-i18n="tabMetrics"></button><button data-tab="info" data-i18n="tabInfo">Info</button>
   </nav>
 </div>
 <div id="shareBox" hidden role="dialog" aria-labelledby="shareTitle">

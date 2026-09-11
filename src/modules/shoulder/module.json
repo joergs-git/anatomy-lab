@@ -4,20 +4,16 @@
   "nameEn": "Shoulder Lab",
   "description": "Rechte Schulter: Muskeln, Sehnen, Bänder, Kapsel; skapulothorakaler Rhythmus; Engstellen (subakromial, subkorakoidal, posterosuperior), lange Bizepssehne, Gelenkkraft.",
   "parts": [
-    "engine/page.html",
-    "engine/math.js",
-    "engine/i18n.js",
-    "modules/shoulder/anatomy.js",
-    "modules/shoulder/kinematics.js",
-    "modules/shoulder/presets.js",
-    "modules/shoulder/bones.js",
-    "modules/shoulder/views.js",
-    "modules/shoulder/monitor.js",
-    "modules/shoulder/hud.js",
-    "modules/shoulder/interaction.js",
-    "engine/render.js",
-    "engine/ui.js",
-    "engine/share.js"
+    "anatomy.js",
+    "kinematics.js",
+    "presets.js",
+    "bones.js",
+    "views.js",
+    "monitor.js",
+    "hud.js",
+    "interaction.js",
+    "i18n.js",
+    "module.js"
   ],
-  "artifactUrl": "https://claude.ai/code/artifact/2cc1f47c-4a88-4fc4-b328-7706d1a9f7ca"
+  "alias": "Schulterlabor"
 }
