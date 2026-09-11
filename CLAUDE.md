@@ -2,6 +2,11 @@
 
 Interaktive biomechanische Lehrmodelle als eine HTML-Datei (three.js r128, kein Build-Framework, kein Backend). Erstes Modul: Schulterlabor (rechte Schulter). Ausgeliefert über GitHub Pages aus dem Root von `main` (`index.html`).
 
+## Zuerst lesen
+
+- `docs/HANDOVER.md` – Stand, Methodik, Kalibrierung, Vereinfachungen, Entscheidungen, Backlog, Blaupause Bein-Modul, Zielbild der Engine-Schnittstelle
+- `docs/LESSONS.md` – Fallen mit Symptom → Ursache → Regel; neue Erkenntnisse dort anhängen, nicht hier
+
 ## Befehle
 
 - `npm run build` – baut `index.html` (Pages), `dist/artifact.html` (claude.ai-Viewer, ohne Dokumentgerüst), `dist/test.html` (lokal, three.js aus node_modules)
@@ -37,6 +42,13 @@ Ruhe AHD ≈ 9,9 mm · 90° Abduktion ≈ 3–4 mm · Wurfposition: posterosuper
 ## Fahrplan
 
 Engine/Modul-Schnittstelle → Bein-Modul (Hüfte–Knie–Sprunggelenk) → Rumpf-Modul (LWS–Becken–Hüfte) → HWS als Erweiterung der Schulter. Module nach kinetischen Ketten schneiden, nicht nach Einzelgelenken.
+
+## Arbeitsweise
+
+- Kleine, benannte Commits; fachliche Änderungen (Anatomie, Kinematik, Kalibrierung) getrennt von Oberflächenänderungen.
+- Jede Modelländerung: Zahlen vorher/nachher an den Ankern aus `tests/model.test.mjs` prüfen und im Commit nennen; Anker nur bewusst verschieben.
+- Neue Erkenntnisse und Fehlschläge in `docs/LESSONS.md`, größere Entscheidungen in `docs/HANDOVER.md` (Abschnitt 6) nachtragen.
+- Versionsnummer in `package.json` erhöhen, wenn eine Veröffentlichung ansteht (erscheint in der Fußzeile der Seite).
 
 ## Veröffentlichen
 
