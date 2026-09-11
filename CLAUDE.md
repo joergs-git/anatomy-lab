@@ -1,6 +1,6 @@
 # CLAUDE.md – Arbeitsregeln für dieses Repo
 
-Interaktive biomechanische Lehrmodelle als eine HTML-Datei (three.js r128, kein Build-Framework, kein Backend). Erstes Modul: Schulterlabor (rechte Schulter). Ausgeliefert über GitHub Pages aus dem Root von `main` (`index.html`).
+Interaktive biomechanische Lehrmodelle als eine HTML-Datei (three.js r128, kein Build-Framework, kein Backend). Module: Schulterlabor (rechte Schulter, engstellendominiert) und Beinlabor (Hüfte–Knie–Sprunggelenk, lastdominiert mit Bodenkontakt). Ausgeliefert über GitHub Pages aus dem Root von `main` (`index.html`).
 
 ## Zuerst lesen
 
@@ -10,7 +10,7 @@ Interaktive biomechanische Lehrmodelle als eine HTML-Datei (three.js r128, kein 
 ## Befehle
 
 - `npm run build` – baut alle Module aus `src/modules/registry.json` in `index.html` (Pages), `dist/artifact.html` (claude.ai-Viewer, ohne Dokumentgerüst), `dist/test.html` (lokal, three.js aus node_modules); `node build.mjs --registry <json> --out <dir>` für Testbuilds
-- `npm test` – Modell-Invarianten (`tests/model.test.mjs`) und Registry/Build (`tests/registry.test.mjs`), ohne Browser
+- `npm test` – Modell-Invarianten Schulter (`tests/model.test.mjs`) und Bein (`tests/leg.test.mjs`) sowie Registry/Build (`tests/registry.test.mjs`), ohne Browser
 - `npm run shots` – Screenshots Desktop/iPhone + Link-Roundtrip in Chromium (braucht `npm i -D playwright && npx playwright install chromium`)
 - Vor jedem Commit: `npm run check` (= build + test). **`index.html` immer mit committen**, die CI vergleicht sie mit dem Quellstand.
 
@@ -26,6 +26,7 @@ Interaktive biomechanische Lehrmodelle als eine HTML-Datei (three.js r128, kein 
 - `src/modules/shoulder/interaction.js`: `LABELS` (3D-Beschriftungen), `DRAG` (greifbare Teile, Rotationsachsen, Griffpunkt → Pose).
 - `src/modules/shoulder/i18n.js`: modulspezifische Texte (`I18N_MOD`) und die englischen Namen (`STRUCT_EN`, `PRESET_EN`, `METRIC_EN`, `INFO_EN`, …).
 - `src/modules/shoulder/module.js`: **die Schnittstelle** – `POSE_PARAMS`/`PATHO_PARAMS` (Regler, Link-Schlüssel, Kurz-Link-Buchstaben, Wertetexte, dynamische Grenzen) und das `MODULE`-Objekt, das die Fabrik zurückgibt.
+- `src/modules/leg/`: gleicher Aufbau wie `shoulder/`. Rahmen B Becken, U Rumpf (Kontext), F Femur, P Patella, T Tibia+Fibula, A Talus, C Fuß, F2…C2 gespiegeltes anderes Bein. `kinematics.js`: Pose `{hipF,hipA,hipR,knee,tibR,valg,ankle,sub,wt,ground}`; bei Bodenkontakt steht der Fuß am festen Bodenpunkt, der Rumpf neigt sich für das Gleichgewicht (`hipF` = Oberschenkel zur Senkrechten, klinische Hüftbeugung = `hipF` + Neigung); Gelenkmomente aus Bodenreaktion/Segmentgewichten, Kraftverteilung je Gelent ∝ PCSA·Hebel (Quadrizeps am Knie über die Patellarsehne), PF-Kraft als Vektorsumme, TF-Kompression, VKB/HKB aus dem Schub entlang der Tibia, Achilles-/Hüftkraft, Tractus-Lage, Sprunggelenk-Impingements. `EXT.at` (`foot`/`body`) und `EXT.fixHip` für Lasten.
 - `src/modules/registry.json`: registrierte Module in Link-Reihenfolge (Index im Kurz-Link, nur anhängen). `build.mjs` legt alle in eine Datei: Engine-Kopf → `REGISTRY` + `MODULES[id]=function(){…; return MODULE;}` → `engine/boot.js` → Engine-Rest.
 - `src/engine/boot.js`: wählt das Modul (`m=<id>` / `x<Index>`), ruft die Fabrik, mischt `MOD.i18n` in `I18N`, löst `MOD` in die festen Engine-Namen auf und erzeugt das modulabhängige Markup (Pose-/Pathologie-Regler, Kopplungs-Block, Schicht-Schnellwahl, Detail-Dock, Umschalter `#moduleSeg`, Fußzeile).
 - `src/engine/render.js`: Szene, Röhren, Flächen-Strukturen (`s.surface`), Sichtbarkeit über `material.userData` (`fixed`, `noPick`, `baseOpacity`), Zonen → Kompression über `MOD.render.zones`, `MOD.render.afterPose`, Kameras, Detail-Dock.
@@ -44,14 +45,17 @@ Interaktive biomechanische Lehrmodelle als eine HTML-Datei (three.js r128, kein 
 7. **Mobil (≤ 980 px)**: Bedienfelder sind Bottom-Sheets, das Detail-Dock verschwindet bei offenem Sheet, das HUD startet eingeklappt. Jede UI-Änderung auch bei 390 px prüfen (`npm run shots`).
 8. **Feste Reihenfolge, nichts springt**: Monitor und Strukturliste sortieren nie dynamisch; Ein-/Ausblenden mit Hysterese (`updateLoads`).
 9. Kein `//`-Kommentar am Zeilenende in Code, der per Skript ersetzt wird – `/* */` verwenden.
+10. **Modul-Auswertung nutzt die gelöste Pose**: `evaluate(fr)` darf nicht das globale `pose` lesen (Harness und Referenzberechnung lösen Kopien) – das Modul merkt sich die zuletzt gelöste Pose (`LAST.pose` im Bein). Pose-Parameter mit Standardwert ≠ 0 (`wt`, `ground`) brauchen `def` im Parameter, sonst landen sie in jedem Link.
+11. **Detailfenster im Headless-Test**: SwiftShader (Playwright ohne GPU) kopiert die Detailfenster nach dem ersten Frame eines Link-Zustands schwarz, bis sich die Pose ändert; auf echten GPUs nicht. `preserveDrawingBuffer` bleibt gesetzt, Screenshot-Skripte setzen vor Detailfenster-Aufnahmen eine Pose (LESSONS 31).
 
 ## Kalibrierung (Literaturwerte, siehe Tests)
 
-Ruhe AHD ≈ 9,9 mm · 90° Abduktion ≈ 3–4 mm · Wurfposition: posterosuperiorer Kontakt ≈ 2 mm, vordere/untere Kapsel endgradig · Hawkins/Sleeper: Kontaktfenster 20–55° IR, Minimum ≈ 2 mm · Gelenkkraft ≈ 330 N (90° Abduktion, keine Last), ≈ 900 N (3 kg). Änderungen an Anatomie oder Kinematik immer gegen `npm test` prüfen und die Anker bei Bedarf bewusst nachziehen.
+Schulter: Ruhe AHD ≈ 9,9 mm · 90° Abduktion ≈ 3–4 mm · Wurfposition: posterosuperiorer Kontakt ≈ 2 mm, vordere/untere Kapsel endgradig · Hawkins/Sleeper: Kontaktfenster 20–55° IR, Minimum ≈ 2 mm · Gelenkkraft ≈ 330 N (90° Abduktion, keine Last), ≈ 900 N (3 kg).
+Bein (75 kg, `BW` = 735 N): Stand PF ≈ 0, TF ≈ 0,9 × KG · Kniebeuge parallel PF 2,5–4,5 × KG, Rumpf 30–60° · tief (140°) PF 4–7,5 × KG, Druck 4–10 MPa, Hinterhörner komprimiert · Treppe einbeinig PF 2,5–4,5, Hüfte 2–6 × KG · Beinstrecker: VKB nahe Streckung > 150 N und > 3 × Wert bei 60°, jenseits 90° null · Tractus-Reibzone 10–35° · vorderes Sprunggelenk-Impingement < 3 mm bei 35° Dorsalextension, hinteres < 3 mm bei −45° · ATFL beim Supinationstrauma ≥ +8 % · Wadenheben Achilles 1–4 × KG. Änderungen an Anatomie oder Kinematik immer gegen `npm test` prüfen und die Anker bei Bedarf bewusst nachziehen.
 
 ## Fahrplan
 
-Engine/Modul-Schnittstelle (Registry, Umschalter, `MODULE`-Objekt: **fertig, v0.10**) → Bein-Modul (Hüfte–Knie–Sprunggelenk) → Rumpf-Modul (LWS–Becken–Hüfte) → HWS als Erweiterung der Schulter. Module nach kinetischen Ketten schneiden, nicht nach Einzelgelenken. Ein neues Modul: Ordner unter `src/modules/<id>/` mit `module.json` (Bauteile, Name, Alias), letzte Datei liefert `MODULE` nach dem Muster von `shoulder/module.js`, dann die ID an `registry.json` **anhängen**; der Umschalter erscheint automatisch.
+Engine/Modul-Schnittstelle (Registry, Umschalter, `MODULE`-Objekt: **fertig, v0.10**) → Bein-Modul (Hüfte–Knie–Sprunggelenk: **erste Fassung, v0.11**; Verfeinerung siehe HANDOVER §8) → Rumpf-Modul (LWS–Becken–Hüfte) → HWS als Erweiterung der Schulter. Module nach kinetischen Ketten schneiden, nicht nach Einzelgelenken. Ein neues Modul: Ordner unter `src/modules/<id>/` mit `module.json` (Bauteile, Name, Alias), letzte Datei liefert `MODULE` nach dem Muster von `shoulder/module.js`, dann die ID an `registry.json` **anhängen**; der Umschalter erscheint automatisch.
 
 ## Arbeitsweise
 

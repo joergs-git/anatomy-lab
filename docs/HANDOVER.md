@@ -89,6 +89,16 @@ Ziel: dieselbe Methodik, aber lastdominiert statt engstellendominiert. Das Modul
 
 **Kalibrierungsanker in die Tests übernehmen** (Reilly & Martens 1972 für patellofemorale Kräfte; Beynnon für VKB-Dehnung; Nachemson-artige Faktoren für Gelenkkräfte), Toleranzen ±25 %.
 
+### Stand Bein-Modul (11. September 2026, v0.11.0, erste Fassung)
+
+Umgesetzt nach der Blaupause oben, mit diesen Entscheidungen:
+
+- **Geschlossene Kette**: Bei Bodenkontakt (`ground`) wird die Kette so verschoben, dass der Auflagepunkt des Fußes (Ferse, Ballen oder Sohlenmitte, je nach Fußstellung) am festen Bodenpunkt steht; der Rumpf (Kontext, Rahmen U) neigt sich so weit, dass der Gesamtschwerpunkt (Rumpf + beide Beine + Zusatzlast) über dem Auflagepunkt liegt. Über 60° Neigung gilt „Abstützung nötig“ (Ausfallschritt, Cutting: zweites Bein trägt). Damit ist `hipF` der Winkel des Oberschenkels zur Senkrechten (klinische Hüftbeugung = `hipF` + Neigung, im HUD ausgewiesen); flacher Fuß ⇔ `hipF = knee − ankle`. Ohne Bodenkontakt hängt das Bein am ruhenden Becken.
+- **Momente und Kräfte**: Je Gelenk (Hüfte, Knie, Sprunggelenk) das äußere Moment aus Bodenreaktion (`wt` % × 735 N + Zusatzlast `at:'body'`) bzw. Last am Fuß (`at:'foot'`) und Segmentgewichten; Verteilung ∝ PCSA · Hebelarm auf die Muskeln, die das Gelenk überspannen (Quadrizeps am Knie über die Patellarsehne, Ansatz Tuberositas); `EXT.fixHip` schaltet das Hüftmoment ab (Maschine, Sitz). Patellofemorale Kraft = Vektorsumme von Quadrizeps- und Patellarsehnenzug an der Patella (Verhältnis 1,0 → 0,75 mit der Beugung), Druck über die Kontaktfläche 2–5,5 cm²; TF-Kompression und VKB/HKB-Schub als Anteile entlang der Tibiaachsen; Achilles = Gastrocnemius + Soleus; Hüftkontaktkraft = Muskelzug + Bodenreaktion.
+- **Kalibrierung** (Tests): Stand PF ≈ 0, TF 0,9 × KG; Kniebeuge parallel PF 3,2, tief 4,7 × KG (Reilly & Martens 7,6 gilt als Obergrenze, moderne Schätzungen 4–6); Treppe 3,1; Beinstrecker 15 kg bei 15°: VKB ≈ 230 N; Tractus-Reibzone 15–25°; Impingements vorn ab ≈ 25° Dorsalextension, hinten ab ≈ −35°; ATFL im Supinationstrauma +10 %; Wadenheben einbeinig Achilles 1,1 × KG (statisch; dynamische Werte 3–4 × KG sind nicht abgebildet).
+- **Vereinfachungen**: keine Dynamik (Gehen, Laufen, Sprung nur als Posen); VKB-Spannung = Geometrie × 0,75 + heuristischer Zuschlag für Innenrotation/Valgus + Schub der Patellarsehne; Menisken als statische Ringe mit Kompressionsheuristik (> 115°); Patella auf einer Kreisbahn um das Kniezentrum (kein Trochlea-Profil); Subtalar-Achse 42° mit 25 % Talus-Mitkippung; Fuß als ein starrer Körper (kein Vorfuß-, kein Zehengelenk, Windlass fehlt); anderes Bein nur gespiegelter Kontext; Kraftverteilung statisch, keine Kokontraktion; zweigelenkige Muskeln bekommen das Maximum ihrer Gelenkzuweisungen.
+- **Offen**: Vorfuß/Zehen (Windlass, Abdruck), Dynamikfaktoren für Gehen/Laufen/Sprung, Kniekapsel als Fläche, Hoffa-Impingement in Hyperextension (Knie < 0° fehlt), Pes-anserinus-Reibung, Hüftimpingement (Cam/Pincer), Umschalter auf dem Handy (Kopfzeile eng), zweites Bein bei einbeinigen Übungen frei hängend statt gespiegelt.
+
 ## 9. Zielbild der Engine-Schnittstelle
 
 Ein Modul liefert ein Objekt, die Engine kennt kein Gelenk mehr beim Namen:

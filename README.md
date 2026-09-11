@@ -6,6 +6,8 @@ ShoulderLab, KneeLab and much more. A learning app to find out and get an idea w
 
 Interaktive, vereinfachte biomechanische Lehrmodelle im Browser – eine einzige HTML-Datei ohne Backend (three.js r128). Das erste Modul ist das **Schulterlabor**: die rechte Schulter mit Knochen, Rotatorenmanschette, Deltoideus, Bizeps, Brust- und Rückenmuskeln, Bändern, Kapsel, Bursa und Nerven als schaltbare Schichten. Beim Bewegen färben sich die Strukturen nach Dehnung (rot), Entspannung (grün) und Einengung (violett); ein Engstellen-Monitor misst subakromialen und subkorakoidalen Abstand, Kapselspannung, die Umlenkung der langen Bizepssehne und die Gelenkkraft; vier synchron mitlaufende Detailansichten zeigen die typischen Engstellen. Klinische Testpositionen (Hawkins, Neer, Jobe, Apprehension, Schürzengriff …), Bewegungsabläufe und physiotherapeutische Übungen mit Lasten (Band, Hantel, Wand) sind als Presets hinterlegt; Pathologien (Humeruskopf-Hochstand, GIRD, Frozen Shoulder) lassen sich zuschalten.
 
+Das zweite Modul ist das **Beinlabor** (Umschalter in der Kopfzeile): rechtes Bein mit Becken, Femur, Patella, Tibia, Fibula, Talus und Fuß, Hüft-, Oberschenkel-, Waden- und Unterschenkelmuskeln, Kreuz- und Seitenbändern, Patellar- und Achillessehne, Menisken, Sprunggelenkbändern und N. peroneus. Steht der Fuß auf dem Boden, neigt sich der Rumpf automatisch so, dass der Körperschwerpunkt über dem Fuß bleibt; aus Bodenreaktion und Segmentgewichten entstehen die Gelenkmomente, die statisch auf die Muskeln verteilt werden. Der Last-Monitor zeigt patellofemorale Kraft und Druck, tibiofemorale Kompression, Kreuzbandlast, Patellar- und Achillessehnenkraft, Hüftkontaktkraft, die Lage des Tractus zum Epikondylus, Sprunggelenk-Impingements, Meniskus-Kompression und Bandspannungen. Presets: Kniebeuge, Ausfallschritt, Treppe, Landung, Cutting, Wadenheben, Hocke, Fersensitz, Supinationstrauma, Spitzentanz, Lachman, Schublade, Slump; Übungen mit Langhantel, Maschinen und Zusatzgewicht.
+
 > Vereinfachtes Lehrmodell (Landmarken- und Fadenmodell). Kein Diagnoseinstrument – Beschwerden bitte ärztlich oder physiotherapeutisch abklären.
 
 ## Links mit Zustand teilen
@@ -21,11 +23,12 @@ https://joergs-git.github.io/anatomy-lab/?run=sleeper&show=thorax,clav,scap,hum,
 
 | Schlüssel | Bedeutung |
 |---|---|
-| `m` | Modul (`shoulder`; fehlt beim ersten Modul der Registry) |
+| `m` | Modul (`shoulder` oder `leg`; fehlt beim ersten Modul der Registry) |
 | `E`, `P`, `rot`, `elbow`, `pro` | Elevation, Bewegungsebene, Rotation (+innen/−außen), Ellbogen, Pro-/Supination in Grad (Schultermodul) |
 | `run` | laufender Ablauf: ID eines Presets, Bewegungsablaufs oder einer Übung (z. B. `hawkins`, `arc`, `erband`, `sleeper`) |
 | `load` | Last einer Übung ohne deren Ablauf (z. B. `wall`) · `speed` Tempo · `loop=0` Endlosschleife aus |
 | `migr`, `gird`, `frozen` | Kopfhochstand in mm, hintere Kapselverkürzung und Frozen Shoulder in % (Schultermodul) |
+| `hipF`, `hipA`, `hipR`, `knee`, `tibR`, `valg`, `ankle`, `sub`, `wt`, `ground` | Beinmodul: Oberschenkel nach vorn, Abduktion, Rotation, Knie, Tibiarotation, Valgus, Sprunggelenk, Subtalar in Grad; Gewichtsanteil in %; Bodenkontakt 0/1 · `cart`, `acl` Knorpelverlust und VKB-Insuffizienz in % |
 | `hide` / `show` | Schichten (Struktur-IDs, kommagetrennt) · `op=delt:0.4,chest:0.3` Gruppen-Transparenz |
 | `peel` | Schichtstufen der vier Detailansichten · `cam=theta,phi,dist[,tx,ty,tz]` Kamera |
 | `mode`, `strain=0`, `labels=1`, `sel`, `dock=0`, `hud`, `pl=0`, `pr=0`, `mon`, `cap`, `lgt` | Bedienzustand |
@@ -57,6 +60,7 @@ src/engine/            gemeinsame Basis (kennt kein Gelenk beim Namen)
   ui.js                Regler, Chips, Schichten, Monitor-Aufbau, Strukturliste, Touch/Maus, Mobil-Sheets, Sprache
   share.js             Zustand ⇄ URL (lesbar und kompakt), Modulwechsel, Teilen-Dialog
 src/modules/registry.json  registrierte Module in Link-Reihenfolge (nur anhängen)
+src/modules/leg/       Beinmodul (gleicher Aufbau; Bodenkontakt mit Gleichgewicht, Gelenkmomente, PF-/TF-Kraft, Kreuzbänder, Sehnen, Tractus, Sprunggelenk)
 src/modules/shoulder/  Schultermodul
   module.json          Name, Beschreibung, Alias, Bauteile in Reihenfolge
   anatomy.js           Landmarken, Strukturen (Faszikel), Schichtgruppen, Infotexte
@@ -70,7 +74,7 @@ src/modules/shoulder/  Schultermodul
   interaction.js       3D-Beschriftungen, Ziehen am Arm (greifbare Teile, Griffpunkt → Pose)
   i18n.js              Modul-Texte Deutsch/Englisch, englische Struktur-/Preset-/Metrik-Namen, Infotexte
   module.js            Schnittstelle: Pose-/Pathologie-Parameter (Regler, Link-Codes) und das MODULE-Objekt
-tests/                 model.test.mjs (Invarianten), registry.test.mjs (Build/Registry), harness.mjs (Modell ohne Browser), shots.mjs (Browser)
+tests/                 model.test.mjs (Schulter-Anker), leg.test.mjs (Bein-Anker), registry.test.mjs (Build/Registry), harness.mjs (Modell ohne Browser), shots.mjs (Browser)
 build.mjs              legt Engine und alle registrierten Module (je eine Fabrik) in eine Datei
 ```
 
@@ -79,7 +83,7 @@ Jedes Modul ist eine Fabrik `MODULES[id]=function(){…; return MODULE;}` in der
 ### Fahrplan
 
 1. ~~Engine/Modul-Schnittstelle herausarbeiten (Modul-Registry, Modul-Umschalter in der Kopfzeile, Modul-Feld im Link)~~ – fertig (v0.10)
-2. Bein-Modul: Hüfte–Knie–Sprunggelenk (Patellofemoraldruck, Kreuzbänder, Tractus, Patellarsehne, Achillessehne, Außenbänder; Kniebeuge, Ausfallschritt, Landung)
+2. ~~Bein-Modul: Hüfte–Knie–Sprunggelenk (Patellofemoraldruck, Kreuzbänder, Tractus, Patellarsehne, Achillessehne, Außenbänder; Kniebeuge, Ausfallschritt, Landung)~~ – erste Fassung (v0.11), Verfeinerungen in `docs/HANDOVER.md` §8
 3. Rumpf-Modul: LWS–Becken–Hüfte (Bandscheibenlast, Facetten, Foramen; Heben, Bücken)
 4. Halswirbelsäule als Erweiterung des Schultermoduls (Trapezius, Levator, Foramenweite)
 
@@ -88,7 +92,8 @@ Jedes Modul ist eine Fabrik `MODULES[id]=function(){…; return MODULE;}` in der
 - Modellkoordinaten in cm: +X lateral (rechts), +Y kranial, +Z ventral, Ursprung im Humeruskopfzentrum – ein linkshändiges System; die Darstellung spiegelt es über `ROOT.scale.x = −1`, Umrechnungen laufen über `toR()`.
 - Listen, deren Index in Kurz-Links steckt (`registry.json`, `allIds()`, `PRESETS`/`ANIMS`/`PHYSIO`, `LAYER_GROUPS`, `LOAD_GROUPS`), werden **nur angehängt, nie umsortiert** – sonst zeigen alte Links auf falsche Dinge.
 - Deutsch ist die Quellsprache (Markup, Code), Englisch liegt als Wörterbuch in `engine/i18n.js` (Engine) und `modules/<id>/i18n.js` (Modul: `data-i18n`-Schlüssel, `*_EN`-Tabellen).
-- Kalibrierungsanker (Literaturwerte, in `tests/model.test.mjs` geprüft): subakromialer Abstand ≈ 9,9 mm in Ruhe und ≈ 3–4 mm bei 90° Abduktion; internes Impingement ≈ 2 mm in der Wurfposition; Kontaktfenster im Hawkins/Sleeper bei 20–55° Innenrotation mit Minimum ≈ 2 mm; Gelenkreaktionskraft ≈ 330 N bei 90° Abduktion ohne Last, ≈ 900 N mit 3 kg.
+- Kalibrierungsanker Schulter (Literaturwerte, in `tests/model.test.mjs` geprüft): subakromialer Abstand ≈ 9,9 mm in Ruhe und ≈ 3–4 mm bei 90° Abduktion; internes Impingement ≈ 2 mm in der Wurfposition; Kontaktfenster im Hawkins/Sleeper bei 20–55° Innenrotation mit Minimum ≈ 2 mm; Gelenkreaktionskraft ≈ 330 N bei 90° Abduktion ohne Last, ≈ 900 N mit 3 kg.
+- Kalibrierungsanker Bein (`tests/leg.test.mjs`, 75 kg): patellofemorale Kraft ≈ 0 im Stand, 2,5–4,5 × KG in der parallelen und 4–7,5 × KG in der tiefen Kniebeuge, 2,5–4,5 × KG beim Treppensteigen; VKB-Last beim Beinstrecker nahe der Streckung maximal, jenseits 90° null; Tractus-Reibzone bei 10–35° Beugung; Sprunggelenk-Impingement vorn bei Dorsalextension, hinten bei Plantarflexion; ATFL beim Supinationstrauma endgradig; Achillessehne 1–4 × KG beim Wadenheben.
 
 ## Danksagung
 
