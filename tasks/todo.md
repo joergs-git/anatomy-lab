@@ -20,7 +20,6 @@ Ziel: Die Engine instanziiert ein Modul über eine Schnittstelle (`MODULE`-Objek
 ## Offen (blockiert, Nutzerentscheidung)
 
 - Git-Historie umschreiben (Autor „Joerg Klaas“/„Claude“ → joergs-git, Co-Authored-By-Trailer entfernen) braucht `git filter-branch` + `push --force-with-lease`; vom Auto-Modus blockiert, Befehle stehen im Abschlussbericht der Sitzung vom 11. September 2026.
-- `git push origin main` wurde in dieser Sitzung vom Auto-Modus blockiert; Commits liegen lokal auf `main`.
 
 ## Results
 
