@@ -114,3 +114,27 @@ Ein Modul liefert ein Objekt, die Engine kennt kein Gelenk mehr beim Namen:
 ```
 
 Migrationsweg: zuerst die schulterspezifischen Teile aus `engine/render.js` (Knochenbau, `detailDefs`, `PEEL`, `orbit0`, `VIEWS`) und `engine/ui.js` (`PRESETS`/`ANIMS`/`PHYSIO`, `METRICS`, Monitor-Gruppen, `LOAD_GROUPS`, `LABELS`, `planeLabel`, HUD-Text, `ARM_IDS`/`dragArm`) in `modules/shoulder/` verschieben, ohne Verhalten zu ändern (Tests + `npm run shots` müssen identisch bleiben); dann die Registry und den Umschalter; dann das Bein-Modul gegen die Schnittstelle bauen.
+
+### Stand der Migration (11. September 2026, v0.9.1)
+
+Schritt 1 ist erledigt, ohne Verhaltensänderung (11 Tests grün; Screenshots aus `npm run shots` byte-identisch bis auf das Startbild, dessen Monitor-Balken während der Startanimation eine CSS-Transition durchlaufen; zusätzlich acht feste Link-Zustände auf Desktop und iPhone pixel-, text- und metrikidentisch gegen den alten Build verglichen, ebenso Ziehen am Arm, Rotationsmodus und Klick-Auswahl).
+
+Verschoben nach `modules/shoulder/`:
+
+| Datei | Inhalt (vorher) |
+|---|---|
+| `presets.js` | `PRESETS`, `ANIMS`, `PHYSIO` (aus `ui.js`) |
+| `bones.js` | `buildBones(ctx)`: Thorax, Klavikula, Skapula, Humerus, Unterarm/Hand, Labrum, Bursa (aus `render.js`); `ctx` = `{G, LAYER, MAT, boneMat, addBone, ell, pickables, BONES}` |
+| `views.js` | `ORBIT0`, `VIEWS`, `detailDefs` (jetzt mit `readout(M, rh)` für den Anzeigewert unter dem Fenster), `PEEL` (aus `render.js`) |
+| `monitor.js` | `METRICS` (Sonderformat der Bizepssehne als `text(v, M)`), `MONITOR = {top, special, aggregate}` statt `METRIC_TOP`/`METRIC_SPECIAL`/`CAP_IDS`-Sonderfall, `LOAD_GROUPS`, `computeLoads`, `structReadouts` (Zusatzzeilen im Struktur-Info), `BONE_NAME_KEYS`, `LAYER_PRESETS` (aus `ui.js`) |
+| `hud.js` | `planeLabel`, `hudMiniText`, `hudBodyHTML`, `poseSummaryText`, `scapReadoutHTML`, `READOUT0` (aus `ui.js`) |
+| `interaction.js` | `LABELS`, `DRAG = {ids, frame, rot, pose(p0, p1, frames)}` statt `ARM_IDS`/`dragArm`-Mathematik (aus `ui.js`) |
+
+Engine-Seite: `G` entsteht aus `Object.keys(frames)`, `BONES` wird von `addBone` dynamisch gefüllt, `frameOfMesh()` ersetzt die feste Zuordnung `fore → F/R`, `startRotDrag()` liest die Achsen aus `DRAG.rot`, `dragArm()` rechnet nur noch Griffpunkt und Ebene und ruft `DRAG.pose`. `tests/harness.mjs` lädt `presets.js` direkt statt Presets per Regex aus `ui.js` zu schneiden.
+
+Noch in der Engine mit Schulterwissen (nächster Schritt, zusammen mit Registry und Umschalter):
+
+- `page.html`: Regler (`sElev` … `sPro`, `sMigr` … `sFrozen`), Detailfenster-Markup `dv1` … `dv4`, Titel und Texte; `ui.js`: `SL`/`VL`/`PL`, `syncSliders` (Wertetexte, `rotLimits`/`Emax`), `setPatho`, `stepAnim` (Pose-Schlüssel), Startanimation `{P:30,E:70}`.
+- `share.js`: `POSE_KEYS`, Kennbuchstaben `E P R B F` (Pose) und `M G Z` (Pathologie), `applyURLState` (Pathologie-Grenzen).
+- `render.js`: `LAYER` (Namen), Zonen 1–4 → `bursaComp`/`corComp`/`grooveComp`/`psComp` in `applyPose`, Kapselfläche (`CAPS_N`/`CAPS_M`, `capsuleMesh`), Bursa-Dicke aus `ahd`, Sonderfälle `thorax`/`bursa`/`capsule` in `applyVisibility` und `pick`.
+- `i18n.js`: ein gemeinsames Wörterbuch (UI und Schulteranatomie); `window.Schulterlabor` als Testschnittstelle.

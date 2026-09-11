@@ -47,23 +47,29 @@ npm run serve        # lokal unter http://localhost:8080
 ### Struktur
 
 ```
-src/engine/            gemeinsame Basis (soll modulunabhängig werden)
+src/engine/            gemeinsame Basis (modulunabhängige Mechanik)
   page.html            Markup + CSS der Oberfläche
   math.js              Vektoren, Wrapping um Kugeln, Röhrengeometrie, Dehnungsfarben
   i18n.js              Deutsch/Englisch (UI-Texte, Struktur- und Preset-Namen, Beschreibungen)
-  render.js            three.js-Szene, Schichten/Sichtbarkeit, Kameras, Detail-Dock
-  ui.js                Regler, Presets/Abläufe/Übungen, Engstellen-Monitor, belastete Strukturen, Touch/Maus
+  render.js            three.js-Szene, Röhren, Schichten/Sichtbarkeit, Kameras, Detail-Dock
+  ui.js                Regler, Chips, Schichten, Monitor-Aufbau, Strukturliste, Touch/Maus, Mobil-Sheets, Sprache
   share.js             Zustand ⇄ URL (lesbar und kompakt), Teilen-Dialog
 src/modules/shoulder/  Schultermodul
   module.json          Name, Beschreibung, Bauteile in Reihenfolge
   anatomy.js           Landmarken, Strukturen (Faszikel), Schichtgruppen, Infotexte
   kinematics.js        Pose → Knochenrahmen (skapulothorakaler Rhythmus), Bewegungsgrenzen, Referenzlängen,
                        Auswertung: Dehnung, Engstellen, Kraftverteilung, Gelenkreaktionskraft
+  presets.js           Klinische Positionen, Bewegungsabläufe, Übungen mit Lasten
+  bones.js             Knochengeometrie je Rahmen (Thorax, Klavikula, Skapula, Humerus, Unterarm/Hand), Labrum, Bursa
+  views.js             Standardkamera, Ansichten, Detailfenster (Kamera-Fit, Anzeigewert), Schichtstufen
+  monitor.js           Engstellen-Monitor (Zeilen, Reihenfolge, Kapsel-Sammelzeile), Strukturgruppen, Belastungsregeln
+  hud.js               Texte für HUD, Pose-Zusammenfassung, Skapula-Anzeige
+  interaction.js       3D-Beschriftungen, Ziehen am Arm (greifbare Teile, Griffpunkt → Pose)
 tests/                 model.test.mjs (Invarianten), harness.mjs (Modell ohne Browser), shots.mjs (Browser)
 build.mjs              Konkatenation der Bauteile eines Moduls zu einer Datei
 ```
 
-Der Schnitt Engine/Modul ist auf Dateiebene angelegt, aber noch nicht sauber: `render.js` baut die Knochengeometrie der Schulter, `ui.js` enthält die Schulter-Presets und -Metriken, `i18n.js` die Übersetzungen der Schulteranatomie. Das zweite Modul (Bein: Hüfte–Knie–Sprunggelenk) soll diese Trennung erzwingen: Ein Modul liefert dann Anatomie, Kinematik, Metriken, Presets, Detailansichten und Texte über eine gemeinsame Schnittstelle, die Engine den Rest.
+Alle Dateien werden in eine gemeinsame IIFE konkateniert (Reihenfolge in `module.json`); die Modul-Dateien stehen vor `render.js`/`ui.js`, damit deren Tabellen beim Aufbau der Oberfläche vorliegen. Die Engine kennt heute noch einige Schulterdetails beim Namen (Regler-IDs und Pose-Schlüssel in `page.html`/`ui.js`/`share.js`, ein gemeinsames Wörterbuch in `i18n.js`, Engstellen-Zonen und Kapselfläche in `applyPose`); die Liste steht in `docs/HANDOVER.md` §9. Das zweite Modul (Bein: Hüfte–Knie–Sprunggelenk) soll diese Reste über eine Modul-Registry auflösen.
 
 ### Fahrplan
 

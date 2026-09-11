@@ -18,10 +18,17 @@ Interaktive biomechanische Lehrmodelle als eine HTML-Datei (three.js r128, kein 
 
 - `src/modules/shoulder/anatomy.js`: Landmarken in knochenlokalen Koordinaten (`L(frame,x,y,z)`), Strukturen als Faszikel (`fas`), Schichtgruppen (`LAYER_GROUPS`), Infotexte (`INFO`).
 - `src/modules/shoulder/kinematics.js`: `pose {P,E,IR,elbow,pro}` (humerothorakal) → Knochenrahmen (`solvePose`, skapulothorakaler Rhythmus landmarkengetrieben), Bewegungsgrenzen (`Emax`, `rotLimits`, `clampPose`), Referenzlängen (`computeReferenceLengths`), Auswertung (`evaluate`: Dehnung je Faszikel, Kapselregionen, Abstände, Kraftverteilung ∝ PCSA·Hebelarm, Gelenkreaktionskraft).
-- `src/engine/render.js`: Szene, Röhren, Sichtbarkeit/Transparenz, Kameras, Detail-Dock mit Schichtstufen (`PEEL`).
-- `src/engine/ui.js`: Regler, Presets (`PRESETS`, `ANIMS`, `PHYSIO`), Monitor (`METRICS`, Gruppen), belastete Strukturen (`LOAD_GROUPS`), Maus/Touch, Mobil-Sheets, Sprache.
+- `src/modules/shoulder/presets.js`: `PRESETS`, `ANIMS`, `PHYSIO` (klinische Positionen, Abläufe, Übungen mit Lasten).
+- `src/modules/shoulder/bones.js`: `buildBones(ctx)` – Knochengeometrie je Rahmen, Labrum, Bursa; `ctx` liefert `render.js` (`G`, `MAT`, `addBone`, …).
+- `src/modules/shoulder/views.js`: `ORBIT0`, `VIEWS`, `detailDefs` (vier Detailfenster mit `fit` und `readout`), `PEEL` (Schichtstufen).
+- `src/modules/shoulder/monitor.js`: `METRICS`, `MONITOR` (Top/Spezial/Kapsel-Sammelzeile), `LOAD_GROUPS`, `computeLoads`, `structReadouts`, `BONE_NAME_KEYS`, `LAYER_PRESETS`.
+- `src/modules/shoulder/hud.js`: `planeLabel`, HUD-, Pose- und Skapula-Texte, `READOUT0`.
+- `src/modules/shoulder/interaction.js`: `LABELS` (3D-Beschriftungen), `DRAG` (greifbare Teile, Rotationsachsen, Griffpunkt → Pose).
+- `src/engine/render.js`: Szene, Röhren, Sichtbarkeit/Transparenz, Kameras, Detail-Dock; ruft `buildBones`, nutzt `detailDefs`/`PEEL`/`ORBIT0`/`VIEWS` aus dem Modul.
+- `src/engine/ui.js`: Regler, Chips, Schichten, Monitor-Aufbau, Strukturliste, Maus/Touch, Mobil-Sheets, Sprache – nur noch generische Mechanik über die Modul-Tabellen.
 - `src/engine/share.js`: `currentState()` → lesbare Query oder kompakter Hash-Token; `applyURLState()` beim Laden.
-- Bauteile und Reihenfolge stehen in `src/modules/<modul>/module.json`; `build.mjs` konkateniert sie in eine IIFE.
+- Bauteile und Reihenfolge stehen in `src/modules/<modul>/module.json`; `build.mjs` konkateniert sie in eine IIFE (Modul-Dateien vor `render.js`/`ui.js`, damit deren Tabellen beim Aufbau vorliegen).
+- Noch nicht modularisiert (siehe `docs/HANDOVER.md` §9): `page.html` (Markup, Regler-IDs), `i18n.js` (ein Wörterbuch), Pose-/Patho-Schlüssel in `share.js` und `ui.js` (`SL`, `PL`, `syncSliders`), Zonen → Kompression und Kapselfläche in `applyPose`, `window.Schulterlabor`.
 
 ## Regeln, die man leicht bricht
 
