@@ -1,0 +1,393 @@
+<title>Schulterlabor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#e9ecf0; --panel:#ffffff; --panel-2:#f3f5f8; --ink:#171c23; --muted:#5d6774; --line:#d5dbe3;
+  --accent:#2b62c9; --accent-ink:#ffffff; --accent-soft:#e3ebfa;
+  --scene:#d9dfe7; --scene-fog:#c9d1db;
+  --red:#d9403a; --green:#2a9d5c; --violet:#8a4fe0; --amber:#d8930f; --blue:#3b82f6;
+  --chip-ok:#e3f4ea; --chip-ok-ink:#1d6a3e; --chip-warn:#fdf0d4; --chip-warn-ink:#8a5a05; --chip-bad:#fbe1df; --chip-bad-ink:#9b2620; --chip-crit:#ecdffc; --chip-crit-ink:#5b2aa6;
+  --shadow:0 1px 2px rgba(20,30,50,.08),0 6px 20px rgba(20,30,50,.08);
+  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --radius:8px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d1116; --panel:#161b22; --panel-2:#1d232c; --ink:#e6eaef; --muted:#97a2b0; --line:#2a323d;
+    --accent:#7aa8ff; --accent-ink:#0b1220; --accent-soft:#1c2a45;
+    --scene:#151a21; --scene-fog:#10141a;
+    --red:#ff6b62; --green:#4fd28a; --violet:#b48cff; --amber:#f4bd3c; --blue:#5da0ff;
+    --chip-ok:#153524; --chip-ok-ink:#7be3a6; --chip-warn:#3a2c0c; --chip-warn-ink:#f4c95d; --chip-bad:#3d1614; --chip-bad-ink:#ff8d85; --chip-crit:#2a1b45; --chip-crit-ink:#cbb0ff;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d1116; --panel:#161b22; --panel-2:#1d232c; --ink:#e6eaef; --muted:#97a2b0; --line:#2a323d;
+  --accent:#7aa8ff; --accent-ink:#0b1220; --accent-soft:#1c2a45;
+  --scene:#151a21; --scene-fog:#10141a;
+  --red:#ff6b62; --green:#4fd28a; --violet:#b48cff; --amber:#f4bd3c; --blue:#5da0ff;
+  --chip-ok:#153524; --chip-ok-ink:#7be3a6; --chip-warn:#3a2c0c; --chip-warn-ink:#f4c95d; --chip-bad:#3d1614; --chip-bad-ink:#ff8d85; --chip-crit:#2a1b45; --chip-crit-ink:#cbb0ff;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.45;overflow:hidden;-webkit-text-size-adjust:100%;overscroll-behavior:none}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#gl{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block;touch-action:none}
+#app{position:relative;z-index:1;height:100dvh;display:grid;grid-template-columns:296px minmax(0,1fr) 372px;grid-template-rows:50px minmax(0,1fr);pointer-events:none}
+#app>*{pointer-events:auto}
+
+/* ---------- top bar ---------- */
+#topbar{grid-column:1/4;display:flex;align-items:center;gap:14px;padding:0 14px;background:var(--panel);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:baseline;gap:10px;min-width:0}
+.brand-name{font-weight:600;font-size:16px;letter-spacing:-.01em}
+.brand-sub{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spacer{flex:1}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--panel-2)}
+.seg button{border:0;background:transparent;padding:5px 10px;font-size:12px;color:var(--muted)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on{background:var(--accent);color:var(--accent-ink)}
+.btn{border:1px solid var(--line);background:var(--panel-2);border-radius:6px;padding:5px 10px;font-size:12px;color:var(--ink)}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.only-mobile{display:none}
+
+/* ---------- panels ---------- */
+.panel{background:transparent;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;display:flex;flex-direction:column}
+.panel>*{flex:none}
+.panel .fill{flex:1;background:var(--panel);min-height:24px}
+.block{background:var(--panel)}
+.disclaimer{background:var(--panel)}
+#left{border-right:1px solid var(--line);grid-column:1;grid-row:2}
+#right{border-left:1px solid var(--line);grid-column:3;grid-row:2}
+#stage{grid-column:2;grid-row:2}
+.block{padding:12px 14px;border-bottom:1px solid var(--line)}
+.block h2{margin:0 0 8px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
+.block h2 .h2r{margin-left:auto;font-weight:400;letter-spacing:0;text-transform:none;font-family:var(--mono);font-size:11px}
+.row{display:flex;align-items:center;gap:8px}
+.ctl{display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto;gap:2px 8px;margin:6px 0}
+.ctl label{font-size:12px;color:var(--ink)}
+.ctl .val{font-family:var(--mono);font-size:11.5px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.ctl input[type=range]{grid-column:1/3;width:100%;margin:2px 0;accent-color:var(--accent);height:22px}
+.ctl .ends{grid-column:1/3;display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);margin-top:-4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--panel-2);border-radius:999px;padding:4px 10px;font-size:12px;line-height:1.2}
+.chip:hover{border-color:var(--accent)}
+.chip.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.chip.anim::before{content:'▶ ';font-size:9px}
+.chip.anim.on::before{content:'■ '}
+.note{color:var(--muted);font-size:11.5px;margin:6px 0 0}
+details.sub summary{cursor:pointer;font-size:12px;color:var(--muted);margin:4px 0;list-style:none;display:flex;align-items:center;gap:6px}
+details.sub summary::before{content:'▸';font-size:10px;transition:transform .15s}
+details.sub[open] summary::before{transform:rotate(90deg)}
+@media (prefers-reduced-motion: reduce){details.sub summary::before{transition:none}}
+
+/* layers */
+.lgroup{margin:4px 0 6px}
+.lgroup-h{display:flex;align-items:center;gap:6px;font-weight:500;font-size:12px}
+.lgroup-h input{margin:0}
+.lgroup-h .sw{width:10px;height:10px;border-radius:3px;flex:none}
+.lgroup-h .op{margin-left:auto;width:64px;height:14px;accent-color:var(--accent)}
+.litems{display:flex;flex-wrap:wrap;gap:3px 10px;padding:3px 0 0 18px}
+.litems label{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;color:var(--muted);cursor:pointer}
+.litems label input{margin:0}
+.litems label.hl{color:var(--ink)}
+
+/* ---------- stage ---------- */
+#stage{position:relative;min-width:0;min-height:0;overflow:hidden}
+#mainView{position:absolute;inset:0;cursor:grab;touch-action:none}
+#mainView.grab{cursor:grabbing}
+#mainView.arm{cursor:move}
+#hud{position:absolute;left:12px;top:10px;display:flex;flex-direction:column;gap:6px;pointer-events:none;touch-action:none;max-width:calc(100% - 24px)}
+#hudTitle{pointer-events:auto;cursor:grab;user-select:none;-webkit-user-select:none}
+#hudTitle .hud-mini{font-family:var(--mono);font-weight:400;letter-spacing:0;text-transform:none;color:var(--ink);margin-left:8px;display:none}
+#hudTitle .hud-tgl{margin-left:8px;color:var(--muted)}
+#hud.collapsed .hud-body{display:none}
+#hud.collapsed #hudTitle{margin:0}
+#hud.collapsed .hud-mini{display:inline}
+#hud.collapsed .hud-tgl{transform:rotate(-90deg);display:inline-block}
+.sheet-handle{display:none}
+#app.noleft{grid-template-columns:0 minmax(0,1fr) 372px}
+#app.noright{grid-template-columns:296px minmax(0,1fr) 0}
+#app.noleft.noright{grid-template-columns:0 minmax(0,1fr) 0}
+#app.noleft #left,#app.noright #right{display:none}
+#panelSeg button.on{background:var(--accent);color:var(--accent-ink)}
+.hudcard{background:color-mix(in srgb,var(--panel) 82%,transparent);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:var(--radius);padding:8px 10px;font-family:var(--mono);font-size:11.5px;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.5}
+.hudcard b{font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:2px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11px;color:var(--ink);pointer-events:none}
+.legend.mobile-legend{display:none}
+.lg{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.lg i{width:13px;height:8px;border-radius:2px;display:inline-block}
+#hint{position:absolute;right:12px;top:48px;font-size:11px;color:var(--muted);background:color-mix(in srgb,var(--panel) 82%,transparent);border:1px solid var(--line);border-radius:var(--radius);padding:5px 9px;pointer-events:none;max-width:300px;text-align:right}
+.hudcard .hload{display:block;margin-top:4px;color:var(--amber)}
+.hudcard .hload button{pointer-events:auto;border:1px solid var(--line);background:var(--panel-2);border-radius:4px;font:inherit;font-size:10.5px;padding:0 6px;margin-left:6px;color:var(--ink);cursor:pointer}
+/* Detail-Dock im 3D-Fenster */
+#dock{position:absolute;left:10px;right:10px;bottom:10px;background:color-mix(in srgb,var(--panel) 90%,transparent);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:10px;padding:6px 8px 8px;box-shadow:var(--shadow)}
+.dock-h{display:flex;align-items:center;gap:14px;min-height:22px;margin-bottom:6px}
+.dock-t{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.dock-t small{font-weight:400;letter-spacing:0;text-transform:none;margin-left:4px}
+.dock-h .legend{flex:1;min-width:0}
+.btn.mini{padding:2px 8px;font-size:11px;white-space:nowrap}
+.dock-row{display:flex;gap:8px}
+#dock.collapsed .dock-row{display:none}
+#dock.collapsed .dock-h{margin-bottom:0}
+.dview{flex:1;min-width:0}
+.dcap{display:flex;flex-direction:column;gap:2px;font-size:11.5px;margin-bottom:3px;min-width:0}
+.dcap b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;display:block}
+.dctl{display:flex;align-items:center;gap:6px;min-width:0}
+.dcap .dval{color:var(--muted);font-size:10.5px;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap;margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.peel{display:inline-flex;align-items:center;gap:2px;flex:none}
+.peel button{border:1px solid var(--line);background:var(--panel-2);border-radius:4px;width:20px;height:18px;font-size:12px;line-height:1;padding:0;color:var(--ink)}
+.peel button:hover{border-color:var(--accent)}
+.peel button:disabled{opacity:.35;cursor:default}
+.peel .pl{font-size:10px;color:var(--muted);white-space:nowrap;max-width:96px;overflow:hidden;text-overflow:ellipsis;padding:0 2px}
+.dvp{height:112px;border:1px solid var(--line);border-radius:var(--radius);background:var(--scene);position:relative;overflow:hidden}
+.dvp canvas.dvc{position:absolute;inset:0;width:100%;height:100%;display:block}
+.dview .dlabel{font-size:10px;color:var(--muted);margin-top:3px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tooltip{position:absolute;pointer-events:none;background:var(--ink);color:var(--panel);font-size:11.5px;padding:4px 8px;border-radius:5px;transform:translate(10px,-50%);white-space:nowrap;display:none;z-index:5}
+#labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lbl{position:absolute;transform:translate(-50%,-100%);font-size:10.5px;padding:1px 5px;border-radius:4px;background:color-mix(in srgb,var(--panel) 78%,transparent);color:var(--ink);border:1px solid var(--line);white-space:nowrap;margin-top:-6px}
+.lbl::after{content:'';position:absolute;left:50%;bottom:-5px;width:1px;height:5px;background:var(--muted)}
+#modeBar{position:absolute;right:12px;top:10px;display:flex;gap:6px}
+
+/* ---------- metrics ---------- */
+.metric{display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:6px 0;border-bottom:1px dashed var(--line)}
+.metric:last-child{border-bottom:0}
+.metric .mname{font-size:12px}
+.metric .mval{font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.metric .mbar{grid-column:1/3;height:5px;border-radius:3px;background:var(--panel-2);position:relative;overflow:hidden}
+.metric .mbar i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--green);transition:width .12s linear}
+@media (prefers-reduced-motion: reduce){.metric .mbar i{transition:none}}
+.metric .msub{grid-column:1/3;font-size:11px;color:var(--muted)}
+.metric.sub{padding:4px 0 4px 12px;border-bottom:0;border-left:2px solid var(--line);margin-left:2px}
+.metric.sub .mname{font-size:11.5px;color:var(--muted)}
+.metric.sub .mbar{height:4px}
+.mtgl{border:0;background:transparent;padding:0;font:inherit;font-size:11px;color:var(--accent);cursor:pointer;text-align:left}
+.mtgl:hover{text-decoration:underline}
+.msubs[hidden]{display:none}
+/* Akkordeon (Monitor „Speziell", Strukturgruppen) */
+.acc{display:flex;align-items:center;gap:8px;width:100%;border:0;background:transparent;padding:7px 0 5px;font:inherit;font-size:12px;color:var(--ink);cursor:pointer;text-align:left}
+.acc .acc-chev{font-size:10px;color:var(--muted);transition:transform .15s;flex:none}
+.acc[aria-expanded=true] .acc-chev{transform:rotate(90deg)}
+@media (prefers-reduced-motion: reduce){.acc .acc-chev{transition:none}}
+.acc .acc-t{min-width:0;line-height:1.3}
+.acc .acc-sub{display:block;font-size:10.5px;color:var(--muted);white-space:normal}
+.acc .acc-badge{margin-left:auto;flex:none}
+.acc-body[hidden]{display:none}
+#metrics .acc{border-top:1px dashed var(--line);margin-top:2px}
+#metrics .acc-body .metric:first-child{border-top:0}
+.lgrp{border-top:1px dashed var(--line);padding-bottom:2px}
+.lgrp:first-child{border-top:0}
+.lgrp[hidden]{display:none}
+.lgrp .acc{padding:6px 0 4px;color:var(--muted);font-weight:500}
+.lgrp .lg-n{font-family:var(--mono);font-size:11px;color:var(--muted);flex:none;margin-left:auto}
+.lgrp .lg-bar{width:46px;height:4px;border-radius:2px;background:var(--panel-2);overflow:hidden;flex:none}
+.lgrp .lg-bar i{display:block;height:100%;width:0}
+.lgrp .acc-body{display:flex;flex-direction:column;gap:4px;padding-bottom:4px}
+.stat{display:inline-block;font-size:10.5px;padding:1px 7px;border-radius:999px;font-weight:500;margin-left:6px;vertical-align:1px}
+.stat.ok{background:var(--chip-ok);color:var(--chip-ok-ink)}
+.stat.warn{background:var(--chip-warn);color:var(--chip-warn-ink)}
+.stat.bad{background:var(--chip-bad);color:var(--chip-bad-ink)}
+.stat.crit{background:var(--chip-crit);color:var(--chip-crit-ink)}
+#loadlist{display:flex;flex-direction:column;gap:0}
+.load{display:grid;grid-template-columns:1fr auto;gap:0 8px;font-size:12px;cursor:pointer;padding:3px 6px;border-radius:5px}
+.load[hidden]{display:none}
+.load .ln{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.load:hover{background:var(--panel-2)}
+.load .lv{font-family:var(--mono);font-size:11.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.load .lb{grid-column:1/3;height:4px;border-radius:2px;background:var(--panel-2);overflow:hidden}
+.load .lb i{display:block;height:100%}
+.empty{color:var(--muted);font-size:12px;font-style:italic}
+
+
+/* info */
+#info h3{margin:0 0 2px;font-size:14px;font-weight:600}
+#info .kind{font-size:11px;color:var(--muted);margin-bottom:6px}
+#info p{margin:4px 0;font-size:12px}
+#info p b{font-weight:600}
+#info .kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:12px;margin:6px 0}
+#info .kv span:nth-child(odd){color:var(--muted)}
+#info .kv span:nth-child(even){font-family:var(--mono);font-variant-numeric:tabular-nums}
+.disclaimer{font-size:10.5px;color:var(--muted);padding:10px 14px 16px}
+.ver{font-size:10px;color:var(--muted);padding:0 14px 12px;background:var(--panel);font-family:var(--mono)}
+.ver a{color:inherit}
+
+/* ---------- mobile ---------- */
+#tabbar{display:none}
+@media (max-width: 980px){
+  #app{grid-template-columns:1fr;grid-template-rows:46px minmax(0,1fr)}
+  #topbar{grid-column:1;padding:0 10px}
+  .brand-sub{display:none}
+  .only-mobile{display:inline-flex}
+  .no-mobile{display:none!important}
+  .panel{position:fixed;left:0;right:0;bottom:52px;height:var(--sheet-h,min(50dvh,520px));border:0;border-top:1px solid var(--line);border-radius:14px 14px 0 0;box-shadow:var(--shadow);transform:translateY(110%);transition:transform .22s ease;z-index:3;display:flex;overflow-x:hidden}
+  .sheet-handle{display:flex;align-items:center;gap:8px;padding:6px 10px 5px 12px;background:var(--panel);border-radius:14px 14px 0 0;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;position:sticky;top:0;z-index:2;border-bottom:1px solid var(--line)}
+  .sheet-handle .grip{position:absolute;left:50%;top:3px;width:36px;height:4px;margin-left:-18px;border-radius:2px;background:var(--line)}
+  .sheet-handle .sh-title{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;padding-top:4px}
+  .sheet-handle .sh-btn{border:1px solid var(--line);background:var(--panel-2);border-radius:5px;font-size:11px;padding:2px 8px;color:var(--ink);margin-top:4px}
+  .sheet-handle .sh-btn[data-act=peek]{margin-left:auto}
+  .panel.ghost .block,.panel.ghost .sheet-handle,.panel.ghost .fill,.panel.ghost .disclaimer{background:color-mix(in srgb,var(--panel) 22%,transparent)}
+  .panel.ghost{box-shadow:none}
+  .panel.ghost .ctl:not(.active),.panel.ghost h2,.panel.ghost .chips,.panel.ghost .note,.panel.ghost details,.panel.ghost .row,.panel.ghost .lgroup,.panel.ghost .sh-title,.panel.ghost .sh-btn{opacity:.18}
+  .panel.ghost .ctl.active{background:color-mix(in srgb,var(--panel) 85%,transparent);border-radius:8px;padding:4px 6px;margin:2px -6px}
+  body.sheet-open #dock{display:none}
+  @media (prefers-reduced-motion: reduce){.panel{transition:none}}
+  .panel.open{transform:none}
+  #left,#right{border-left:0;border-right:0}
+  .block[data-tab]{display:none}
+  .block[data-tab].show{display:block}
+  #tabbar{position:fixed;left:0;right:0;bottom:0;height:52px;display:flex;background:var(--panel);border-top:1px solid var(--line);z-index:4;padding-bottom:env(safe-area-inset-bottom)}
+  #tabbar button{flex:1;border:0;background:transparent;font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+  #tabbar button.on{color:var(--accent);font-weight:600}
+  #stage{grid-column:1;grid-row:2;margin-bottom:calc(52px + env(safe-area-inset-bottom))}
+  #left,#right{grid-column:1;grid-row:2}
+  #hud{left:8px;top:50px;max-width:calc(100% - 16px)}
+  #hudTitle{cursor:pointer}
+  .hudcard{white-space:normal}
+  .legend.mobile-legend{display:flex;pointer-events:auto;margin-top:8px}
+  .hudcard{font-size:10.5px;padding:6px 8px}
+  #hint{display:none}
+  #modeBar{right:8px;top:8px}
+  .hudcard .hud-more{display:none}
+  #hud{max-width:calc(100% - 16px)}
+  #topbar{gap:8px}
+  .seg button{padding:5px 8px;font-size:11.5px}
+  #btnNeutral{display:none}
+  #dock{left:6px;right:6px;bottom:6px;padding:4px 6px 6px}
+  .dock-h .legend{display:none}
+  .dock-row{overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .dview{flex:0 0 172px}
+  .dvp{height:104px}
+  .peel .pl{display:none}
+}
+@media (max-width: 480px){
+  .brand-name{font-size:13px}
+  .seg button{padding:5px 6px}
+  #topbar{gap:6px;padding:0 8px}
+  #shareBox{top:50px;left:8px;right:8px;width:auto}
+}
+/* share box, language */
+#btnShare{display:inline-flex;align-items:center;gap:6px}
+#btnShare svg{flex:none}
+#btnLang{font-family:var(--mono);font-weight:500;letter-spacing:.04em;padding:5px 8px}
+#shareBox{position:fixed;right:14px;top:56px;z-index:6;width:min(460px,calc(100vw - 28px));background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:10px 12px 8px}
+#shareBox[hidden]{display:none}
+.sb-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.sb-h b{font-size:12px;font-weight:600}
+#shareUrl{width:100%;font-family:var(--mono);font-size:11px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel-2);color:var(--ink);min-width:0}
+.sb-r{margin-top:8px;flex-wrap:wrap}
+#shareMsg{font-size:11.5px;color:var(--green);margin:0}
+.brand{min-width:0;flex-shrink:1}
+.brand-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+</style>
+
+<div id="app">
+  <header id="topbar">
+    <div class="brand"><span class="brand-name" data-i18n="title">Schulterlabor</span><span class="brand-sub" data-i18n="sub">Rechte Schulter · Bewegungs- und Engstellenmodell</span></div>
+    <div class="spacer"></div>
+    <div class="seg" id="viewSeg" aria-label="Ansicht">
+      <button data-view="front" data-i18n="vFront">Vorne</button><button data-view="side" data-i18n="vSide">Seite</button><button data-view="back" data-i18n="vBack">Hinten</button><button data-view="top" data-i18n="vTop">Oben</button>
+    </div>
+    <button class="btn" id="btnNeutral" data-i18n="neutral" data-i18n-title="neutralT" title="Arm in Neutralstellung">Neutral</button>
+    <span class="seg no-mobile" id="panelSeg" aria-label="Bedienfelder"><button id="btnLeftPanel" class="on" data-i18n="pLeft" data-i18n-title="pLeftT" title="Linkes Bedienfeld ein-/ausblenden">◧ Bewegung</button><button id="btnRightPanel" class="on" data-i18n="pRight" data-i18n-title="pRightT" title="Rechtes Bedienfeld ein-/ausblenden">Monitor ◨</button></span>
+    <button class="btn" id="btnShare" data-i18n-title="shareT" title="Link zu genau dieser Einstellung kopieren oder teilen" aria-haspopup="dialog"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5"/></svg><span class="no-mobile" data-i18n="share">Link teilen</span></button>
+    <button class="btn" id="btnLang" data-i18n-title="langT" title="Switch to English" aria-label="Language">EN</button>
+  </header>
+
+  <aside id="left" class="panel">
+    <div class="sheet-handle" data-panel="left"><span class="grip"></span><span class="sh-title"></span><button class="sh-btn" data-act="peek" data-i18n-title="smallT" title="Bedienfeld klein machen – Modell sichtbar">Klein</button><button class="sh-btn" data-act="close" data-i18n-title="closeT" title="Bedienfeld schließen">✕</button></div>
+    <section class="block" id="blk-move" data-tab="move">
+      <h2><span data-i18n="hMove">Bewegung</span> <span class="h2r" id="poseSummary"></span></h2>
+      <div class="ctl"><label for="sElev" data-i18n="lElev">Elevation (Arm heben)</label><span class="val" id="vElev">0°</span><input type="range" id="sElev" min="0" max="180" value="0" step="1"><div class="ends"><span data-i18n="eHang">hängend</span><span data-i18n="eOver">über Kopf</span></div></div>
+      <div class="ctl"><label for="sPlane" data-i18n="lPlane">Bewegungsebene</label><span class="val" id="vPlane">0°</span><input type="range" id="sPlane" min="-90" max="150" value="0" step="1"><div class="ends"><span data-i18n="ePlaneL">Extension</span><span data-i18n="ePlaneR">Abduktion · Flexion · Adduktion</span></div></div>
+      <div class="ctl"><label for="sRot" data-i18n="lRot">Rotation Oberarm</label><span class="val" id="vRot">0°</span><input type="range" id="sRot" min="-110" max="110" value="0" step="1"><div class="ends"><span data-i18n="eER">Außenrotation</span><span data-i18n="eIR">Innenrotation</span></div></div>
+      <div class="ctl"><label for="sElbow" data-i18n="lElbow">Ellbogen</label><span class="val" id="vElbow">0°</span><input type="range" id="sElbow" min="0" max="145" value="0" step="1"><div class="ends"><span data-i18n="eExt">gestreckt</span><span data-i18n="eFlex">gebeugt</span></div></div>
+      <div class="ctl"><label for="sPro" data-i18n="lPro">Unterarm / Hand drehen</label><span class="val" id="vPro">0°</span><input type="range" id="sPro" min="-85" max="80" value="0" step="1"><div class="ends"><span data-i18n="eSup">Supination (Handfläche vor)</span><span data-i18n="ePro">Pronation</span></div></div>
+      <details class="sub" id="scapDetails"><summary data-i18n="scapSum">Skapula &amp; Klavikula (automatischer Rhythmus)</summary>
+        <div class="kvs" id="scapReadout" style="font-family:var(--mono);font-size:11.5px;color:var(--muted);line-height:1.6"></div>
+        <p class="note" data-i18n="scapNote">Skapulothorakaler Rhythmus ca. 2:1 (glenohumeral : skapulothorakal), mit posteriorer Kippung und Außenrotation bei Elevation, Protraktion bei Adduktion vor dem Körper.</p>
+      </details>
+    </section>
+    <section class="block" id="blk-presets" data-tab="move">
+      <h2 data-i18n="hPresets">Klinische Positionen &amp; Tests</h2>
+      <div class="chips" id="presets"></div>
+      <h2 style="margin-top:12px" data-i18n="hPhysio">Physiotherapie &amp; Training</h2>
+      <div class="chips" id="physio"></div>
+      <p class="note" data-i18n="physioNote">Mit Last (Band, Hantel, Wand) – die Kraft an der Hand fließt in Haltearbeit und Gelenkreaktionskraft ein. Ablaufpresets (▶) laufen einmal durch, Schleifen (↻) bis zum erneuten Antippen.</p>
+      <h2 style="margin-top:12px" data-i18n="hAnims">Bewegungsabläufe</h2>
+      <div class="chips" id="anims"></div>
+      <div class="row" style="margin-top:8px;gap:12px;flex-wrap:wrap"><label style="display:inline-flex;gap:6px;align-items:center;font-size:12px"><input type="checkbox" id="cbLoop" checked> <span data-i18n="loop">Endlos wiederholen (gilt für alle Bewegungsabläufe ▶ ↻)</span></label></div>
+      <div class="ctl" style="margin-top:6px"><label for="sSpeed" data-i18n="speed">Tempo</label><span class="val" id="vSpeed">1,0×</span><input type="range" id="sSpeed" min="0.25" max="2" step="0.25" value="1"></div>
+    </section>
+    <section class="block" id="blk-patho" data-tab="move">
+      <h2 data-i18n="hPatho">Pathologie simulieren</h2>
+      <div class="ctl"><label for="sMigr" data-i18n="lMigr">Humeruskopf-Hochstand (z. B. Manschettenruptur)</label><span class="val" id="vMigr">0 mm</span><input type="range" id="sMigr" min="0" max="6" step="0.5" value="0"></div>
+      <div class="ctl"><label for="sGird" data-i18n="lGird">Hintere Kapselverkürzung (GIRD)</label><span class="val" id="vGird">0 %</span><input type="range" id="sGird" min="0" max="100" step="5" value="0"></div>
+      <div class="ctl"><label for="sFrozen" data-i18n="lFrozen">Kapselschrumpfung gesamt (Frozen Shoulder)</label><span class="val" id="vFrozen">0 %</span><input type="range" id="sFrozen" min="0" max="100" step="5" value="0"></div>
+      <p class="note" data-i18n="pathoNote">Wirkt auf Bewegungsgrenzen, Kapselspannung und den subakromialen Abstand.</p>
+    </section>
+    <section class="block" id="blk-layers" data-tab="layers">
+      <h2><span data-i18n="hLayers">Schichten</span> <span class="h2r"><button class="btn" id="btnLayersBones" style="padding:2px 7px;font-size:11px" data-i18n="lyBones">nur Knochen</button> <button class="btn" id="btnLayersCuff" style="padding:2px 7px;font-size:11px" data-i18n="lyCuff">Manschette</button> <button class="btn" id="btnLayersAll" style="padding:2px 7px;font-size:11px" data-i18n="lyAll">alles</button></span></h2>
+      <div id="layers"></div>
+      <div class="legend mobile-legend"><span class="lg"><i style="background:var(--red)"></i><span data-i18n="lgStretched">gedehnt</span></span><span class="lg"><i style="background:#b5766a"></i><span data-i18n="lgNeutral">neutral</span></span><span class="lg"><i style="background:var(--green)"></i><span data-i18n="lgShort">verkürzt / entspannt</span></span><span class="lg"><i style="background:var(--violet)"></i><span data-i18n="lgImp">eingeengt</span></span><span class="lg"><i style="background:#e9dfcf"></i><span data-i18n="lgBone">Knochen</span></span><span class="lg"><i style="background:#efe7dc;border:1px solid #bbb"></i><span data-i18n="lgTendon">Sehne / Band</span></span><span class="lg"><i style="background:#8fd3ff"></i><span data-i18n="lgBursa">Bursa</span></span><span class="lg"><i style="background:#f4d35e"></i><span data-i18n="lgNerve">Nerv</span></span></div>
+      <div class="row" style="margin-top:8px;gap:12px"><label style="display:inline-flex;gap:6px;align-items:center;font-size:12px"><input type="checkbox" id="cbLabels"> <span data-i18n="labels">Beschriftungen</span></label><label style="display:inline-flex;gap:6px;align-items:center;font-size:12px"><input type="checkbox" id="cbStrain" checked> <span data-i18n="strain">Dehnungsfarben</span></label></div>
+    </section>
+    <div class="disclaimer no-mobile" data-i18n="disc1">Vereinfachtes biomechanisches Lehrmodell (Landmarken- und Fadenmodell, Wrapping um den Humeruskopf, skapulothorakaler Rhythmus). Kein Diagnoseinstrument – Beschwerden bitte ärztlich/physiotherapeutisch abklären.</div>
+    <div class="fill"></div>
+  </aside>
+
+  <main id="stage">
+    <div id="mainView" class="viewport" aria-label="3D-Ansicht der rechten Schulter" data-i18n-aria="aria3d"></div>
+    <div id="labels"></div>
+    <div id="hud"><div class="hudcard" id="hudPose"><b id="hudTitle" data-i18n-title="hudT" title="Antippen: ein-/ausklappen · Ziehen: verschieben"><span data-i18n="hudTitle">Position</span><span class="hud-mini" id="hudMini"></span><span class="hud-tgl">▾</span></b><div class="hud-body" id="hudBody"></div></div></div>
+    <div id="modeBar"><div class="seg" id="modeSeg"><button data-mode="arm" class="on" data-i18n="mArm" data-i18n-title="mArmT" title="Ziehen am Arm bewegt den Arm">Arm bewegen</button><button data-mode="rot" data-i18n="mRot" data-i18n-title="mRotT" title="Ziehen am Arm rotiert den Oberarm (Innen-/Außenrotation)">Rotieren</button><button data-mode="orbit" data-i18n="mCam" data-i18n-title="mCamT" title="Ziehen dreht nur die Kamera">Kamera</button></div></div>
+    <div id="hint" data-i18n="hint">Ziehen am Arm: bewegen · Ziehen im Leeren: Kamera drehen · Rad/Pinch: Zoom · Klick/Tipp: Struktur-Info</div>
+    <div id="dock">
+      <div class="dock-h"><span class="dock-t"><span data-i18n="dockT">Detailansichten</span><small data-i18n="dockSub">synchron zur Bewegung</small></span><div class="legend"><span class="lg"><i style="background:var(--red)"></i><span data-i18n="lgStretched">gedehnt</span></span><span class="lg"><i style="background:#b5766a"></i><span data-i18n="lgNeutral">neutral</span></span><span class="lg"><i style="background:var(--green)"></i><span data-i18n="lgShort">verkürzt / entspannt</span></span><span class="lg"><i style="background:var(--violet)"></i><span data-i18n="lgImp">eingeengt</span></span><span class="lg"><i style="background:#e9dfcf"></i><span data-i18n="lgBone">Knochen</span></span><span class="lg"><i style="background:#efe7dc;border:1px solid #bbb"></i><span data-i18n="lgTendon">Sehne / Band</span></span><span class="lg"><i style="background:#8fd3ff"></i><span data-i18n="lgBursa">Bursa</span></span><span class="lg"><i style="background:#f4d35e"></i><span data-i18n="lgNerve">Nerv</span></span></div><button class="btn mini" id="dockToggle" aria-expanded="true">Ausblenden</button></div>
+      <div class="dock-row">
+      <div class="dview"><div class="dcap"><b data-i18n="dv1">Subakromialraum</b><div class="dctl"><span class="peel"><button data-dv="dv1" data-d="1" title="weniger Schichten">−</button><span class="pl" id="dv1pl"></span><button data-dv="dv1" data-d="-1" title="mehr Schichten">+</button></span><span class="dval" id="dv1val"></span></div></div><div class="dvp viewport" id="dv1"></div><div class="dlabel" data-i18n="dv1l">Schulterdach · Supraspinatussehne · Bursa</div></div>
+      <div class="dview"><div class="dcap"><b data-i18n="dv2">Kapsel &amp; Labrum</b><div class="dctl"><span class="peel"><button data-dv="dv2" data-d="1" title="weniger Schichten">−</button><span class="pl" id="dv2pl"></span><button data-dv="dv2" data-d="-1" title="mehr Schichten">+</button></span><span class="dval" id="dv2val"></span></div></div><div class="dvp viewport" id="dv2"></div><div class="dlabel" data-i18n="dv2l">von lateral, Humeruskopf aufgeschnitten</div></div>
+      <div class="dview"><div class="dcap"><b data-i18n="dv3">Bizepssehne &amp; Intervall</b><div class="dctl"><span class="peel"><button data-dv="dv3" data-d="1" title="weniger Schichten">−</button><span class="pl" id="dv3pl"></span><button data-dv="dv3" data-d="-1" title="mehr Schichten">+</button></span><span class="dval" id="dv3val"></span></div></div><div class="dvp viewport" id="dv3"></div><div class="dlabel" data-i18n="dv3l">Sulcus · Coracoid · Subscapularis</div></div>
+      <div class="dview"><div class="dcap"><b data-i18n="dv4">Skapula &amp; Rücken</b><div class="dctl"><span class="peel"><button data-dv="dv4" data-d="1" title="weniger Schichten">−</button><span class="pl" id="dv4pl"></span><button data-dv="dv4" data-d="-1" title="mehr Schichten">+</button></span><span class="dval" id="dv4val"></span></div></div><div class="dvp viewport" id="dv4"></div><div class="dlabel" data-i18n="dv4l">Blick von hinten</div></div>
+      </div>
+    </div>
+    <div id="tooltip"></div>
+  </main>
+
+  <aside id="right" class="panel">
+    <div class="sheet-handle" data-panel="right"><span class="grip"></span><span class="sh-title"></span><button class="sh-btn" data-act="peek" data-i18n-title="smallT" title="Bedienfeld klein machen – Modell sichtbar">Klein</button><button class="sh-btn" data-act="close" data-i18n-title="closeT" title="Bedienfeld schließen">✕</button></div>
+    <section class="block" id="blk-metrics" data-tab="metrics">
+      <h2 data-i18n="hMetrics">Engstellen-Monitor</h2>
+      <div id="metrics"></div>
+    </section>
+    <section class="block" id="blk-load" data-tab="metrics">
+      <h2 data-i18n="hLoad">Belastete Strukturen in dieser Position</h2>
+      <div id="loadlist"></div>
+      <p class="note" id="loadNote" data-i18n="loadNote">Feste alphabetische Reihenfolge; Strukturen ohne nennenswerte Belastung werden ausgeblendet. Rot = gedehnt/gespannt, violett = eingeengt, gelb = Haltearbeit gegen Schwerkraft/Last (Schätzung).</p>
+    </section>
+    <section class="block" id="blk-info" data-tab="info">
+      <h2 data-i18n="hInfo">Struktur</h2>
+      <div id="info"><p class="empty">Klicke oder tippe auf einen Muskel, eine Sehne, ein Band oder einen Knochen.</p></div>
+    </section>
+    <div class="disclaimer" data-i18n="disc2">Vereinfachtes biomechanisches Lehrmodell. Kein Diagnoseinstrument.</div>
+    <div class="ver"><a href="https://github.com/joergs-git/anatomy-lab" target="_blank" rel="noopener">anatomy-lab</a> · Schulterlabor v__VERSION__</div>
+    <div class="fill"></div>
+  </aside>
+
+  <nav id="tabbar" class="only-mobile">
+    <button data-tab="move" data-i18n="tabMove">Bewegung</button><button data-tab="layers" data-i18n="tabLayers">Schichten</button><button data-tab="metrics" data-i18n="tabMetrics">Engstellen</button><button data-tab="info" data-i18n="tabInfo">Info</button>
+  </nav>
+</div>
+<div id="shareBox" hidden role="dialog" aria-labelledby="shareTitle">
+  <div class="sb-h"><b id="shareTitle" data-i18n="shareTitle">Link zu dieser Einstellung</b><button class="btn mini" id="shareClose" data-i18n-title="close" title="Schließen">✕</button></div>
+  <input id="shareUrl" readonly spellcheck="false" aria-label="URL">
+  <div class="row sb-r"><button class="btn primary" id="shareCopy" data-i18n="copy">Kopieren</button><button class="btn" id="shareNative" data-i18n="shareNative" hidden>Teilen…</button><span id="shareMsg"></span></div>
+  <p class="note" id="shareHint" data-i18n="shareHint">Der Link enthält alles, was vom Standard abweicht: Position bzw. laufender Ablauf, Last, Tempo, Schichten, Transparenz, Detailstufen, Kamera (Drehung, Zoom), Pathologie, Sprache. Wer ihn öffnet, sieht genau diese Ansicht.</p>
+</div>
+<canvas id="gl"></canvas>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>if(!window.THREE){document.write('<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"><\/script>');}</script>
