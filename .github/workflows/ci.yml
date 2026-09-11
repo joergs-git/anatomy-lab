@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Build
+        run: npm run build
+      - name: index.html muss dem Quellstand entsprechen (vor dem Commit `npm run build` ausführen)
+        run: |
+          if ! git diff --quiet -- index.html; then
+            echo "::error::index.html ist nicht aktuell. Bitte 'npm run build' ausführen und index.html mit committen."
+            git --no-pager diff --stat -- index.html
+            exit 1
+          fi
+      - name: Modell-Invarianten
+        run: npm test
