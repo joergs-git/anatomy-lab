@@ -87,4 +87,4 @@ Alle Dateien werden in eine gemeinsame IIFE konkateniert (Reihenfolge in `module
 
 ## Danksagung
 
-three.js (MIT), IBM Plex (OFL). Entwickelt von Joerg Klaas mit Claude.
+three.js (MIT), IBM Plex (OFL). Entwickelt von joergsflow.
