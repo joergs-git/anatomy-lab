@@ -15,7 +15,7 @@ Ziel: reine Verschiebung, kein Verhaltensunterschied. Nachweis: `npm run check` 
 - [x] `module.json` Reihenfolge, `tests/harness.mjs` liest Presets aus `presets.js`
 - [x] Verifikation: check + shots + Pixelvergleich
 - [x] Doku: CLAUDE.md (Architektur), HANDOVER §9 (Stand, Restkopplungen), README (Struktur), LESSONS bei Bedarf
-- [ ] Version 0.9.1, Commit(s), Push, Merge nach `main`
+- [x] Version 0.9.1, Commit(s), Push, Merge nach `main`
 
 ## Results
 
