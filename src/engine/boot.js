@@ -29,6 +29,8 @@ const $=id=>document.getElementById(id);
   const pc=$('poseCtls');
   pc.innerHTML=POSE_PARAMS.map(p=>p.type==='check'
     ?`<div class="ctl check"><label for="ps_${p.key}"><input type="checkbox" id="ps_${p.key}"${p.def?' checked':''}> <span data-i18n="${p.label}"></span></label><span class="val" id="pv_${p.key}"></span></div>`
+    :p.type==='seg'
+    ?`<div class="ctl"><label data-i18n="${p.label}"></label><span class="val" id="pv_${p.key}"></span><div class="seg pseg" id="ps_${p.key}">${p.options.map(([v,k])=>`<button type="button" data-v="${v}"${v===p.def?' class="on"':''} data-i18n="${k}"></button>`).join('')}</div></div>`
     :`<div class="ctl"><label for="ps_${p.key}" data-i18n="${p.label}"></label><span class="val" id="pv_${p.key}"></span><input type="range" id="ps_${p.key}" min="${p.min}" max="${p.max}" value="${p.def}" step="${p.step}"><div class="ends"><span data-i18n="${p.ends[0]}"></span><span data-i18n="${p.ends[1]}"></span></div></div>`).join('');
   if(MOD.readout) pc.insertAdjacentHTML('beforeend',`<details class="sub" id="readoutDetails"><summary data-i18n="${MOD.readout.sum}"></summary><div class="kvs" id="readout" style="font-family:var(--mono);font-size:11.5px;color:var(--muted);line-height:1.6"></div><p class="note" data-i18n="${MOD.readout.note}"></p></details>`);
   const pa=$('pathoCtls');

@@ -10,8 +10,10 @@ const qAxis = (axis,deg)=>new THREE.Quaternion().setFromAxisAngle(axis.clone().n
 const qMul = (...qs)=>qs.reduce((a,b)=>a.multiply(b),new THREE.Quaternion());
 
 /* Kürzester Weg um eine Kugel (Muskel-/Sehnen-Wrapping, Garner & Pandy).
-   Liefert Zwischenpunkte auf dem Bogen oder null, wenn die Strecke A-B die Kugel nicht schneidet. */
-function wrapSphere(A,B,C,r){
+   Liefert Zwischenpunkte auf dem Bogen oder null, wenn die Strecke A-B die Kugel nicht schneidet.
+   side (optional, Weltrichtung): die Umlenkung muss auf dieser Seite der Kugel liegen (ein Muskel wechselt nicht die Gelenkseite) – läuft die
+   Strecke auf der falschen Seite am Mittelpunkt vorbei, wird sie über einen Stützpunkt auf der richtigen Seite geführt (zwei Teilbögen). */
+function wrapSphere(A,B,C,r,side){
   const a=A.clone().sub(C), b=B.clone().sub(C);
   const la=a.length(), lb=b.length();
   if(la<=r*1.001||lb<=r*1.001) return null;
@@ -19,6 +21,11 @@ function wrapSphere(A,B,C,r){
   const t=clamp(-a.dot(ab)/L2,0,1);
   const closest=A.clone().addScaledVector(ab,t);
   if(closest.distanceTo(C)>=r) return null;
+  if(side){
+    const abh=ab.clone().normalize(); const n=side.clone().sub(abh.multiplyScalar(side.dot(abh)));
+    if(n.lengthSq()>1e-6){ n.normalize(); const rad=closest.clone().sub(C); const rl=rad.length();
+      if(rl<1e-6||rad.dot(n)/rl<0.3){ const S=C.clone().addScaledVector(n,r*1.02); return [...(wrapSphere(A,S,C,r)||[]),S,...(wrapSphere(S,B,C,r)||[])]; } }
+  }
   const e1=a.clone().normalize();
   let e2=b.clone().sub(e1.clone().multiplyScalar(b.dot(e1)));
   if(e2.lengthSq()<1e-8){ e2=V3(0,1,0).cross(e1); if(e2.lengthSq()<1e-6) e2=V3(1,0,0).cross(e1); }
@@ -41,7 +48,7 @@ function wrapPath(items,spheres){
     const A=out[out.length-1], B=items[i];
     let inserted=null;
     for(const s of spheres){
-      const arc=wrapSphere(A.p,B.p,s.c,s.r);
+      const arc=wrapSphere(A.p,B.p,s.c,s.r,s.side);
       if(arc){ inserted=arc; break; }
     }
     if(inserted){

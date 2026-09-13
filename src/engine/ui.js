@@ -5,12 +5,15 @@ const SL={},VL={}; for(const p of POSE_PARAMS){ SL[p.key]=$('ps_'+p.key); VL[p.k
 let syncing=false;
 function syncSliders(){
   syncing=true;
-  for(const p of POSE_PARAMS){ const el=SL[p.key]; if(p.type==='check'){ el.checked=pose[p.key]>=0.5; continue; } const v=Math.round(pose[p.key]); if(+el.value!==v) el.value=v; }
+  for(const p of POSE_PARAMS){ const el=SL[p.key]; if(p.type==='check'){ el.checked=pose[p.key]>=0.5; continue; } const v=Math.round(pose[p.key]);
+    if(p.type==='seg'){ el.querySelectorAll('button').forEach(b=>b.classList.toggle('on',+b.dataset.v===v)); continue; } if(+el.value!==v) el.value=v; }
   for(const p of POSE_PARAMS){ VL[p.key].textContent=p.text(pose); }
   for(const p of POSE_PARAMS){ if(!p.range) continue; const r=p.range(pose); const el=SL[p.key]; if(r.min!==undefined) el.min=Math.round(r.min); if(r.max!==undefined) el.max=Math.round(r.max); }
   syncing=false;
 }
-for(const p of POSE_PARAMS){ SL[p.key].addEventListener(p.type==='check'?'change':'input',()=>{ if(syncing) return; stopAnim(); const o={}; o[p.key]=p.type==='check'?(SL[p.key].checked?1:0):+SL[p.key].value; setPose(o); }); }
+for(const p of POSE_PARAMS){
+  if(p.type==='seg'){ SL[p.key].querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{ stopAnim(); const o={}; o[p.key]=+b.dataset.v; setPose(o); })); continue; }
+  SL[p.key].addEventListener(p.type==='check'?'change':'input',()=>{ if(syncing) return; stopAnim(); const o={}; o[p.key]=p.type==='check'?(SL[p.key].checked?1:0):+SL[p.key].value; setPose(o); }); }
 $('btnNeutral').addEventListener('click',()=>runPreset(PRESETS[0]));
 // Pathologie (Regler in Anzeigeeinheit, Zustand in Modelleinheit: sliderScale)
 const PL={}; for(const p of PATHO_PARAMS) PL[p.key]=$('pp_'+p.key);
