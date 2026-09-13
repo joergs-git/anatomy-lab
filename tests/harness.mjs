@@ -28,9 +28,23 @@ export function loadModel(moduleId = 'shoulder') {
       if(opts.load){ Object.assign(EXT,opts.load); EXT.F=V3(opts.load.F[0],opts.load.F[1],opts.load.F[2]); }
       const rh=solvePose(p,fr); evaluate(fr);
       const strain={}; for(const s of STRUCT){ if(!s.surface&&!s.static) strain[s.id]=strainOf(s.id); }
-      return {pose:p,rh:Object.assign({},rh),M:Object.assign({},EVAL.metrics),act:Object.assign({},EVAL.act),strain};
+      const fasL={}; for(const k in EVAL.fas) fasL[k]=EVAL.fas[k].L;
+      return {pose:p,rh:Object.assign({},rh),M:Object.assign({},EVAL.metrics),act:Object.assign({},EVAL.act),strain,fasL};
     }
-    return Object.assign({evalPose,clampPose,MODULE,PRESETS:MODULE.presets,ANIMS:MODULE.anims,PHYSIO:MODULE.physio,STRUCT,STRUCT_BY_ID,LAYER_GROUPS,AN,poseParams,pathoParams},MODULE.testing||{});`;
+    /* Knochenprimitive aufzeichnen (Ellipsoide, Röhren, Kugeln je Rahmen) – für Ansatzprüfungen ohne Szene */
+    function recordBones(){
+      const st=staticTube; const prims=[];
+      staticTube=(pts,radii)=>({kind:'tube',pts:pts.map(p=>p.clone()),radii:Array.isArray(radii)?radii.slice():pts.map(()=>radii),rotation:{y:0},material:{userData:{}}});
+      const G={}; for(const k in frames) G[k]={scale:{x:1},parent:{add(){}}};
+      const ctx={G,MAT:{context:{},contextSolid:{},bursa:{clone(){ return {userData:{}}; },userData:{}}},boneMat:()=>({}),pickables:[],BONES:{},
+        ell:(c,r)=>({kind:'ell',c:c.clone(),r:r.clone(),rotation:{y:0},material:{userData:{}}}),
+        addBone:(g,mesh,id)=>{ const f=Object.keys(G).find(k=>G[k]===g);
+          if(mesh.kind) prims.push({f,id,kind:mesh.kind,c:mesh.c,r:mesh.r,pts:mesh.pts,radii:mesh.radii,ry:mesh.rotation.y});
+          else if(mesh.geometry&&mesh.geometry.parameters&&mesh.geometry.parameters.radius!==undefined) prims.push({f,id,kind:'ell',c:V3(),r:V3(1,1,1).multiplyScalar(mesh.geometry.parameters.radius),ry:0}); } };
+      try{ MODULE.buildBones(ctx); } finally { staticTube=st; }
+      return prims;
+    }
+    return Object.assign({evalPose,clampPose,recordBones,MODULE,PRESETS:MODULE.presets,ANIMS:MODULE.anims,PHYSIO:MODULE.physio,STRUCT,STRUCT_BY_ID,LAYER_GROUPS,AN,poseParams,pathoParams},MODULE.testing||{});`;
   const THREE = THREE_NS.default || THREE_NS;
   return new Function('THREE', body)(THREE);
 }

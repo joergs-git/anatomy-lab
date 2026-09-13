@@ -1,13 +1,13 @@
 /* ===================== Bein: klinische Positionen, Bewegungsabläufe, Übungen =====================
    Reihenfolge nie ändern, neue Einträge nur anhängen – die Position in PRESETS+ANIMS+PHYSIO (RUN_LIST) steckt als Basis-36-Index in Kurz-Links.
    Pose-Felder, die fehlen, gelten als 0 (wt: 50, ground: 1 werden hier immer angegeben). */
-const STAND={hipF:0,hipA:0,hipR:0,knee:0,tibR:0,valg:0,ankle:0,sub:0,wt:50,ground:1};
+const STAND={hipF:0,hipA:0,hipR:0,knee:0,tibR:0,valg:0,ankle:0,sub:0,wt:50,ground:1,tilt:0,other:0};   // other: 0 automatisch, 1 gespiegelt, 2 abgehoben, 3 hinten am Boden, 4 vorn gestreckt
 const P=o=>Object.assign({},STAND,o);
 const PRESETS=[
  {id:'stand',name:'Stand',pose:P({})},
  {id:'squatPar',name:'Kniebeuge parallel',pose:P({hipF:75,knee:100,ankle:25})},
  {id:'squatDeep',name:'Kniebeuge tief',pose:P({hipF:102,knee:140,ankle:38})},
- {id:'lunge',name:'Ausfallschritt (vorderes Bein)',pose:P({hipF:72,knee:90,ankle:18,wt:70})},
+ {id:'lunge',name:'Ausfallschritt (vorderes Bein)',pose:P({hipF:72,knee:90,ankle:18,wt:70,other:3})},
  {id:'stair',name:'Treppe auf ▶',pose:P({hipF:50,knee:65,ankle:15,wt:100}),sweep:{hipF:5,knee:5,ankle:0}},
  {id:'landing',name:'Landung nach Sprung',pose:P({hipF:33,knee:45,ankle:12,valg:6,wt:100})},
  {id:'cutting',name:'Cutting / Pivot (Valgus + Innenrotation)',pose:P({hipF:20,knee:20,valg:12,tibR:15,wt:100})},
@@ -19,6 +19,13 @@ const PRESETS=[
  {id:'lachman',name:'Lachman-Position (25°)',pose:P({knee:25,ground:0})},
  {id:'drawer',name:'Schubladentest (90°, sitzend)',pose:P({hipF:85,knee:90,ground:0})},
  {id:'slump',name:'Slump (Nervendehnung)',pose:P({hipF:85,knee:0,ankle:20,sub:15,ground:0})},
+ /* nur anhängen */
+ {id:'fadir',name:'Hüftimpingement-Test (FADIR)',pose:P({hipF:90,hipA:-15,hipR:25,knee:90,ground:0})},
+ {id:'trend',name:'Einbeinstand mit Beckenabsinken (Trendelenburg)',pose:P({hipA:-12,knee:5,wt:100,other:2})},
+ {id:'antTilt',name:'Hohlkreuz: Becken nach vorn gekippt',pose:P({tilt:18})},
+ {id:'postTilt',name:'Flachrücken: Becken nach hinten gekippt',pose:P({tilt:-14,knee:8})},
+ {id:'pronation',name:'Knick-Senkfuß: Pronation → Tibia-Innenrotation → Valgus',pose:P({sub:-15,valg:8,knee:12})},
+ {id:'thomas',name:'Thomas-Test (Hüftbeuger-Dehnung)',pose:P({hipF:-15,knee:60,tilt:-10,ground:0})},
 ];
 const ANIMS=[
  {id:'squatCycle',name:'Kniebeuge 0–140°',from:P({}),to:P({hipF:102,knee:140,ankle:38}),dur:5200},
@@ -34,8 +41,10 @@ const PHYSIO=[
  {id:'legExt',name:'Beinstrecker 15 kg ▶',pose:P({hipF:90,knee:90,ground:0}),sweep:{knee:0},load:{F:[0,-147,0],at:'foot',fixHip:true,label:'Maschine 15 kg am Unterschenkel, Oberschenkel aufliegend'}},
  {id:'legCurl',name:'Beinbeuger 10 kg ▶',pose:P({hipF:0,knee:0,ground:0}),sweep:{knee:100},load:{F:[0,-98,0],at:'foot',fixHip:true,label:'Maschine 10 kg am Unterschenkel, Bauchlage'}},
  {id:'calfRaiseW',name:'Wadenheben mit 20 kg ▶',pose:P({wt:100}),sweep:{ankle:-35},load:{F:[0,-196,0],at:'body',label:'Hantel 20 kg'}},
- {id:'pistol',name:'Einbein-Kniebeuge (Pistol) ▶',pose:P({wt:100}),sweep:{hipF:75,knee:105,ankle:30}},
- {id:'splitSquat',name:'Split Squat ▶',pose:P({hipF:15,knee:15,wt:70}),sweep:{hipF:75,knee:95,ankle:20}},
+ {id:'pistol',name:'Einbein-Kniebeuge (Pistol) ▶',pose:P({wt:100,other:4}),sweep:{hipF:75,knee:105,ankle:30}},
+ {id:'splitSquat',name:'Split Squat ▶',pose:P({hipF:42,knee:50,ankle:8,wt:70,other:3}),sweep:{hipF:75,knee:95,ankle:20}},
  {id:'heelWalk',name:'Fersengang (Fußheber)',pose:P({ankle:20,wt:100})},
  {id:'nordic',name:'Nordic Hamstring ▶',pose:P({hipF:0,knee:90,ground:0}),sweep:{knee:30},load:{F:[0,0,150],at:'foot',fixHip:true,label:'Partner hält die Fersen, Rumpf kippt nach vorn'}},
+ /* nur anhängen */
+ {id:'deadlift',name:'Kreuzheben 60 kg (Hüfthinge) ▶',pose:P({hipF:12,knee:8,tilt:8}),sweep:{hipF:34,knee:25,ankle:5},load:{F:[0,-589,0],at:'body',label:'Langhantel 60 kg in den Händen (Hüfte nach hinten, Schienbein bleibt senkrecht, Rumpf neigt sich für das Gleichgewicht)'}},
 ];

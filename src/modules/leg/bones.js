@@ -13,6 +13,11 @@ function buildBones({G,MAT,boneMat,addBone,ell,pickables,BONES}){
     addBone(g,ell(V3(-3.6,-5.0,-4.6),V3(1.6,1.6,2.6),mat),'pelvis');                                         // Sitzbein
     addBone(g,staticTube([V3(-1.2,-2.2,4.2),V3(-5,-2.6,5.4),V3(-9,-2.4,5.6)],[1.0,0.9,1.0],8,{material:mat,rings:10}),'pelvis');   // Schambein
     addBone(g,ell(V3(-9,4.5,-8.5),V3(3.2,4.2,2.0),mat),'pelvis');                                             // Kreuzbein
+    addBone(g,staticTube([V3(-7.6,-2.6,4.9),V3(-6.5,-4.2,1.0),V3(-4.6,-5.2,-3.2)],[0.9,0.85,1.0],8,{material:mat,rings:12}),'pelvis');   // unterer Schambeinast → Sitzbein (Adduktoren)
+    addBone(g,ell(AN.ASIS,V3(0.9,1.0,0.9),mat),'pelvis'); addBone(g,ell(AN.AIIS,V3(0.8,0.9,0.8),mat),'pelvis');                  // Spina iliaca anterior superior/inferior
+    addBone(g,ell(AN.PSIS,V3(2.6,3.0,1.6),mat),'pelvis'); addBone(g,ell(V3(2*AN.mid-AN.PSIS.x,AN.PSIS.y,AN.PSIS.z),V3(2.6,3.0,1.6),mat),'pelvis');   // hinteres Darmbein / Iliosakralgelenk (schließt den Beckenring)
+    addBone(g,staticTube([V3(-13.4,-2.6,4.9),V3(-11.5,-4.2,1.0),V3(-13.4,-5.2,-3.2)],[0.9,0.85,1.0],8,{material:mat,rings:12}),'pelvis');
+    addBone(g,ell(V3(-14.4,-5.0,-4.6),V3(1.6,1.6,2.6),mat),'pelvis');                                             // Sitzbein links
     const wing2=ell(V3(-20.2,8.5,-1.5),V3(1.1,4.8,5.6),mat); wing2.rotation.y=-0.35; addBone(g,wing2,'pelvis'); // Darmbeinschaufel links
     addBone(g,ell(V3(-18,0.4,0),V3(3.1,3.1,3.1),mat),'pelvis');
     addBone(g,staticTube([V3(-16.8,-2.2,4.2),V3(-13,-2.6,5.4),V3(-9.2,-2.4,5.6)],[1.0,0.9,1.0],8,{material:mat,rings:10}),'pelvis');
@@ -40,27 +45,31 @@ function buildBones({G,MAT,boneMat,addBone,ell,pickables,BONES}){
   (function buildTibia(){
     const g=G.T, mat=boneMat('tibia'), L=LAYER.shank;
     addBone(g,ell(AN.plateau.c,AN.plateau.r,mat),'tibia',L);
-    addBone(g,staticTube([V3(0,-1.6,0.8),V3(0,-10,1.2),V3(0,-20,1.0),V3(0,-30,0.6),V3(0,-38,0.2),V3(0,-41.5,0)],[2.7,1.7,1.3,1.3,1.9,2.2],12,{material:mat,rings:26}),'tibia',L);
-    addBone(g,ell(V3(0,-5.0,3.2),V3(1.0,1.3,0.6),mat),'tibia',L);                                          // Tuberositas tibiae
+    addBone(g,ell(AN.metaph.c,AN.metaph.r,mat),'tibia',L);                                                  // Tibiakopf (Metaphyse)
+    addBone(g,staticTube([V3(0,-6.0,0.8),V3(0,-10,1.2),V3(0,-20,1.0),V3(0,-30,0.6),V3(0,-36,0.2),V3(0,-38.8,0.1)],[2.4,1.7,1.3,1.3,1.8,2.1],12,{material:mat,rings:26}),'tibia',L);   // Schaft bis zum Pilon (Gelenkfläche ≈ 2 cm über der Achse)
+    addBone(g,ell(V3(0,-5.4,3.4),V3(1.0,1.3,0.6),mat),'tibia',L);                                          // Tuberositas tibiae
     addBone(g,ell(AN.MM,V3(0.9,1.6,1.1),mat),'tibia',L);                                                     // Innenknöchel
-    addBone(g,staticTube([AN.fibHead,V3(3.7,-12,-1.6),V3(3.6,-25,-1.5),V3(3.5,-38,-1.1),AN.LM.clone().add(V3(0,-0.8,0))],[1.0,0.6,0.6,0.7,1.0],10,{material:mat,rings:24}),'tibia',L);   // Fibula
-    const hoffa=ell(V3(0,-2.8,2.3),V3(2.0,1.3,1.1),MAT.bursa.clone()); hoffa.material.userData=Object.assign({},MAT.bursa.userData); addBone(g,hoffa,'hoffa',L);
+    addBone(g,staticTube([AN.fibHead,V3(3.7,-12,-1.6),V3(3.6,-25,-1.5),V3(3.5,-36,-1.1),AN.LM.clone().add(V3(0,-0.6,0))],[1.0,0.6,0.6,0.7,1.0],10,{material:mat,rings:24}),'tibia',L);   // Fibula bis zur Spitze des Außenknöchels
+    const hoffa=ell(V3(0,-4.2,2.5),V3(2.0,1.3,1.1),MAT.bursa.clone()); hoffa.material.userData=Object.assign({},MAT.bursa.userData); addBone(g,hoffa,'hoffa',L);
   })();
   /* ---- Talus, Calcaneus, Fuß ---- */
   (function buildFoot(){
     const mat=boneMat('foot'), L=LAYER.shank;
     addBone(G.A,ell(V3(0,0,0),V3(1.7,1.5,2.0),mat),'foot',L);
     addBone(G.A,ell(V3(0,-0.4,2.8),V3(1.3,1.1,1.6),mat),'foot',L);                                          // Talushals/-kopf
-    addBone(G.A,ell(V3(0,-0.3,-2.3),V3(1.0,0.7,0.7),mat),'foot',L);                                         // Processus posterior
+    addBone(G.A,ell(V3(0,-0.3,-2.3),V3(1.3,0.8,0.9),mat),'foot',L);                                         // Processus posterior (Os trigonum)
+    addBone(G.A,ell(AN.talusLat,V3(0.9,0.7,1.3),mat),'foot',L);                                             // Processus lateralis (ATFL-Ansatz)
     const g=G.C;
     addBone(g,ell(V3(0,-2.4,-3.2),V3(1.8,2.2,4.3),mat),'foot',L);                                           // Calcaneus
-    addBone(g,ell(V3(-0.5,-3.0,3.0),V3(2.4,1.4,2.2),mat),'foot',L);                                         // Kahn-, Keil-, Würfelbein
+    addBone(g,ell(V3(-0.4,-3.1,3.0),V3(2.5,1.5,2.4),mat),'foot',L);                                         // Kahn-, Keilbeine
+    addBone(g,ell(AN.cuboid,V3(1.2,1.0,1.4),mat),'foot',L);                                                 // Würfelbein (Peroneus-longus-Rinne)
+    addBone(g,ell(AN.sustent,V3(0.9,0.6,1.2),mat),'foot',L);                                               // Sustentaculum tali (Deltaband, Tibialis posterior)
     for(const x of [-2.6,-1.3,0,1.3,2.6]){ const len=x<-2?7.6:x<0?8.6:x<1?8.4:7.6;
       addBone(g,staticTube([V3(x,-3.6,3.8),V3(x*1.05,-4.4,3.8+len*0.6),V3(x*1.1,-4.8,3.8+len)],[0.6,0.5,0.6],7,{material:mat,rings:10}),'foot',L);
       addBone(g,staticTube([V3(x*1.1,-4.8,3.8+len),V3(x*1.15,-4.9,3.8+len+2.2),V3(x*1.2,-4.9,3.8+len+3.6)],[0.5,0.45,0.35],7,{material:mat,rings:8}),'foot',L); }
   })();
   /* ---- Boden (Weltkoordinaten): flache Platte unter dem Auflagepunkt, nur bei Bodenkontakt sichtbar ---- */
-  { const gm=new THREE.Mesh(new THREE.BoxGeometry(70,0.6,70),MAT.contextSolid); gm.position.set(AN.mid,AN.groundY-0.35,4); ROOT.add(gm); (BONES.ground||(BONES.ground=[])).push(gm); gm.userData.sid='ground'; gm.userData.kind='bone'; pickables.push(gm); }
+  { const gm=new THREE.Mesh(new THREE.BoxGeometry(70,0.6,130),MAT.contextSolid); gm.position.set(AN.mid,AN.groundY-0.35,-22);   /* reicht bis unter den hinteren Fuß im Ausfallschritt */ ROOT.add(gm); (BONES.ground||(BONES.ground=[])).push(gm); gm.userData.sid='ground'; gm.userData.kind='bone'; pickables.push(gm); }
   /* ---- Anderes Bein (Kontext): gespiegelte Rahmen, Geometrie x-gespiegelt ---- */
   (function buildOther(){
     const mat=MAT.context;

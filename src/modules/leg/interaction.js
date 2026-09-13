@@ -5,8 +5,8 @@
 const LABELS=[
  {id:'femur',key:'lbGT',lm:F_(AN.GT.c.clone().add(V3(1.0,1.6,0)))},{id:'femur',key:'nameFemur',lm:F_(2.4,-22,0.3)},{id:'femur',key:'lbEpiL',lm:F_(AN.epiL.clone().add(V3(1.2,0.6,0)))},
  {id:'patella',key:'namePatella',lm:P_(0,0,1.3)},{id:'tibia',key:'lbTT',lm:T_(0,-5.2,4.3)},{id:'tibia',key:'nameTibia',lm:T_(0,-20,1.8)},{id:'tibia',key:'lbFibHead',lm:T_(4.8,-3.5,-1.5)},
- {id:'tibia',key:'lbLM',lm:T_(4.4,-43.2,-0.5)},{id:'tibia',key:'lbMM',lm:T_(-4.0,-41.5,-0.2)},{id:'foot',key:'lbCalc',lm:C_(0,-2.4,-7.8)},{id:'foot',key:'lbTalus',lm:A_(0,1.9,0.4)},{id:'foot',key:'lbMT',lm:C_(0,-3.6,13)},
- {id:'pelvis',key:'lbASIS',lm:B_(3.6,8.2,5.8)},{id:'pelvis',key:'lbIschium',lm:B_(-3.6,-6.4,-5.6)},{id:'pelvis',key:'lbSacrum',lm:B_(-9,5,-10.8)},{id:'hoffa',key:'nameHoffa',lm:T_(0,-2.8,3.6)},
+ {id:'tibia',key:'lbLM',lm:T_(4.4,-41.8,-0.5)},{id:'tibia',key:'lbMM',lm:T_(-4.0,-40.6,-0.2)},{id:'foot',key:'lbCalc',lm:C_(0,-2.4,-7.8)},{id:'foot',key:'lbTalus',lm:A_(0,1.9,0.4)},{id:'foot',key:'lbMT',lm:C_(0,-3.6,13)},
+ {id:'pelvis',key:'lbASIS',lm:B_(3.6,8.2,5.8)},{id:'pelvis',key:'lbIschium',lm:B_(-3.6,-6.4,-5.6)},{id:'pelvis',key:'lbSacrum',lm:B_(-9,5,-10.8)},{id:'pelvis',key:'lbPubis',lm:B_(-7.5,-3.4,6.2)},{id:'hoffa',key:'nameHoffa',lm:T_(0,-2.8,3.6)},
 ];
 STRUCT.forEach(s=>{ if(!s.surface) LABELS.push({id:s.id,struct:s}); });
 

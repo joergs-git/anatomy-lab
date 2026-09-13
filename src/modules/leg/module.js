@@ -13,6 +13,9 @@ const POSE_PARAMS=[
  {key:'sub',url:'sub',code:'Z',min:-15,max:30,step:1,def:0,label:'lSub',ends:['eEver','eInv'],text:ps=>Math.abs(ps.sub)<1?t('neutralS'):(ps.sub<0?t('ev'):t('inv'))+' '+fmt(Math.abs(ps.sub))+'°'},
  {key:'wt',url:'wt',code:'w',min:0,max:100,step:5,def:50,label:'lWt',ends:['eWt0','eWt1'],text:ps=>fmt(ps.wt)+' % · '+fmt(ps.wt/100*BW)+' N'},
  {key:'ground',url:'ground',code:'b',type:'check',min:0,max:1,step:1,def:1,label:'lGround',ends:[],text:ps=>ps.ground>=0.5?t('groundOn'):t('groundOff')},
+ /* nur anhängen (Reihenfolge = Regler) */
+ {key:'tilt',url:'tilt',code:'t',min:-20,max:25,step:1,def:0,label:'lTilt',ends:['eTiltPost','eTiltAnt'],text:ps=>Math.abs(ps.tilt)<1?t('neutralS'):(ps.tilt<0?t('tiltPost'):t('tiltAnt'))+' '+fmt(Math.abs(ps.tilt))+'°'},
+ {key:'other',url:'other',code:'o',type:'seg',min:0,max:4,step:1,def:0,label:'lOther',ends:[],options:[[0,'otAuto'],[1,'otMirror'],[2,'otLift'],[3,'otRear'],[4,'otFront']],text:ps=>t(['otAuto','otMirror','otLift','otRear','otFront'][Math.round(ps.other)]||'otAuto')+(ps.other<0.5?' → '+t(otherMode(ps)===2?'otLift':'otMirror'):'')},
 ];
 const PATHO_PARAMS=[
  {key:'cart',url:'cart',code:'c',min:0,max:100,step:5,sliderScale:100,urlScale:100,compactScale:100,label:'lCart',text:v=>fmt(v*100)+' %'},

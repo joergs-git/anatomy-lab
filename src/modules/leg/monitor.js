@@ -23,13 +23,19 @@ const METRICS=[
  {id:'delt',name:'Deltaband (Innenband)',unit:'%',get:M=>M.delt*100,levels:LV_TENS,max:12,tension:true},
  {id:'mcl',name:'Innenband (MCL)',unit:'%',get:M=>M.mcl*100,levels:LV_TENS,max:12,tension:true},
  {id:'lcl',name:'Außenband (LCL)',unit:'%',get:M=>M.lcl*100,levels:LV_TENS,max:12,tension:true},
- {id:'nerve',name:'N. peroneus communis',unit:'%',get:M=>M.nerve*100,levels:[[8,'lvStretched','warn'],[-99,'lvRelaxed','ok']],max:12,tension:true},
+ {id:'nerve',name:'N. ischiadicus / peroneus',unit:'%',get:M=>M.nerve*100,levels:[[8,'lvStretched','warn'],[-99,'lvRelaxed','ok']],max:12,tension:true},
+ /* nur anhängen */
+ {id:'comp',name:'Kompartimente medial / lateral',unit:'%',get:M=>M.medShare*100,levels:[[80,'lvMedOver','bad'],[68,'lvMedRaised','warn'],[35,'lvBalanced','ok'],[20,'lvLatRaised','warn'],[-1,'lvLatOver','bad']],max:100,
+  text:(v,M)=>t('medS')+' '+fmt(M.tfMed)+' N · '+t('latS')+' '+fmt(M.tfLat)+' N',sub:'Verteilung der tibiofemoralen Kompression nach Beinachse und Bodenreaktionslinie (Adduktionsmoment): Varus/Beinachse medial → mediale Gonarthrose, Valgus → lateral'},
+ {id:'fai',name:'Hüftimpingement (Kopf-Hals-Übergang ↔ Pfannenrand)',unit:'mm',get:M=>M.fai,levels:[[8,'lvFree','ok'],[4,'lvContact','warn'],[-99,'lvStop','bad']],max:40,sub:'FADIR: Beugung + Adduktion + Innenrotation führt den vorderen Schenkelhals an den Pfannenrand (Cam/Pincer, Labrum)'},
+ {id:'tilt',name:'Beckenkippung / Lendenlordose',unit:'°',get:M=>M.tilt,levels:[[15,'lvHollow','warn'],[-10,'lvNeutral','ok'],[-99,'lvFlat','warn']],max:25,tension:true,
+  text:(v,M)=>(v>=0?'+':'')+fmt(v)+'° '+(v>=1?t('tiltAnt'):v<=-1?t('tiltPost'):t('neutralS')),sub:'Anteriore Kippung = Hohlkreuz (Hüftbeuger und Rückenstrecker verkürzt, Bauch und Hamstrings gedehnt), posteriore = Flachrücken'},
 ];
 /* Reihenfolge nach klinischer Häufigkeit: vorderer Knieschmerz (patellofemoral), Arthrose/Meniskus (tibiofemoral), VKB, Sehnen; Sprunggelenkbänder als Sammelzeile.
    Eingeklappt: HKB, Hüfte, Tractus, Impingements, Menisken, Seitenbänder, Nerv. */
 const ANKLE_LIG=['atfl','cfl','ptfl','delt'];
 const MONITOR={
-  top:['pf','pfPress','tf','acl','patTen','ach','ankleLig'], special:['pcl','hipJ','itb','ankAnt','ankPost','men','mcl','lcl','nerve'],
+  top:['pf','pfPress','tf','comp','acl','patTen','ach','ankleLig'], special:['pcl','hipJ','fai','tilt','itb','ankAnt','ankPost','men','mcl','lcl','nerve'],
   aggregate:{id:'ankleLig',ids:ANKLE_LIG,nameKey:'mAnkleLig',max:12,tension:true,
     text:(v,best)=>(v>=0?'+':'')+fmt(v)+' % '+t({atfl:'ligAtfl',cfl:'ligCfl',ptfl:'ligPtfl',delt:'ligDelt'}[best])},
 };
@@ -52,17 +58,20 @@ function computeLoads(){
   if(M.ankAntComp>0.2) add('foot',M.ankAntComp,t('antImp')+' '+fmt(M.ankAnt)+' mm','var(--violet)');
   if(M.ankPostComp>0.2) add('foot',M.ankPostComp,t('postImp')+' '+fmt(M.ankPost)+' mm','var(--violet)');
   if(M.achBW>0.5) add('soleus',M.achBW/4,t('achForce')+' '+fmt(M.ach)+' N','var(--amber)');
+  if(M.faiComp>0.2){ add('femur',M.faiComp,t('faiL')+' '+fmt(M.fai)+' mm','var(--violet)'); add('pelvis',M.faiComp*0.9,t('faiL')+' '+fmt(M.fai)+' mm','var(--violet)'); }
+  if(M.tfBW>0.8&&(M.medShare>0.68||M.medShare<0.32)) add('tibia',Math.abs(M.medShare-0.5)*1.6,(M.medShare>0.5?t('medS'):t('latS'))+' '+fmt(Math.max(M.medShare,1-M.medShare)*100)+' %','var(--violet)');
   return out;
 }
 /* Gruppen in fester klinischer Reihenfolge, innerhalb alphabetisch; nie umsortieren – Gruppenindex steckt in Kurz-Links. */
 const LOAD_GROUPS=[
- {id:'kneeJ',key:'lgKneeB',ids:['patella','patTen','ACL','PCL','MCL','LCL','menisci','hoffa'],open:true},
+ {id:'kneeJ',key:'lgKneeB',ids:['patella','patTen','ACL','PCL','MCL','LCL','menisci','hoffa','tibia'],open:true},
  {id:'quad',key:'lgQuadB',ids:['rectF','vastL','vastM'],open:true},
  {id:'ham',key:'lgHamB',ids:['bicF','semimem','semitend','sart','gracilis'],open:true},
  {id:'calf',key:'lgCalfB',ids:['gastroM','gastroL','soleus','tibAnt','tibPost','peron','plantar'],open:false},
- {id:'hip',key:'lgHipB',ids:['glutMax','glutMed','tfl','addMag','iliopsoas'],open:false},
+ {id:'hip',key:'lgHipB',ids:['glutMax','glutMed','tfl','addMag','iliopsoas','addLong','piri','pelvis','femur'],open:false},
  {id:'ankle',key:'lgAnkleB',ids:['atfl','cfl','ptfl','deltoid','foot'],open:false},
  {id:'nerve',key:'lgNerveB',ids:['nPer'],open:false},
+ {id:'trunk',key:'lgTrunkB',ids:['erector','rectAbd','oblique'],open:false},
 ];
 
 /* Anzeigenamen der Teile, die keine Strukturen sind – Schlüssel in i18n.js */
@@ -85,6 +94,8 @@ function structReadouts(id,M){
   if(id==='menisci') rows.push([t('liMen'),fmt(M.menComp*100)+' %']);
   if(id==='foot') rows.push([t('liAnkA'),fmt(M.ankAnt)+' mm'],[t('liAnkP'),fmt(M.ankPost)+' mm']);
   if(id==='femur'||id==='tibia') rows.push([t('liTF'),fmt(M.tfBW,1)+' × KG']);
-  if(id==='pelvis') rows.push([t('liHip'),fmt(M.hipBW,1)+' × KG']);
+  if(id==='pelvis') rows.push([t('liHip'),fmt(M.hipBW,1)+' × KG'],[t('liTilt'),(M.tilt>=0?'+':'')+fmt(M.tilt)+'°'],[t('liFai'),fmt(M.fai)+' mm']);
+  if(id==='femur') rows.push([t('liFai'),fmt(M.fai)+' mm']);
+  if(id==='tibia'||id==='menisci') rows.push([t('liComp'),t('medS')+' '+fmt(M.medShare*100)+' % · '+t('latS')+' '+fmt((1-M.medShare)*100)+' %']);
   return rows;
 }

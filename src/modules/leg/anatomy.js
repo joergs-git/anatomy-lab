@@ -13,22 +13,25 @@ AN.ankle=V3(0,-41,0);              // Sprunggelenkzentrum, tibialokal
 AN.subtalar=V3(0,-2.0,-1.0);       // Subtalargelenk, taluslokal (= Ursprung C)
 AN.groundY=-91.2;                  // Bodenhöhe (Sohle) im Stand, Weltkoordinaten
 AN.GT={c:V3(6.0,-2.0,-0.8),r:V3(2.0,2.8,2.0)};        // Trochanter major
-AN.LT={c:V3(2.4,-5.4,1.4),r:V3(0.9,1.2,0.9)};         // Trochanter minor
+AN.LT={c:V3(2.6,-5.2,-1.4),r:V3(0.9,1.2,0.9)};        // Trochanter minor (posteromedial am Übergang Hals → Schaft)
 AN.condM={c:V3(-2.2,-43.2,-0.6),r:2.3};               // medialer Femurkondylus (Kugel)
 AN.condL={c:V3(2.3,-43.0,-0.6),r:2.25};               // lateraler Femurkondylus
 AN.trochlea={c:V3(0,-41.4,1.7),r:V3(2.4,2.6,1.5)};    // Trochlea (Patellagleitlager)
 AN.epiL=V3(4.4,-42.6,0.2); AN.epiM=V3(-4.5,-42.8,-0.3); AN.addTub=V3(-4.0,-40.5,-0.8);
-AN.plateau={c:V3(0,-0.6,0),r:V3(3.9,0.8,2.7)};        // Tibiaplateau, tibialokal
+AN.plateau={c:V3(0,-3.2,0),r:V3(3.9,1.0,2.7)};        // Tibiaplateau, tibialokal (Oberfläche 2,2 cm unter dem Kniezentrum = Kondylenradius)
+AN.metaph={c:V3(0,-5.2,0.4),r:V3(3.2,3.0,2.4)};        // Tibiakopf-Metaphyse (Ansätze von MCL, Pes anserinus, Semimembranosus, Tractus)
 AN.TT=V3(0,-5.2,3.6);                                  // Tuberositas tibiae
-AN.gerdy=V3(3.0,-3.0,2.2);                             // Tuberculum Gerdy (Tractus-Ansatz)
-AN.pes=V3(-2.3,-6.2,2.1);                              // Pes anserinus
-AN.fibHead=V3(3.9,-3.5,-1.5); AN.LM=V3(3.4,-42.8,-0.5); AN.MM=V3(-3.0,-41.5,-0.2);   // Fibulakopf, Malleolus lateralis/medialis
-AN.tibAntRim=V3(0,-39.6,2.0); AN.tibPostRim=V3(0,-39.8,-1.9);   // vorderer/hinterer Tibiarand am Sprunggelenk
+AN.gerdy=V3(2.8,-3.6,1.9);                             // Tuberculum Gerdy (Tractus-Ansatz)
+AN.pes=V3(-2.1,-6.4,1.9);                              // Pes anserinus
+AN.fibHead=V3(3.9,-3.5,-1.5); AN.LM=V3(3.4,-41.4,-0.5); AN.MM=V3(-3.0,-40.4,-0.2);   // Fibulakopf, Malleolus lateralis/medialis (Spitzen ≈ 1 cm unter der Sprunggelenkachse)
+AN.tibAntRim=V3(0,-39.0,2.0); AN.tibPostRim=V3(0,-39.2,-1.9);   // vorderer/hinterer Tibiarand am Sprunggelenk
 AN.talusNeck=V3(0,0.2,2.8); AN.talusPost=V3(0,-0.2,-2.5);       // Talushals (vorderes Impingement), Processus posterior (Os trigonum)
 AN.subtalarAxis=V3(0,Math.sin(42*DEG),Math.cos(42*DEG));         // Subtalarachse: 42° zur Horizontalen, nach vorn-oben
 AN.calcTuber=V3(0,-1.5,-6.5);                          // Tuber calcanei (Achillessehnenansatz), fußlokal
 AN.heel=V3(0,-4.7,-7.0); AN.mtHeads=V3(0,-5.2,12.5);   // Fersenauflage, Mittelfußköpfchen (Sohle), fußlokal
-AN.navic=V3(-2.2,-3.0,3.4); AN.cuboid=V3(2.2,-3.8,2.5);
+AN.navic=V3(-2.2,-3.0,3.4); AN.cuboid=V3(2.0,-3.9,2.5); AN.sustent=V3(-1.6,-1.3,-0.9); AN.talusLat=V3(1.5,-0.7,1.0);   // Kahnbein, Würfelbein, Sustentaculum tali, Processus lateralis tali
+AN.ASIS=V3(3.4,7.5,4.4); AN.AIIS=V3(1.6,3.8,5.2); AN.PSIS=V3(-3.0,5.5,-7.8); AN.pubis=V3(-6.8,-2.5,5.0); AN.ischium=V3(-3.6,-5.0,-4.6);   // Beckenlandmarken (beckenlokal)
+AN.headNeck=V3(0.77,-1.3,2.12); AN.acetRim=V3(0.26,2.64,1.5);   /* Kopf-Hals-Übergang vorn-unten (femurlokal, Kopfradius 2,6) und vorderer-oberer Pfannenrand (beckenlokal, Pfannenradius 3,05): Hüftimpingement – FADIR schließt auf ≈ 2 mm, neutral ≈ 37 mm, gerade Beugung 90° ≈ 5 mm */
 AN.patSup=V3(0,2.3,0.4); AN.patApex=V3(0,-2.4,0.2);   // Patella: oberer Pol (Quadrizepssehne), Spitze (Patellarsehne)
 AN.patR0=6.6; AN.patPhi0=46;                           // Patellabahn: Radius um das Kniezentrum, Winkel über der Horizontalen in Streckung
 AN.trunkCOM=V3(0,34,2.0);                              // Rumpf + Kopf + Arme (Schwerpunkt ≈ Th10), rumpflokal (Ursprung Beckenmitte)
@@ -47,8 +50,12 @@ const WRAP_KNEE={f:'F',v:V3(0,-43,-0.5),r:2.9};        // hintere Kondylen (Hams
 const WRAP_CONDM={f:'F',v:AN.condM.c,r:2.6};
 const WRAP_EPI={f:'F',v:V3(4.6,-42.6,0.2),r:1.6};       // lateraler Epikondylus (Tractus)
 const WRAP_GT={f:'F',v:AN.GT.c,r:2.6};
-const WRAP_LM={f:'T',v:V3(3.4,-42.5,-0.6),r:1.3};
-const WRAP_MM={f:'T',v:V3(-3.0,-41.5,-0.3),r:1.1};
+/* Hüftgelenk als Umlenkung (Kopf + Kapsel ≈ 3,4 cm): Beuger bleiben vorn (side ventral), der Glutaeus maximus bleibt hinten-unten (side dorsal-kaudal) –
+   ohne diese Seitenbindung schneidet die gerade Linie in tiefer Beugung durch das Gelenkzentrum und der Muskel würde rechnerisch zum Gegenspieler */
+const WRAP_HIP_ANT={f:'B',v:V3(0,0,0),r:3.4,side:V3(0,0.2,1).normalize()};
+const WRAP_HIP_POST={f:'B',v:V3(0,0,0),r:3.4,side:V3(0,-1,-0.3).normalize()};
+const WRAP_LM={f:'T',v:V3(3.4,-41.4,-0.6),r:1.3};
+const WRAP_MM={f:'T',v:V3(-3.0,-40.6,-0.3),r:1.1};
 const WRAP_HEEL={f:'C',v:V3(0,-2.6,-3.6),r:2.4};
 
 /* ===================== Strukturen =====================
@@ -57,74 +64,86 @@ const WRAP_HEEL={f:'C',v:V3(0,-2.6,-3.6),r:2.4};
 const STRUCT=[
  /* ---- Hüfte ---- */
  {id:'iliopsoas',name:'Iliopsoas',group:'hip',kind:'muscle',r:1.1,pcsa:2.2,joints:['hip'],
-  fas:[[U_(3.0,4.0,3.0),B_(-3.5,1.5,4.6),B_(0.5,-1.5,4.2,TEND),F_(2.3,-5.4,1.5,TEND)]]},
- {id:'glutMax',name:'Glutaeus maximus',group:'hip',kind:'muscle',r:1.5,pcsa:3.0,joints:['hip'],wrap:[WRAP_GT],layer:4,
-  fas:[[B_(-6.0,6.5,-8.0),B_(-2.0,0.0,-7.5),F_(4.8,-9.0,-2.0,TEND)],[B_(-5.0,3.0,-8.5),B_(0.5,-2.5,-7.0),F_(6.4,-10.5,-0.6,TEND)]]},
+  wrap:[WRAP_HIP_ANT],
+  fas:[[U_(1.2,4.0,-5.0),B_(-3.5,1.5,4.6),B_(0.0,1.5,4.0,TEND),F_(2.0,-5.4,-1.9,TEND)]]},   /* Lendenwirbelsäule → Fossa iliaca → Eminentia iliopubica (Umlenkung über Kapsel und Kopf) → Trochanter minor */
+ {id:'glutMax',name:'Glutaeus maximus',group:'hip',kind:'muscle',r:1.5,pcsa:3.0,joints:['hip'],wrap:[WRAP_HIP_POST,WRAP_GT],layer:4,
+  fas:[[B_(-6.2,3.5,-8.4),B_(-3.0,-6.0,-5.5),F_(4.8,-9.0,-1.8,TEND)],[B_(-6.0,6.5,-8.0),B_(-1.0,0.5,-7.5),F_(5.6,-10.5,-1.2,TEND)]]},   /* unterer Teil: Kreuzbein → über Sitzbein/Lig. sacrotuberale → Tuberositas glutea (Hauptstrecker); oberer Teil: Darmbein → Trochanter → Tractus */
  {id:'glutMed',name:'Glutaeus medius',group:'hip',kind:'muscle',r:1.2,pcsa:2.4,joints:['hip'],layer:4,
-  fas:[[B_(2.5,10.5,-2.0),B_(4.8,4.5,-1.6),F_(6.0,-0.2,-0.6,TEND)],[B_(4.0,9.0,2.0),B_(5.5,4.0,0.5),F_(6.2,-0.4,0.0,TEND)]]},
+  fas:[[B_(2.5,10.5,-2.0),B_(4.8,4.5,-1.6),F_(6.0,-0.2,-0.6,TEND)],[B_(3.6,9.0,1.6),B_(5.5,4.0,0.5),F_(6.2,-0.4,0.0,TEND)]]},
  {id:'tfl',name:'Tensor fasciae latae · Tractus iliotibialis',group:'hip',kind:'muscle',r:0.75,pcsa:0.6,joints:['hip','knee'],wrap:[WRAP_EPI],layer:1,
-  fas:[[B_(3.4,7.6,4.0),F_(7.0,-5.0,2.3),F_(6.9,-16,0.6,TEND),F_(6.7,-28,-0.2,TEND),F_(6.4,-36,-0.6,zITB),T_(3.1,-3.0,2.2,zITB)]]},
+  fas:[[B_(3.6,7.4,4.2),F_(7.0,-5.0,2.3),F_(6.9,-16,0.6,TEND),F_(6.7,-28,-0.2,TEND),F_(6.4,-36,-0.6,zITB),T_(2.8,-3.6,1.9,zITB)]]},
  {id:'addMag',name:'Adductor magnus',group:'hip',kind:'muscle',r:1.2,pcsa:2.5,joints:['hip'],layer:4,
-  fas:[[B_(-5.0,-4.5,-2.5),F_(-1.5,-22,-1.8),F_(-4.0,-40.5,-0.8,TEND)],[B_(-7.5,-3.0,2.5),F_(-1.0,-18,-0.5,TEND)]]},
+  fas:[[B_(-5.0,-4.8,-2.6),F_(-1.5,-22,-1.8),F_(-4.0,-40.5,-0.8,TEND)],[B_(-7.0,-3.4,3.4),F_(1.0,-12,-0.6),F_(2.6,-18,-1.0,TEND)]]},
  /* ---- Quadrizeps ---- */
- {id:'rectF',name:'Rectus femoris',group:'quad',kind:'muscle',r:1.2,pcsa:1.8,joints:['hip','knee'],layer:1,
-  fas:[[B_(1.5,4.0,5.5,TEND),F_(1.5,-10,4.0),F_(1.0,-25,4.6),F_(0.4,-35,4.2,TEND),P_(0,2.3,0.4,TEND)]]},
+ {id:'rectF',name:'Rectus femoris',group:'quad',kind:'muscle',r:1.2,pcsa:1.8,joints:['hip','knee'],wrap:[WRAP_HIP_ANT],layer:1,
+  fas:[[B_(1.6,3.8,5.4,TEND),F_(1.5,-10,4.0),F_(1.0,-25,4.6),F_(0.4,-35,4.2,TEND),P_(0,2.3,0.4,TEND)]]},
  {id:'vastL',name:'Vastus lateralis',group:'quad',kind:'muscle',r:1.5,pcsa:3.5,joints:['knee'],
   fas:[[F_(4.5,-9.0,-0.5),F_(4.2,-22,2.6),F_(2.6,-34,3.8,TEND),P_(1.4,2.0,0.3,TEND)]]},
  {id:'vastM',name:'Vastus medialis',group:'quad',kind:'muscle',r:1.4,pcsa:2.6,joints:['knee'],
-  fas:[[F_(-1.5,-14,-0.8),F_(-3.0,-28,2.2),F_(-2.6,-37,3.6,TEND),P_(-1.4,1.6,0.3,TEND)]]},
+  fas:[[F_(2.7,-14,-1.0),F_(-3.0,-28,2.2),F_(-2.6,-37,3.6,TEND),P_(-1.4,1.6,0.3,TEND)]]},
  /* ---- Hamstrings & Pes anserinus ---- */
  {id:'bicF',name:'Biceps femoris (langer Kopf)',group:'ham',kind:'muscle',r:1.2,pcsa:1.6,joints:['hip','knee'],wrap:[WRAP_KNEE],
   fas:[[B_(-3.5,-5.5,-5.0,TEND),F_(2.5,-20,-3.5),F_(3.8,-34,-3.2,TEND),T_(3.9,-3.4,-1.6,TEND)]]},
  {id:'semimem',name:'Semimembranosus',group:'ham',kind:'muscle',r:1.2,pcsa:2.0,joints:['hip','knee'],wrap:[WRAP_KNEE],
-  fas:[[B_(-3.8,-5.2,-5.2,TEND),F_(-2.5,-22,-3.4),F_(-3.4,-36,-3.0,TEND),T_(-3.0,-2.6,-1.6,TEND)]]},
+  fas:[[B_(-3.8,-5.2,-5.2,TEND),F_(-2.5,-22,-3.4),F_(-3.4,-36,-3.0,TEND),T_(-2.4,-4.0,-1.3,TEND)]]},
  {id:'semitend',name:'Semitendinosus',group:'ham',kind:'muscle',r:0.9,pcsa:1.0,joints:['hip','knee'],wrap:[WRAP_CONDM],
-  fas:[[B_(-3.2,-5.8,-4.6,TEND),F_(-1.8,-22,-4.2),F_(-3.2,-38,-2.6,TEND),T_(-2.2,-6.2,2.0,TEND)]]},
+  fas:[[B_(-3.2,-5.8,-4.6,TEND),F_(-1.8,-22,-4.2),F_(-3.2,-38,-2.6,TEND),T_(-2.0,-6.6,1.9,TEND)]]},
  {id:'sart',name:'Sartorius',group:'medial',kind:'muscle',r:0.6,pcsa:0.3,joints:['hip','knee'],
-  fas:[[B_(3.2,7.2,4.6),F_(-0.5,-12,4.5),F_(-3.5,-30,1.5),F_(-4.6,-40,-0.6,TEND),T_(-2.4,-6.0,2.2,TEND)]]},
+  fas:[[B_(3.5,7.6,4.6),F_(-0.5,-12,4.5),F_(-3.5,-30,1.5),F_(-4.6,-40,-0.6,TEND),T_(-2.1,-6.2,2.0,TEND)]]},
  {id:'gracilis',name:'Gracilis',group:'medial',kind:'muscle',r:0.6,pcsa:0.3,joints:['hip','knee'],
-  fas:[[B_(-8.5,-2.5,5.0),F_(-4.5,-20,0.5),F_(-4.8,-38,-0.8,TEND),T_(-2.3,-6.4,2.1,TEND)]]},
+  fas:[[B_(-7.4,-2.8,4.4),F_(-4.5,-20,0.5),F_(-4.8,-38,-0.8,TEND),T_(-2.1,-6.5,1.9,TEND)]]},
  /* ---- Unterschenkel ---- */
  {id:'gastroM',name:'Gastrocnemius, Caput mediale',group:'calf',kind:'muscle',r:1.5,pcsa:2.4,joints:['knee','ankle'],wrap:[WRAP_KNEE],
   fas:[[F_(-2.4,-41.5,-2.6,TEND),T_(-1.6,-8,-3.6),T_(-1.0,-18,-3.8),T_(-0.4,-28,-3.0,TEND),T_(0,-36,-2.6,TEND),C_(0,-1.5,-6.5,TEND)]]},
  {id:'gastroL',name:'Gastrocnemius, Caput laterale',group:'calf',kind:'muscle',r:1.2,pcsa:1.2,joints:['knee','ankle'],wrap:[WRAP_KNEE],
   fas:[[F_(2.6,-41.5,-2.5,TEND),T_(1.8,-8,-3.5),T_(1.2,-18,-3.6),T_(0.5,-28,-3.0,TEND),T_(0.1,-36,-2.6,TEND),C_(0.1,-1.5,-6.5,TEND)]]},
  {id:'soleus',name:'Soleus · Achillessehne',group:'calf',kind:'muscle',r:1.6,pcsa:4.0,joints:['ankle'],
-  fas:[[T_(2.4,-6.0,-2.4),T_(0.6,-16,-3.4),T_(0.0,-30,-2.9,TEND),T_(0,-38,-2.5,TEND),C_(0,-1.5,-6.5,TEND)]]},
+  fas:[[T_(3.3,-6.5,-2.1),T_(0.6,-16,-3.4),T_(0.0,-30,-2.9,TEND),T_(0,-38,-2.5,TEND),C_(0,-1.5,-6.5,TEND)]]},
  {id:'tibAnt',name:'Tibialis anterior',group:'shin',kind:'muscle',r:1.0,pcsa:1.2,joints:['ankle'],
-  fas:[[T_(1.4,-8,1.6),T_(0.7,-22,1.7),T_(0.2,-34,1.6,TEND),T_(-0.6,-41,1.6,TEND),C_(-1.8,-3.6,4.5,TEND)]]},
+  fas:[[T_(1.4,-8,1.6),T_(0.7,-22,1.7),T_(0.2,-34,1.6,TEND),T_(-0.6,-40.2,1.8,TEND),C_(-1.8,-3.6,4.5,TEND)]]},
  {id:'tibPost',name:'Tibialis posterior',group:'shin',kind:'muscle',r:0.9,pcsa:1.4,joints:['ankle'],wrap:[WRAP_MM],
-  fas:[[T_(0.5,-10,-2.2),T_(-1.5,-30,-1.6,TEND),T_(-3.3,-41.0,-1.0,TEND),C_(-2.2,-3.0,3.4,TEND)]]},
+  fas:[[T_(0.9,-10,-0.6),T_(-1.5,-30,-1.6,TEND),T_(-3.3,-40.6,-1.0,TEND),C_(-2.2,-3.0,3.4,TEND)]]},
  {id:'peron',name:'Peroneus longus',group:'shin',kind:'muscle',r:0.9,pcsa:1.2,joints:['ankle'],wrap:[WRAP_LM],
-  fas:[[T_(3.8,-6.0,-1.2),T_(3.6,-22,-1.4),T_(3.5,-36,-1.3,TEND),T_(3.7,-43.2,-1.5,TEND),C_(2.2,-3.8,2.5,TEND),C_(-1.6,-4.8,5.0,TEND)]]},
+  fas:[[T_(3.8,-6.0,-1.2),T_(3.6,-22,-1.4),T_(3.5,-36,-1.3,TEND),T_(3.7,-42.0,-1.5,TEND),C_(2.0,-3.9,2.5,TEND),C_(-2.4,-4.1,4.3,TEND)]]},
  /* ---- Bänder Knie ---- */
  {id:'ACL',name:'Vorderes Kreuzband (AM · PL)',group:'joint',kind:'lig',r:0.32,
-  fas:[[F_(1.1,-43.5,-1.4),T_(-0.3,-0.9,1.5)],[F_(1.3,-44.4,-1.0),T_(0.3,-1.0,0.9)]]},
+  fas:[[F_(1.2,-43.1,-0.6),T_(-0.3,-2.9,1.4)],[F_(1.2,-42.8,-1.1),T_(0.4,-3.0,0.9)]]},   /* AM-Bündel nahezu isometrisch (Ursprung nahe der Beugeachse), PL-Bündel in Streckung gespannt, in Beugung locker */
  {id:'PCL',name:'Hinteres Kreuzband',group:'joint',kind:'lig',r:0.34,
-  fas:[[F_(-1.0,-43.6,0.3),T_(0,-1.6,-2.2)],[F_(-0.8,-44.3,0.6),T_(0.4,-1.9,-2.4)]]},
+  fas:[[F_(-1.0,-43.6,0.3),T_(0,-3.4,-2.2)],[F_(-0.8,-44.3,0.6),T_(0.4,-3.7,-2.3)]]},
  {id:'MCL',name:'Innenband (MCL)',group:'joint',kind:'lig',r:0.3,
-  fas:[[F_(-4.5,-42.8,-0.3),T_(-3.4,-7.0,0.4)],[F_(-4.4,-43.4,-1.0),T_(-3.6,-2.2,-0.6)]]},
+  fas:[[F_(-4.5,-42.8,-0.3),T_(-1.9,-8.0,0.6)],[F_(-4.4,-43.4,-1.0),T_(-3.0,-3.6,-0.3)]]},
  {id:'LCL',name:'Außenband (LCL)',group:'joint',kind:'lig',r:0.28,
   fas:[[F_(4.4,-42.6,-0.3),T_(3.9,-3.6,-1.4)]]},
  {id:'patTen',name:'Patellarsehne',group:'joint',kind:'lig',r:0.55,static:true,
   fas:[[P_(0,-2.4,0.2),T_(0,-5.2,3.6)]]},
  {id:'menisci',name:'Menisken (medial · lateral)',group:'joint',kind:'lig',r:0.45,static:true,
-  fas:[[T_(-1.2,-0.3,2.3),T_(-3.2,-0.3,1.6,TEND),T_(-4.2,-0.3,0.0,TEND),T_(-3.4,-0.3,-1.8,zMEN),T_(-1.6,-0.3,-2.6,zMEN)],
-       [T_(1.0,-0.3,2.2),T_(3.0,-0.3,1.5,TEND),T_(3.9,-0.3,0.0,TEND),T_(3.2,-0.3,-1.7,zMEN),T_(1.5,-0.3,-2.5,zMEN)]]},
+  fas:[[T_(-1.2,-2.6,2.3),T_(-3.2,-2.6,1.6,TEND),T_(-4.1,-2.6,0.0,TEND),T_(-3.4,-2.6,-1.8,zMEN),T_(-1.6,-2.6,-2.5,zMEN)],
+       [T_(1.0,-2.6,2.2),T_(3.0,-2.6,1.5,TEND),T_(3.9,-2.6,0.0,TEND),T_(3.2,-2.6,-1.7,zMEN),T_(1.5,-2.6,-2.4,zMEN)]]},
  /* ---- Bänder Sprunggelenk & Fuß ---- */
  {id:'atfl',name:'Lig. talofibulare anterius (ATFL)',group:'ankle',kind:'lig',r:0.26,
-  fas:[[T_(3.3,-41.2,0.6),A_(1.9,-1.2,2.0)]]},
+  fas:[[T_(3.4,-40.8,0.4),A_(1.9,-0.2,1.7)]]},
  {id:'cfl',name:'Lig. calcaneofibulare (CFL)',group:'ankle',kind:'lig',r:0.26,
-  fas:[[T_(3.4,-43.0,-0.5),C_(2.0,-3.2,-0.8)]]},
+  fas:[[T_(3.4,-42.0,-0.6),C_(1.6,-3.4,-0.4)]]},
  {id:'ptfl',name:'Lig. talofibulare posterius (PTFL)',group:'ankle',kind:'lig',r:0.24,
-  fas:[[T_(3.0,-42.3,-1.4),A_(1.2,-0.6,-2.2)]]},
+  fas:[[T_(3.2,-40.2,-1.0),A_(1.0,-1.1,-2.0)]]},
  {id:'deltoid',name:'Deltaband (medial)',group:'ankle',kind:'lig',r:0.3,
-  fas:[[T_(-3.0,-42.0,0.0),C_(-1.6,-0.4,-1.2)],[T_(-3.0,-41.8,0.5),C_(-2.0,-2.6,3.2)]]},
+  fas:[[T_(-3.0,-41.2,0.0),C_(-1.6,-1.0,-1.0)],[T_(-3.0,-41.0,0.5),C_(-2.0,-2.6,3.2)]]},
  {id:'plantar',name:'Plantarfaszie',group:'ankle',kind:'lig',r:0.3,static:true,
   fas:[[C_(0,-4.2,-5.5),C_(0,-4.9,3.0,TEND),C_(0,-4.8,12.0,TEND)]]},
  /* ---- Nerv ---- */
- {id:'nPer',name:'N. peroneus communis (Fibulakopf)',group:'nerve',kind:'nerve',r:0.2,
-  fas:[[B_(-2.5,-4.0,-4.8),F_(0.5,-16,-4.6),F_(2.6,-36,-3.6),T_(4.3,-5.6,-1.0,zNRV),T_(2.8,-9.5,1.0)]]},
+ {id:'nPer',name:'N. ischiadicus → N. peroneus communis (Fibulakopf)',group:'nerve',kind:'nerve',r:0.2,
+  fas:[[B_(-3.5,-1.0,-6.2),B_(-2.5,-4.0,-4.8),F_(0.5,-16,-4.6),F_(2.6,-36,-3.6),T_(4.3,-5.6,-1.0,zNRV),T_(2.8,-9.5,1.0)]]},
+ /* ---- Rumpf–Becken-Kette (Beckenkippung), weitere Hüftmuskeln – nur anhängen ---- */
+ {id:'erector',name:'Rückenstrecker (Erector spinae, lumbal)',group:'trunk',kind:'muscle',r:1.3,pcsa:2.5,joints:['pelvis'],layer:2,
+  fas:[[U_(1.8,22,-7.2),U_(1.8,10,-7.4),U_(1.6,3,-7.0,TEND),B_(-4.2,4.8,-8.6,TEND)]]},
+ {id:'rectAbd',name:'Gerader Bauchmuskel (Rectus abdominis)',group:'trunk',kind:'muscle',r:1.0,pcsa:1.6,joints:['pelvis'],layer:2,
+  fas:[[U_(2.0,26,9.0,TEND),U_(2.0,16,9.4),U_(1.5,6,8.4),B_(-6.4,-1.8,5.6,TEND)]]},
+ {id:'oblique',name:'Schräge Bauchmuskeln (Obliqui)',group:'trunk',kind:'muscle',r:0.9,pcsa:1.4,joints:['pelvis'],layer:2,
+  fas:[[U_(9.5,18,3.5,TEND),U_(7.5,9,5.5),B_(2.6,9.4,2.0,TEND)],[U_(6.5,12,7.5),B_(-3.0,-1.6,5.0,TEND)]]},
+ {id:'addLong',name:'Adductor longus · Pectineus',group:'hip',kind:'muscle',r:0.9,pcsa:1.2,joints:['hip'],
+  fas:[[B_(-6.6,-2.6,4.6,TEND),F_(0.5,-10,1.6),F_(2.5,-22,-0.8,TEND)]]},
+ {id:'piri',name:'Piriformis · tiefe Außenrotatoren',group:'hip',kind:'muscle',r:0.7,pcsa:0.8,joints:['hip'],
+  fas:[[B_(-7.6,3.0,-8.2),B_(-3.0,1.0,-6.4),F_(5.2,-0.8,-1.8,TEND)]]},
 ];
 const STRUCT_BY_ID={}; STRUCT.forEach(s=>STRUCT_BY_ID[s.id]=s);
 
@@ -139,7 +158,8 @@ const LAYER_GROUPS=[
  {id:'medial',name:'Pes anserinus',color:'#b5766a',items:[['sart','Sartorius'],['gracilis','Gracilis']]},
  {id:'calf',name:'Wade',color:'#b5766a',items:[['gastroM','Gastrocnemius medial'],['gastroL','Gastrocnemius lateral'],['soleus','Soleus · Achillessehne']]},
  {id:'shin',name:'Unterschenkel vorn/seitlich',color:'#b5766a',items:[['tibAnt','Tibialis anterior'],['tibPost','Tibialis posterior'],['peron','Peroneus longus']]},
- {id:'nerve',name:'Nerven',color:'#f4d35e',items:[['nPer','N. peroneus communis']]},
+ {id:'nerve',name:'Nerven',color:'#f4d35e',items:[['nPer','N. ischiadicus / peroneus']]},
+ {id:'trunk',name:'Rumpf & Becken',color:'#b5766a',items:[['erector','Rückenstrecker'],['rectAbd','Rectus abdominis'],['oblique','Schräge Bauchmuskeln'],['addLong','Adductor longus'],['piri','Piriformis']]},
 ];
 
 /* ===================== Beschreibungen ===================== */
@@ -176,8 +196,13 @@ const INFO={
  deltoid:{k:'Band (mehrschichtig)',f:'Innenband vom Innenknöchel zu Talus, Kahnbein und Fersenbein; sichert gegen Eversion und Außenrotation, stützt das Längsgewölbe.',p:'Pronationstrauma, Begleitverletzung bei Außenknöchelfraktur, Überlastung beim Knick-Senkfuß.',t:'Eversionsstress, Druckschmerz unter dem Innenknöchel.'},
  plantar:{k:'Faszie',f:'Spannt das Längsgewölbe vom Fersenbein zu den Zehen; Windlass-Mechanismus: Zehenstreckung spannt die Faszie und hebt das Gewölbe (Abstoßphase).',p:'Plantarfasziitis (Anlaufschmerz an der Ferse), Fersensporn, Ruptur (selten).',t:'Druck am medialen Fersenbeinhöcker, Dehnung mit Zehenstreckung (Windlass-Test).'},
  nPer:{k:'Nerv',f:'Läuft um den Fibulahals in die Unterschenkelloge; versorgt Fußheber und Fußaußenrand. Dort oberflächlich und druckgefährdet.',p:'Druckläsion (Gips, übereinandergeschlagene Beine, Lagerung) → Fußheberschwäche (Steppergang); Dehnung bei Slump-Position (Hüftbeugung, Kniestreckung, Plantarflexion + Inversion).',t:'Tinel am Fibulakopf, Slump-Test, Fersengang.'},
- pelvis:{k:'Knochen (Kontext)',f:'Becken mit Hüftpfanne; der Rumpf darüber wird bei Bodenkontakt automatisch so geneigt, dass der Körperschwerpunkt über dem Fuß bleibt (Gleichgewicht).',p:'Beckenkippung und Rumpfneigung bestimmen die Hüft- und Kniemomente: aufrechter Rumpf → mehr Knielast, vorgeneigter Rumpf → mehr Hüft- und Rückenlast.',t:''},
- femur:{k:'Knochen',f:'Femurkopf (Kugel, r ≈ 2,4 cm), Schenkelhals (125° zum Schaft), Trochanter major (Abduktoren) und minor (Iliopsoas), Schaft mit Linea aspera (Vasti, Adduktoren), Kondylen (Kugelflächen r ≈ 2,3 cm) mit Trochlea für die Patella.',p:'Schenkelhalsfraktur (Alter), Hüftimpingement (Cam am Kopf-Hals-Übergang), Knorpelschaden an den Kondylen.',t:''},
+ erector:{k:'Muskel (Rumpf ↔ Becken)',f:'Streckt die Lendenwirbelsäule und kippt das Becken nach vorn; hält den Rumpf beim Bücken und Heben gegen die Schwerkraft (exzentrisch beim Vorneigen).',p:'Überlastung beim Heben mit rundem Rücken; verkürzt/überaktiv beim Hohlkreuz („Lower-Crossed-Syndrom“ zusammen mit dem Hüftbeuger), schwach bei flachem Rücken.',t:'Rumpfneigung mit Last, Superman/Bird-Dog.'},
+ rectAbd:{k:'Muskel (Rumpf ↔ Becken)',f:'Vom Brustkorb zum Schambein: beugt den Rumpf und kippt das Becken nach hinten (richtet das Hohlkreuz auf); Gegenspieler des Rückenstreckers und des Hüftbeugers.',p:'Schwäche erlaubt anteriore Beckenkippung und Hohlkreuz; Rektusdiastase; Ansatzreizung am Schambein (Sportlerleiste).',t:'Beckenkippung im Liegen, Plank.'},
+ oblique:{k:'Muskel (Rumpf ↔ Becken)',f:'Von den Rippen zum Darmbeinkamm und Leistenband: Rumpfrotation und Seitneigung, Beckenkontrolle in der Frontalebene, Bauchpresse.',p:'Schwäche → Beckenabsinken und Rumpfausweichen im Einbeinstand; Überlastung bei Wurf-/Schlagsport.',t:'Side-Plank, Rotation gegen Widerstand.'},
+ addLong:{k:'Muskel + Sehne',f:'Vom Schambein zur Linea aspera: Adduktion und Hüftbeugung aus der Streckung; stabilisiert das Becken beim Cutting und Grätschen.',p:'Häufigste Leistenverletzung im Fußball (Adduktorenzerrung, Ansatztendinopathie am Schambein); Verkürzung bei Sitzhaltung.',t:'Squeeze-Test (Ball zwischen den Knien), Druckschmerz am Schambein.'},
+ piri:{k:'Muskel (tiefe Außenrotatoren)',f:'Vom Kreuzbein zum Trochanter major: Außenrotation im Stand, Abduktion bei gebeugter Hüfte; der N. ischiadicus läuft unter (selten durch) den Muskel.',p:'Piriformis-Syndrom: Verspannung reizt den N. ischiadicus (Gesäßschmerz mit Ausstrahlung ins Bein, verstärkt im Sitzen); verkürzt bei viel Sitzen.',t:'FAIR-Test (Flexion, Adduktion, Innenrotation), Dehnung im Vierer-Sitz.'},
+ pelvis:{k:'Knochen (Kontext)',f:'Becken mit Hüftpfanne; der Rumpf darüber wird bei Bodenkontakt automatisch so geneigt, dass der Körperschwerpunkt über dem Fuß bleibt (Gleichgewicht). Die Beckenkippung (Regler) verstellt das Becken gegen Rumpf und Oberschenkel: nach vorn = Hohlkreuz, Hüftbeuger und Rückenstrecker verkürzt, Hamstrings und Bauchmuskeln gedehnt; nach hinten umgekehrt.',p:'Beckenkippung und Rumpfneigung bestimmen die Hüft- und Kniemomente: aufrechter Rumpf → mehr Knielast, vorgeneigter Rumpf → mehr Hüft- und Rückenlast. Anteriore Kippung mit Hohlkreuz belastet Facetten und Bandscheiben, posteriore Kippung in der tiefen Kniebeuge („Butt Wink“) die Bandscheiben in Flexion.',t:'Beckenkippung im Stand (Hand am Kreuz), Thomas-Test.'},
+ femur:{k:'Knochen',f:'Femurkopf (Kugel, r ≈ 2,4 cm), Schenkelhals (125° zum Schaft), Trochanter major (Abduktoren) und minor (Iliopsoas), Schaft mit Linea aspera (Vasti, Adduktoren), Kondylen (Kugelflächen r ≈ 2,3 cm) mit Trochlea für die Patella.',p:'Schenkelhalsfraktur (Alter), Hüftimpingement (FAI: Cam am Kopf-Hals-Übergang oder Pincer am Pfannenrand) – der Kopf-Hals-Übergang stößt bei Beugung + Adduktion + Innenrotation an den vorderen Pfannenrand (Labrumschaden, Leistenschmerz beim Sitzen/Autofahren); Knorpelschaden an den Kondylen.',t:'FADIR-Test (Flexion 90°, Adduktion, Innenrotation), Preset „Hüftimpingement“.'},
  patella:{k:'Knochen (Sesambein)',f:'Vergrößert den Hebelarm des Quadrizeps; gleitet mit zunehmender Beugung von der Trochlea auf die Kondylen (Eingriff ab ≈ 20°). Kontaktfläche und -kraft steigen mit der Beugung; der Druck ist bei 60–90° am höchsten.',p:'Patellofemoraler Schmerz (häufigste Knie-Diagnose bei jungen Erwachsenen), Chondromalazie, Lateralisation/Luxation bei flacher Trochlea.',t:'Zohlen-Zeichen, Kniebeuge/Treppe abwärts schmerzhaft, Apprehension-Test der Patella.'},
  tibia:{k:'Knochen',f:'Tibiaplateau (medial größer, konkav; lateral konvex) mit Eminentia (Kreuzbandansätze), Tuberositas tibiae (Patellarsehne), Tuberculum Gerdy (Tractus), Pes anserinus medial; Fibula trägt kaum Last, bildet den Außenknöchel.',p:'Tibiakopffraktur, Stressfraktur, Osgood-Schlatter, Fibulakopf: N. peroneus.',t:''},
  foot:{k:'Knochen',f:'Talus (Rolle im Knöchelgabel: Dorsal-/Plantarflexion), Calcaneus (Subtalargelenk: Inversion/Eversion, Achillessehnenansatz), Mittel- und Vorfuß (Gewölbe, Abdruck über die Mittelfußköpfchen).',p:'Sprunggelenkarthrose nach Fraktur, vorderes Impingement (Fußballer: Osteophyten am Tibiavorderrand), hinteres Impingement (Os trigonum, Ballett).',t:''},

@@ -31,9 +31,10 @@ test('Kniebeuge tief (140°): PF 4–7,5 × KG (Reilly & Martens 7,6 als Obergre
   assert.ok(r.M.pfBW > preset('squatPar').M.pfBW, 'tiefer > parallel');
 });
 
-test('Treppe (einbeinig, 65°): PF ≈ 3,3 × KG (2,5–4,5), Hüftkontaktkraft 2–6 × KG', () => {
+test('Treppe (einbeinig, 65°): PF ≈ 3,3 × KG (2,5–4,5), Hüftkontaktkraft 2–7 × KG (statischer Extremfall mit 60° Rumpf; Bergmann in vivo ≈ 2,5–3,5 × KG im Gehrhythmus), Glutaeus maximus beteiligt', () => {
   const r = preset('stair');
-  between(r.M.pfBW, 2.5, 4.5, 'PF Treppe'); between(r.M.hipBW, 2, 6, 'Hüftkraft Treppe');
+  between(r.M.pfBW, 2.5, 4.5, 'PF Treppe'); between(r.M.hipBW, 2, 7, 'Hüftkraft Treppe');
+  assert.ok((r.act.glutMax || 0) > 0.2 && (r.act.semimem || 0) > 0.2, 'Hüftstrecker (Glutaeus maximus und Hamstrings) tragen den Treppenaufstieg');
 });
 
 test('Beinstrecker: VKB-Last nahe Streckung maximal, bei 60° gering, jenseits 90° null; ohne Hüftmoment (Sitz stützt)', () => {
@@ -103,4 +104,72 @@ test('Presets, Abläufe und Übungen: eindeutige IDs, im Bewegungsraum; Lasten m
   for (const p of m.PRESETS) { const c = m.clampPose(Object.assign({}, p.pose)); for (const k of keys) assert.ok(Math.abs(c[k] - (p.pose[k] || 0)) <= 5, `Preset ${p.id}: ${k} außerhalb (${p.pose[k]} → ${c[k]})`); }
   for (const a of m.ANIMS) for (const pose of [a.from, a.to]) { const c = m.clampPose(Object.assign({}, pose)); for (const k of keys) assert.ok(Math.abs(c[k] - (pose[k] || 0)) <= 22, `Ablauf ${a.id}: ${k} außerhalb`); }
   for (const p of m.PHYSIO) { if (p.load) { assert.equal(p.load.F.length, 3); assert.ok(typeof p.load.label === 'string'); assert.ok(['foot', 'body'].includes(p.load.at)); } }
+});
+
+/* ---- v0.12: Ansätze, Hüfte/Becken/Rumpf, Kompartimente, anderes Bein ---- */
+const V3 = (x, y, z) => ({ x, y, z });
+const distEll = (p, c, r, ry) => { let dx = p.x - c.x, dy = p.y - c.y, dz = p.z - c.z; if (ry) { const cs = Math.cos(-ry), sn = Math.sin(-ry); const x2 = dx * cs + dz * sn, z2 = -dx * sn + dz * cs; dx = x2; dz = z2; } const n = Math.hypot(dx / r.x, dy / r.y, dz / r.z); return (n - 1) * Math.min(r.x, r.y, r.z); };
+const distTube = (p, pts, radii) => { let best = 1e9; for (let i = 0; i < pts.length - 1; i++) { const a = pts[i], b = pts[i + 1]; const ab = V3(b.x - a.x, b.y - a.y, b.z - a.z); const l2 = ab.x * ab.x + ab.y * ab.y + ab.z * ab.z; const t = Math.max(0, Math.min(1, ((p.x - a.x) * ab.x + (p.y - a.y) * ab.y + (p.z - a.z) * ab.z) / l2)); const q = V3(a.x + ab.x * t, a.y + ab.y * t, a.z + ab.z * t); const r = radii[i] + (radii[i + 1] - radii[i]) * t; best = Math.min(best, Math.hypot(p.x - q.x, p.y - q.y, p.z - q.z) - r); } return best; };
+
+test('Ansätze: jeder Ursprung und Ansatz von Muskeln und Bändern liegt auf einem Knochenprimitiv des Rahmens (≤ 4 mm), nichts hängt in der Luft', () => {
+  const prims = m.recordBones(); assert.ok(prims.length > 50, 'Knochenprimitive aufgezeichnet');
+  const dist = (f, p) => { let best = 1e9; for (const pr of prims) { if (pr.f !== f) continue; best = Math.min(best, pr.kind === 'ell' ? distEll(p, pr.c, pr.r, pr.ry) : distTube(p, pr.pts, pr.radii)); } return best; };
+  const bad = [];
+  for (const s of m.STRUCT) { if (s.kind === 'nerve' || s.surface) continue; s.fas.forEach((f, i) => { for (const lm of [f[0], f[f.length - 1]]) { const d = dist(lm.f, lm.v); if (d > 0.4) bad.push(`${s.id}#${i} ${lm.f}(${lm.v.x},${lm.v.y},${lm.v.z}) ${d.toFixed(2)} cm`); } }); }
+  assert.deepEqual(bad, [], 'Endpunkte ohne Knochenkontakt: ' + bad.join('; '));
+});
+
+test('Hüftimpingement (FADIR): Kopf-Hals-Übergang trifft den Pfannenrand bei 90° Beugung + Adduktion + Innenrotation (< 4 mm), frei im Stand (> 25 mm) und in Außenrotation', () => {
+  const fadir = preset('fadir'), stand = preset('stand'), er = m.evalPose({ hipF: 90, knee: 90, hipR: -25, ground: 0 }), f90 = m.evalPose({ hipF: 90, knee: 90, ground: 0 });
+  assert.ok(fadir.M.fai < 4 && fadir.M.faiComp > 0.6, `FADIR ${fadir.M.fai.toFixed(1)} mm`);
+  assert.ok(stand.M.fai > 25, `Stand ${stand.M.fai.toFixed(1)} mm`); assert.ok(er.M.fai > 8, `Außenrotation ${er.M.fai.toFixed(1)} mm`);
+  assert.ok(f90.M.fai > fadir.M.fai && f90.M.fai < 10, `gerade Beugung 90°: ${f90.M.fai.toFixed(1)} mm – nahe, aber nicht so eng wie FADIR`);
+});
+
+test('Kompartimente: Varus belastet medial, Valgus lateral, Stand ≈ 55 % medial; Knick-Senkfuß (Pronation → Tibia-Innenrotation → Valgus) verlagert nach lateral', () => {
+  const stand = preset('stand'); between(stand.M.medShare, 0.5, 0.65, 'medialer Anteil im Stand');
+  const varus = m.evalPose({ valg: -8, knee: 12 }), valgus = m.evalPose({ valg: 8, knee: 12 });
+  assert.ok(varus.M.medShare > 0.7 && varus.M.medShare < 0.95, `Varus medial ${varus.M.medShare.toFixed(2)}`);
+  assert.ok(valgus.M.medShare < 0.35 && valgus.M.medShare > 0.05, `Valgus medial ${valgus.M.medShare.toFixed(2)}`);
+  const pron = preset('pronation');
+  assert.ok(pron.M.tibRe > pron.pose.tibR + 5, `Pronation koppelt Tibia-Innenrotation (${pron.M.tibRe.toFixed(1)}°)`); assert.ok(pron.M.medShare < 0.35, 'Knick-Senkfuß entlastet medial');
+  assert.ok(Math.abs(stand.M.tfMed + stand.M.tfLat - stand.M.tf) < 1e-6, 'Anteile summieren sich zur TF-Kompression');
+});
+
+test('Beckenkippung: nach vorn verkürzt Hüftbeuger und Rückenstrecker, dehnt Bauchmuskeln und Hamstrings – nach hinten umgekehrt (unteres gekreuztes Syndrom)', () => {
+  const ant = preset('antTilt'), post = preset('postTilt'), n = preset('stand');
+  assert.ok(ant.strain.iliopsoas < n.strain.iliopsoas - 0.015 && ant.strain.erector < n.strain.erector - 0.02, 'vorn: Iliopsoas und Erector verkürzt');
+  assert.ok(ant.strain.rectAbd > n.strain.rectAbd + 0.04 && ant.strain.semimem > n.strain.semimem + 0.02, 'vorn: Rectus abdominis und Hamstrings gedehnt');
+  assert.ok(post.strain.erector > n.strain.erector + 0.02 && post.strain.rectAbd < n.strain.rectAbd - 0.04, 'hinten: Erector gedehnt, Bauch verkürzt');
+  assert.ok(Math.abs(ant.rh.hipClin - (ant.pose.hipF + ant.rh.lean + ant.pose.tilt)) < 1e-9, 'klinische Hüftbeugung enthält die Kippung');
+  const thomas = preset('thomas'); assert.ok(thomas.strain.rectF > 0.1 && thomas.strain.iliopsoas > 0.02, 'Thomas-Test dehnt Rectus femoris (Knie gebeugt) und Iliopsoas');
+});
+
+test('Hüftmuskeln: Glutaeus maximus streckt über den ganzen Beugebereich (Hebel ≥ 2 cm bis 120°), Iliopsoas bleibt Beuger bis 90°; Hüfthinge (Kreuzheben) und tiefe Kniebeuge aktivieren den Glutaeus', () => {
+  const dl = byId(m.PHYSIO, 'deadlift'); const bottom = Object.assign({}, dl.pose, dl.sweep);
+  const r = m.evalPose(bottom, { load: dl.load });
+  assert.ok(r.rh.balanced && r.rh.hipClin > 80, `Kreuzheben unten: Hüfte ${r.rh.hipClin.toFixed(0)}°, Rumpf ${r.rh.lean.toFixed(0)}°`);
+  assert.ok((r.act.glutMax || 0) > 0.25 && (r.act.semimem || 0) > 0.3 && !(r.act.iliopsoas > 0.02), `Glutaeus ${(r.act.glutMax || 0).toFixed(2)}, Hamstrings ${(r.act.semimem || 0).toFixed(2)}, Iliopsoas ${(r.act.iliopsoas || 0).toFixed(2)}`);
+  assert.ok(r.M.tfBW < 3 && r.M.hipBW > 3, `TF ${r.M.tfBW.toFixed(1)} × KG, Hüfte ${r.M.hipBW.toFixed(1)} × KG`);
+  const deep = preset('squatDeep'); assert.ok((deep.act.glutMax || 0) > 0.15 && !(deep.act.iliopsoas > 0.02), 'tiefe Kniebeuge: Glutaeus aktiv, Iliopsoas nicht');
+  for (const hipF of [0, 60, 90, 120]) { const x = m.evalPose({ hipF, knee: Math.min(hipF, 100), ground: 0 }); assert.ok((x.act.glutMax || 0) === 0 || x.M.mHip > 0, 'konsistent'); }
+});
+
+test('Anderes Bein: Spiegelebene folgt dem Becken (kein Auseinanderdriften bei Bodenkontakt); Ausfallschritt mit hinterem Bein am Boden ist ausbalanciert, Ballen auf Bodenhöhe; Pistol hebt das Bein', () => {
+  const fr = m.MODULE.frames, K = m.MODULE.kinematics;
+  for (const ps of [preset('stand').pose, preset('squatPar').pose, preset('trend').pose, preset('lunge').pose]) {
+    K.solvePose(ps, fr); const midX = fr.B.p.x + m.AN.mid;
+    assert.ok(Math.abs(fr.F2.p.x - (2 * midX - fr.F.p.x)) < 1e-6, 'Hüfte des anderen Beins gespiegelt an der Beckenmitte');
+  }
+  const lunge = preset('lunge'); assert.ok(lunge.rh.balanced && lunge.rh.otherMode === 3 && lunge.rh.otherGround, `Ausfallschritt: Rumpf ${lunge.rh.lean.toFixed(0)}°`); between(lunge.rh.lean, 0, 40, 'Rumpfneigung Ausfallschritt');
+  K.solvePose(lunge.pose, fr); const mt = K.worldPt(fr, { f: 'C2', v: m.AN.mtHeads }), heel = K.worldPt(fr, { f: 'C2', v: m.AN.heel });
+  assert.ok(Math.abs(mt.y - m.AN.groundY) < 0.3, `Ballen des hinteren Fußes auf dem Boden (${mt.y.toFixed(1)} vs ${m.AN.groundY})`); assert.ok(heel.y > mt.y + 5 && mt.z < fr.B.p.z - 20, 'Ferse angehoben, Fuß hinter dem Becken');
+  const pistol = byId(m.PHYSIO, 'pistol'); const p = m.evalPose(pistol.pose); assert.equal(p.rh.otherMode, 4); assert.ok(!p.rh.otherGround);
+  K.solvePose(p.pose, fr); assert.ok(fr.C2.p.z > fr.B.p.z + 40 && fr.C2.p.y > m.AN.groundY + 20, 'Pistol: anderes Bein vorn gestreckt in der Luft');
+  const one = m.evalPose({ wt: 100 }); assert.equal(one.rh.otherMode, 2, 'volles Gewicht auf einem Bein → anderes Bein abgehoben (automatisch)');
+});
+
+test('Druckmittelpunkt wandert stetig: kleine Änderungen des Sprunggelenkwinkels ändern das Kniemoment nur begrenzt (kein Sprung Ferse ↔ Ballen)', () => {
+  let prev = null;
+  for (let ankle = 10; ankle <= 40; ankle += 1) { const r = m.evalPose({ hipF: 60, knee: 90, ankle, wt: 100 }); if (prev !== null) assert.ok(Math.abs(r.M.mKnee - prev) < 25, `Sprung im Kniemoment bei ${ankle}°: ${prev.toFixed(0)} → ${r.M.mKnee.toFixed(0)} Nm`); prev = r.M.mKnee; }
 });

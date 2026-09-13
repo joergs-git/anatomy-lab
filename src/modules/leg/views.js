@@ -17,7 +17,7 @@ const detailDefs=[
 ];
 
 /* Schichtstufen (von außen nach innen abtragen) */
-const PEEL=[{ids:[],key:'peel0'},{ids:['pelvis','other','ground'],key:'peel1'},{ids:['glutMax','glutMed','tfl','addMag','iliopsoas','sart','gracilis'],key:'peel2'},
+const PEEL=[{ids:[],key:'peel0'},{ids:['pelvis','other','ground'],key:'peel1'},{ids:['glutMax','glutMed','tfl','addMag','iliopsoas','sart','gracilis','erector','rectAbd','oblique','addLong','piri'],key:'peel2'},
   {ids:['rectF','vastL','vastM','bicF','semimem','semitend','gastroM','gastroL','soleus','tibAnt','tibPost','peron','nPer'],key:'peel3'},
   {ids:['patella','patTen','hoffa'],key:'peel4'},{ids:['MCL','LCL','atfl','cfl','ptfl','deltoid','plantar'],key:'peel5'},{ids:['ACL','PCL','menisci'],key:'peel6'}];
 PEEL.forEach(p=>Object.defineProperty(p,'name',{get(){ return t(p.key); }}));

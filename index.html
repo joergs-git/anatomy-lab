@@ -82,6 +82,8 @@ button{cursor:pointer}
 .ctl .val{font-family:var(--mono);font-size:11.5px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
 .ctl input[type=range]{grid-column:1/3;width:100%;margin:2px 0;accent-color:var(--accent);height:22px}
 .ctl .ends{grid-column:1/3;display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);margin-top:-4px}
+.ctl .pseg{grid-column:1/3;margin:3px 0 2px;flex-wrap:wrap}
+.ctl .pseg button{padding:3px 8px;font-size:11px;flex:1 1 auto}
 .ctl.check{grid-template-rows:auto}
 .ctl.check label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
 .ctl.check input{margin:0}
@@ -379,7 +381,7 @@ details.sub[open] summary::before{transform:rotate(90deg)}
       <div id="info"><p class="empty">Klicke oder tippe auf einen Muskel, eine Sehne, ein Band oder einen Knochen.</p></div>
     </section>
     <div class="disclaimer" data-i18n="disc2">Vereinfachtes biomechanisches Lehrmodell. Kein Diagnoseinstrument.</div>
-    <div class="ver"><a href="https://github.com/joergs-git/anatomy-lab" target="_blank" rel="noopener">anatomy-lab</a> · <span id="verName"></span> v0.11.0</div>
+    <div class="ver"><a href="https://github.com/joergs-git/anatomy-lab" target="_blank" rel="noopener">anatomy-lab</a> · <span id="verName"></span> v0.12.0</div>
     <div class="fill"></div>
   </aside>
 
@@ -413,8 +415,10 @@ const qAxis = (axis,deg)=>new THREE.Quaternion().setFromAxisAngle(axis.clone().n
 const qMul = (...qs)=>qs.reduce((a,b)=>a.multiply(b),new THREE.Quaternion());
 
 /* Kürzester Weg um eine Kugel (Muskel-/Sehnen-Wrapping, Garner & Pandy).
-   Liefert Zwischenpunkte auf dem Bogen oder null, wenn die Strecke A-B die Kugel nicht schneidet. */
-function wrapSphere(A,B,C,r){
+   Liefert Zwischenpunkte auf dem Bogen oder null, wenn die Strecke A-B die Kugel nicht schneidet.
+   side (optional, Weltrichtung): die Umlenkung muss auf dieser Seite der Kugel liegen (ein Muskel wechselt nicht die Gelenkseite) – läuft die
+   Strecke auf der falschen Seite am Mittelpunkt vorbei, wird sie über einen Stützpunkt auf der richtigen Seite geführt (zwei Teilbögen). */
+function wrapSphere(A,B,C,r,side){
   const a=A.clone().sub(C), b=B.clone().sub(C);
   const la=a.length(), lb=b.length();
   if(la<=r*1.001||lb<=r*1.001) return null;
@@ -422,6 +426,11 @@ function wrapSphere(A,B,C,r){
   const t=clamp(-a.dot(ab)/L2,0,1);
   const closest=A.clone().addScaledVector(ab,t);
   if(closest.distanceTo(C)>=r) return null;
+  if(side){
+    const abh=ab.clone().normalize(); const n=side.clone().sub(abh.multiplyScalar(side.dot(abh)));
+    if(n.lengthSq()>1e-6){ n.normalize(); const rad=closest.clone().sub(C); const rl=rad.length();
+      if(rl<1e-6||rad.dot(n)/rl<0.3){ const S=C.clone().addScaledVector(n,r*1.02); return [...(wrapSphere(A,S,C,r)||[]),S,...(wrapSphere(S,B,C,r)||[])]; } }
+  }
   const e1=a.clone().normalize();
   let e2=b.clone().sub(e1.clone().multiplyScalar(b.dot(e1)));
   if(e2.lengthSq()<1e-8){ e2=V3(0,1,0).cross(e1); if(e2.lengthSq()<1e-6) e2=V3(1,0,0).cross(e1); }
@@ -444,7 +453,7 @@ function wrapPath(items,spheres){
     const A=out[out.length-1], B=items[i];
     let inserted=null;
     for(const s of spheres){
-      const arc=wrapSphere(A.p,B.p,s.c,s.r);
+      const arc=wrapSphere(A.p,B.p,s.c,s.r,s.side);
       if(arc){ inserted=arc; break; }
     }
     if(inserted){
@@ -1566,22 +1575,25 @@ AN.ankle=V3(0,-41,0);              // Sprunggelenkzentrum, tibialokal
 AN.subtalar=V3(0,-2.0,-1.0);       // Subtalargelenk, taluslokal (= Ursprung C)
 AN.groundY=-91.2;                  // Bodenhöhe (Sohle) im Stand, Weltkoordinaten
 AN.GT={c:V3(6.0,-2.0,-0.8),r:V3(2.0,2.8,2.0)};        // Trochanter major
-AN.LT={c:V3(2.4,-5.4,1.4),r:V3(0.9,1.2,0.9)};         // Trochanter minor
+AN.LT={c:V3(2.6,-5.2,-1.4),r:V3(0.9,1.2,0.9)};        // Trochanter minor (posteromedial am Übergang Hals → Schaft)
 AN.condM={c:V3(-2.2,-43.2,-0.6),r:2.3};               // medialer Femurkondylus (Kugel)
 AN.condL={c:V3(2.3,-43.0,-0.6),r:2.25};               // lateraler Femurkondylus
 AN.trochlea={c:V3(0,-41.4,1.7),r:V3(2.4,2.6,1.5)};    // Trochlea (Patellagleitlager)
 AN.epiL=V3(4.4,-42.6,0.2); AN.epiM=V3(-4.5,-42.8,-0.3); AN.addTub=V3(-4.0,-40.5,-0.8);
-AN.plateau={c:V3(0,-0.6,0),r:V3(3.9,0.8,2.7)};        // Tibiaplateau, tibialokal
+AN.plateau={c:V3(0,-3.2,0),r:V3(3.9,1.0,2.7)};        // Tibiaplateau, tibialokal (Oberfläche 2,2 cm unter dem Kniezentrum = Kondylenradius)
+AN.metaph={c:V3(0,-5.2,0.4),r:V3(3.2,3.0,2.4)};        // Tibiakopf-Metaphyse (Ansätze von MCL, Pes anserinus, Semimembranosus, Tractus)
 AN.TT=V3(0,-5.2,3.6);                                  // Tuberositas tibiae
-AN.gerdy=V3(3.0,-3.0,2.2);                             // Tuberculum Gerdy (Tractus-Ansatz)
-AN.pes=V3(-2.3,-6.2,2.1);                              // Pes anserinus
-AN.fibHead=V3(3.9,-3.5,-1.5); AN.LM=V3(3.4,-42.8,-0.5); AN.MM=V3(-3.0,-41.5,-0.2);   // Fibulakopf, Malleolus lateralis/medialis
-AN.tibAntRim=V3(0,-39.6,2.0); AN.tibPostRim=V3(0,-39.8,-1.9);   // vorderer/hinterer Tibiarand am Sprunggelenk
+AN.gerdy=V3(2.8,-3.6,1.9);                             // Tuberculum Gerdy (Tractus-Ansatz)
+AN.pes=V3(-2.1,-6.4,1.9);                              // Pes anserinus
+AN.fibHead=V3(3.9,-3.5,-1.5); AN.LM=V3(3.4,-41.4,-0.5); AN.MM=V3(-3.0,-40.4,-0.2);   // Fibulakopf, Malleolus lateralis/medialis (Spitzen ≈ 1 cm unter der Sprunggelenkachse)
+AN.tibAntRim=V3(0,-39.0,2.0); AN.tibPostRim=V3(0,-39.2,-1.9);   // vorderer/hinterer Tibiarand am Sprunggelenk
 AN.talusNeck=V3(0,0.2,2.8); AN.talusPost=V3(0,-0.2,-2.5);       // Talushals (vorderes Impingement), Processus posterior (Os trigonum)
 AN.subtalarAxis=V3(0,Math.sin(42*DEG),Math.cos(42*DEG));         // Subtalarachse: 42° zur Horizontalen, nach vorn-oben
 AN.calcTuber=V3(0,-1.5,-6.5);                          // Tuber calcanei (Achillessehnenansatz), fußlokal
 AN.heel=V3(0,-4.7,-7.0); AN.mtHeads=V3(0,-5.2,12.5);   // Fersenauflage, Mittelfußköpfchen (Sohle), fußlokal
-AN.navic=V3(-2.2,-3.0,3.4); AN.cuboid=V3(2.2,-3.8,2.5);
+AN.navic=V3(-2.2,-3.0,3.4); AN.cuboid=V3(2.0,-3.9,2.5); AN.sustent=V3(-1.6,-1.3,-0.9); AN.talusLat=V3(1.5,-0.7,1.0);   // Kahnbein, Würfelbein, Sustentaculum tali, Processus lateralis tali
+AN.ASIS=V3(3.4,7.5,4.4); AN.AIIS=V3(1.6,3.8,5.2); AN.PSIS=V3(-3.0,5.5,-7.8); AN.pubis=V3(-6.8,-2.5,5.0); AN.ischium=V3(-3.6,-5.0,-4.6);   // Beckenlandmarken (beckenlokal)
+AN.headNeck=V3(0.77,-1.3,2.12); AN.acetRim=V3(0.26,2.64,1.5);   /* Kopf-Hals-Übergang vorn-unten (femurlokal, Kopfradius 2,6) und vorderer-oberer Pfannenrand (beckenlokal, Pfannenradius 3,05): Hüftimpingement – FADIR schließt auf ≈ 2 mm, neutral ≈ 37 mm, gerade Beugung 90° ≈ 5 mm */
 AN.patSup=V3(0,2.3,0.4); AN.patApex=V3(0,-2.4,0.2);   // Patella: oberer Pol (Quadrizepssehne), Spitze (Patellarsehne)
 AN.patR0=6.6; AN.patPhi0=46;                           // Patellabahn: Radius um das Kniezentrum, Winkel über der Horizontalen in Streckung
 AN.trunkCOM=V3(0,34,2.0);                              // Rumpf + Kopf + Arme (Schwerpunkt ≈ Th10), rumpflokal (Ursprung Beckenmitte)
@@ -1600,8 +1612,12 @@ const WRAP_KNEE={f:'F',v:V3(0,-43,-0.5),r:2.9};        // hintere Kondylen (Hams
 const WRAP_CONDM={f:'F',v:AN.condM.c,r:2.6};
 const WRAP_EPI={f:'F',v:V3(4.6,-42.6,0.2),r:1.6};       // lateraler Epikondylus (Tractus)
 const WRAP_GT={f:'F',v:AN.GT.c,r:2.6};
-const WRAP_LM={f:'T',v:V3(3.4,-42.5,-0.6),r:1.3};
-const WRAP_MM={f:'T',v:V3(-3.0,-41.5,-0.3),r:1.1};
+/* Hüftgelenk als Umlenkung (Kopf + Kapsel ≈ 3,4 cm): Beuger bleiben vorn (side ventral), der Glutaeus maximus bleibt hinten-unten (side dorsal-kaudal) –
+   ohne diese Seitenbindung schneidet die gerade Linie in tiefer Beugung durch das Gelenkzentrum und der Muskel würde rechnerisch zum Gegenspieler */
+const WRAP_HIP_ANT={f:'B',v:V3(0,0,0),r:3.4,side:V3(0,0.2,1).normalize()};
+const WRAP_HIP_POST={f:'B',v:V3(0,0,0),r:3.4,side:V3(0,-1,-0.3).normalize()};
+const WRAP_LM={f:'T',v:V3(3.4,-41.4,-0.6),r:1.3};
+const WRAP_MM={f:'T',v:V3(-3.0,-40.6,-0.3),r:1.1};
 const WRAP_HEEL={f:'C',v:V3(0,-2.6,-3.6),r:2.4};
 
 /* ===================== Strukturen =====================
@@ -1610,74 +1626,86 @@ const WRAP_HEEL={f:'C',v:V3(0,-2.6,-3.6),r:2.4};
 const STRUCT=[
  /* ---- Hüfte ---- */
  {id:'iliopsoas',name:'Iliopsoas',group:'hip',kind:'muscle',r:1.1,pcsa:2.2,joints:['hip'],
-  fas:[[U_(3.0,4.0,3.0),B_(-3.5,1.5,4.6),B_(0.5,-1.5,4.2,TEND),F_(2.3,-5.4,1.5,TEND)]]},
- {id:'glutMax',name:'Glutaeus maximus',group:'hip',kind:'muscle',r:1.5,pcsa:3.0,joints:['hip'],wrap:[WRAP_GT],layer:4,
-  fas:[[B_(-6.0,6.5,-8.0),B_(-2.0,0.0,-7.5),F_(4.8,-9.0,-2.0,TEND)],[B_(-5.0,3.0,-8.5),B_(0.5,-2.5,-7.0),F_(6.4,-10.5,-0.6,TEND)]]},
+  wrap:[WRAP_HIP_ANT],
+  fas:[[U_(1.2,4.0,-5.0),B_(-3.5,1.5,4.6),B_(0.0,1.5,4.0,TEND),F_(2.0,-5.4,-1.9,TEND)]]},   /* Lendenwirbelsäule → Fossa iliaca → Eminentia iliopubica (Umlenkung über Kapsel und Kopf) → Trochanter minor */
+ {id:'glutMax',name:'Glutaeus maximus',group:'hip',kind:'muscle',r:1.5,pcsa:3.0,joints:['hip'],wrap:[WRAP_HIP_POST,WRAP_GT],layer:4,
+  fas:[[B_(-6.2,3.5,-8.4),B_(-3.0,-6.0,-5.5),F_(4.8,-9.0,-1.8,TEND)],[B_(-6.0,6.5,-8.0),B_(-1.0,0.5,-7.5),F_(5.6,-10.5,-1.2,TEND)]]},   /* unterer Teil: Kreuzbein → über Sitzbein/Lig. sacrotuberale → Tuberositas glutea (Hauptstrecker); oberer Teil: Darmbein → Trochanter → Tractus */
  {id:'glutMed',name:'Glutaeus medius',group:'hip',kind:'muscle',r:1.2,pcsa:2.4,joints:['hip'],layer:4,
-  fas:[[B_(2.5,10.5,-2.0),B_(4.8,4.5,-1.6),F_(6.0,-0.2,-0.6,TEND)],[B_(4.0,9.0,2.0),B_(5.5,4.0,0.5),F_(6.2,-0.4,0.0,TEND)]]},
+  fas:[[B_(2.5,10.5,-2.0),B_(4.8,4.5,-1.6),F_(6.0,-0.2,-0.6,TEND)],[B_(3.6,9.0,1.6),B_(5.5,4.0,0.5),F_(6.2,-0.4,0.0,TEND)]]},
  {id:'tfl',name:'Tensor fasciae latae · Tractus iliotibialis',group:'hip',kind:'muscle',r:0.75,pcsa:0.6,joints:['hip','knee'],wrap:[WRAP_EPI],layer:1,
-  fas:[[B_(3.4,7.6,4.0),F_(7.0,-5.0,2.3),F_(6.9,-16,0.6,TEND),F_(6.7,-28,-0.2,TEND),F_(6.4,-36,-0.6,zITB),T_(3.1,-3.0,2.2,zITB)]]},
+  fas:[[B_(3.6,7.4,4.2),F_(7.0,-5.0,2.3),F_(6.9,-16,0.6,TEND),F_(6.7,-28,-0.2,TEND),F_(6.4,-36,-0.6,zITB),T_(2.8,-3.6,1.9,zITB)]]},
  {id:'addMag',name:'Adductor magnus',group:'hip',kind:'muscle',r:1.2,pcsa:2.5,joints:['hip'],layer:4,
-  fas:[[B_(-5.0,-4.5,-2.5),F_(-1.5,-22,-1.8),F_(-4.0,-40.5,-0.8,TEND)],[B_(-7.5,-3.0,2.5),F_(-1.0,-18,-0.5,TEND)]]},
+  fas:[[B_(-5.0,-4.8,-2.6),F_(-1.5,-22,-1.8),F_(-4.0,-40.5,-0.8,TEND)],[B_(-7.0,-3.4,3.4),F_(1.0,-12,-0.6),F_(2.6,-18,-1.0,TEND)]]},
  /* ---- Quadrizeps ---- */
- {id:'rectF',name:'Rectus femoris',group:'quad',kind:'muscle',r:1.2,pcsa:1.8,joints:['hip','knee'],layer:1,
-  fas:[[B_(1.5,4.0,5.5,TEND),F_(1.5,-10,4.0),F_(1.0,-25,4.6),F_(0.4,-35,4.2,TEND),P_(0,2.3,0.4,TEND)]]},
+ {id:'rectF',name:'Rectus femoris',group:'quad',kind:'muscle',r:1.2,pcsa:1.8,joints:['hip','knee'],wrap:[WRAP_HIP_ANT],layer:1,
+  fas:[[B_(1.6,3.8,5.4,TEND),F_(1.5,-10,4.0),F_(1.0,-25,4.6),F_(0.4,-35,4.2,TEND),P_(0,2.3,0.4,TEND)]]},
  {id:'vastL',name:'Vastus lateralis',group:'quad',kind:'muscle',r:1.5,pcsa:3.5,joints:['knee'],
   fas:[[F_(4.5,-9.0,-0.5),F_(4.2,-22,2.6),F_(2.6,-34,3.8,TEND),P_(1.4,2.0,0.3,TEND)]]},
  {id:'vastM',name:'Vastus medialis',group:'quad',kind:'muscle',r:1.4,pcsa:2.6,joints:['knee'],
-  fas:[[F_(-1.5,-14,-0.8),F_(-3.0,-28,2.2),F_(-2.6,-37,3.6,TEND),P_(-1.4,1.6,0.3,TEND)]]},
+  fas:[[F_(2.7,-14,-1.0),F_(-3.0,-28,2.2),F_(-2.6,-37,3.6,TEND),P_(-1.4,1.6,0.3,TEND)]]},
  /* ---- Hamstrings & Pes anserinus ---- */
  {id:'bicF',name:'Biceps femoris (langer Kopf)',group:'ham',kind:'muscle',r:1.2,pcsa:1.6,joints:['hip','knee'],wrap:[WRAP_KNEE],
   fas:[[B_(-3.5,-5.5,-5.0,TEND),F_(2.5,-20,-3.5),F_(3.8,-34,-3.2,TEND),T_(3.9,-3.4,-1.6,TEND)]]},
  {id:'semimem',name:'Semimembranosus',group:'ham',kind:'muscle',r:1.2,pcsa:2.0,joints:['hip','knee'],wrap:[WRAP_KNEE],
-  fas:[[B_(-3.8,-5.2,-5.2,TEND),F_(-2.5,-22,-3.4),F_(-3.4,-36,-3.0,TEND),T_(-3.0,-2.6,-1.6,TEND)]]},
+  fas:[[B_(-3.8,-5.2,-5.2,TEND),F_(-2.5,-22,-3.4),F_(-3.4,-36,-3.0,TEND),T_(-2.4,-4.0,-1.3,TEND)]]},
  {id:'semitend',name:'Semitendinosus',group:'ham',kind:'muscle',r:0.9,pcsa:1.0,joints:['hip','knee'],wrap:[WRAP_CONDM],
-  fas:[[B_(-3.2,-5.8,-4.6,TEND),F_(-1.8,-22,-4.2),F_(-3.2,-38,-2.6,TEND),T_(-2.2,-6.2,2.0,TEND)]]},
+  fas:[[B_(-3.2,-5.8,-4.6,TEND),F_(-1.8,-22,-4.2),F_(-3.2,-38,-2.6,TEND),T_(-2.0,-6.6,1.9,TEND)]]},
  {id:'sart',name:'Sartorius',group:'medial',kind:'muscle',r:0.6,pcsa:0.3,joints:['hip','knee'],
-  fas:[[B_(3.2,7.2,4.6),F_(-0.5,-12,4.5),F_(-3.5,-30,1.5),F_(-4.6,-40,-0.6,TEND),T_(-2.4,-6.0,2.2,TEND)]]},
+  fas:[[B_(3.5,7.6,4.6),F_(-0.5,-12,4.5),F_(-3.5,-30,1.5),F_(-4.6,-40,-0.6,TEND),T_(-2.1,-6.2,2.0,TEND)]]},
  {id:'gracilis',name:'Gracilis',group:'medial',kind:'muscle',r:0.6,pcsa:0.3,joints:['hip','knee'],
-  fas:[[B_(-8.5,-2.5,5.0),F_(-4.5,-20,0.5),F_(-4.8,-38,-0.8,TEND),T_(-2.3,-6.4,2.1,TEND)]]},
+  fas:[[B_(-7.4,-2.8,4.4),F_(-4.5,-20,0.5),F_(-4.8,-38,-0.8,TEND),T_(-2.1,-6.5,1.9,TEND)]]},
  /* ---- Unterschenkel ---- */
  {id:'gastroM',name:'Gastrocnemius, Caput mediale',group:'calf',kind:'muscle',r:1.5,pcsa:2.4,joints:['knee','ankle'],wrap:[WRAP_KNEE],
   fas:[[F_(-2.4,-41.5,-2.6,TEND),T_(-1.6,-8,-3.6),T_(-1.0,-18,-3.8),T_(-0.4,-28,-3.0,TEND),T_(0,-36,-2.6,TEND),C_(0,-1.5,-6.5,TEND)]]},
  {id:'gastroL',name:'Gastrocnemius, Caput laterale',group:'calf',kind:'muscle',r:1.2,pcsa:1.2,joints:['knee','ankle'],wrap:[WRAP_KNEE],
   fas:[[F_(2.6,-41.5,-2.5,TEND),T_(1.8,-8,-3.5),T_(1.2,-18,-3.6),T_(0.5,-28,-3.0,TEND),T_(0.1,-36,-2.6,TEND),C_(0.1,-1.5,-6.5,TEND)]]},
  {id:'soleus',name:'Soleus · Achillessehne',group:'calf',kind:'muscle',r:1.6,pcsa:4.0,joints:['ankle'],
-  fas:[[T_(2.4,-6.0,-2.4),T_(0.6,-16,-3.4),T_(0.0,-30,-2.9,TEND),T_(0,-38,-2.5,TEND),C_(0,-1.5,-6.5,TEND)]]},
+  fas:[[T_(3.3,-6.5,-2.1),T_(0.6,-16,-3.4),T_(0.0,-30,-2.9,TEND),T_(0,-38,-2.5,TEND),C_(0,-1.5,-6.5,TEND)]]},
  {id:'tibAnt',name:'Tibialis anterior',group:'shin',kind:'muscle',r:1.0,pcsa:1.2,joints:['ankle'],
-  fas:[[T_(1.4,-8,1.6),T_(0.7,-22,1.7),T_(0.2,-34,1.6,TEND),T_(-0.6,-41,1.6,TEND),C_(-1.8,-3.6,4.5,TEND)]]},
+  fas:[[T_(1.4,-8,1.6),T_(0.7,-22,1.7),T_(0.2,-34,1.6,TEND),T_(-0.6,-40.2,1.8,TEND),C_(-1.8,-3.6,4.5,TEND)]]},
  {id:'tibPost',name:'Tibialis posterior',group:'shin',kind:'muscle',r:0.9,pcsa:1.4,joints:['ankle'],wrap:[WRAP_MM],
-  fas:[[T_(0.5,-10,-2.2),T_(-1.5,-30,-1.6,TEND),T_(-3.3,-41.0,-1.0,TEND),C_(-2.2,-3.0,3.4,TEND)]]},
+  fas:[[T_(0.9,-10,-0.6),T_(-1.5,-30,-1.6,TEND),T_(-3.3,-40.6,-1.0,TEND),C_(-2.2,-3.0,3.4,TEND)]]},
  {id:'peron',name:'Peroneus longus',group:'shin',kind:'muscle',r:0.9,pcsa:1.2,joints:['ankle'],wrap:[WRAP_LM],
-  fas:[[T_(3.8,-6.0,-1.2),T_(3.6,-22,-1.4),T_(3.5,-36,-1.3,TEND),T_(3.7,-43.2,-1.5,TEND),C_(2.2,-3.8,2.5,TEND),C_(-1.6,-4.8,5.0,TEND)]]},
+  fas:[[T_(3.8,-6.0,-1.2),T_(3.6,-22,-1.4),T_(3.5,-36,-1.3,TEND),T_(3.7,-42.0,-1.5,TEND),C_(2.0,-3.9,2.5,TEND),C_(-2.4,-4.1,4.3,TEND)]]},
  /* ---- Bänder Knie ---- */
  {id:'ACL',name:'Vorderes Kreuzband (AM · PL)',group:'joint',kind:'lig',r:0.32,
-  fas:[[F_(1.1,-43.5,-1.4),T_(-0.3,-0.9,1.5)],[F_(1.3,-44.4,-1.0),T_(0.3,-1.0,0.9)]]},
+  fas:[[F_(1.2,-43.1,-0.6),T_(-0.3,-2.9,1.4)],[F_(1.2,-42.8,-1.1),T_(0.4,-3.0,0.9)]]},   /* AM-Bündel nahezu isometrisch (Ursprung nahe der Beugeachse), PL-Bündel in Streckung gespannt, in Beugung locker */
  {id:'PCL',name:'Hinteres Kreuzband',group:'joint',kind:'lig',r:0.34,
-  fas:[[F_(-1.0,-43.6,0.3),T_(0,-1.6,-2.2)],[F_(-0.8,-44.3,0.6),T_(0.4,-1.9,-2.4)]]},
+  fas:[[F_(-1.0,-43.6,0.3),T_(0,-3.4,-2.2)],[F_(-0.8,-44.3,0.6),T_(0.4,-3.7,-2.3)]]},
  {id:'MCL',name:'Innenband (MCL)',group:'joint',kind:'lig',r:0.3,
-  fas:[[F_(-4.5,-42.8,-0.3),T_(-3.4,-7.0,0.4)],[F_(-4.4,-43.4,-1.0),T_(-3.6,-2.2,-0.6)]]},
+  fas:[[F_(-4.5,-42.8,-0.3),T_(-1.9,-8.0,0.6)],[F_(-4.4,-43.4,-1.0),T_(-3.0,-3.6,-0.3)]]},
  {id:'LCL',name:'Außenband (LCL)',group:'joint',kind:'lig',r:0.28,
   fas:[[F_(4.4,-42.6,-0.3),T_(3.9,-3.6,-1.4)]]},
  {id:'patTen',name:'Patellarsehne',group:'joint',kind:'lig',r:0.55,static:true,
   fas:[[P_(0,-2.4,0.2),T_(0,-5.2,3.6)]]},
  {id:'menisci',name:'Menisken (medial · lateral)',group:'joint',kind:'lig',r:0.45,static:true,
-  fas:[[T_(-1.2,-0.3,2.3),T_(-3.2,-0.3,1.6,TEND),T_(-4.2,-0.3,0.0,TEND),T_(-3.4,-0.3,-1.8,zMEN),T_(-1.6,-0.3,-2.6,zMEN)],
-       [T_(1.0,-0.3,2.2),T_(3.0,-0.3,1.5,TEND),T_(3.9,-0.3,0.0,TEND),T_(3.2,-0.3,-1.7,zMEN),T_(1.5,-0.3,-2.5,zMEN)]]},
+  fas:[[T_(-1.2,-2.6,2.3),T_(-3.2,-2.6,1.6,TEND),T_(-4.1,-2.6,0.0,TEND),T_(-3.4,-2.6,-1.8,zMEN),T_(-1.6,-2.6,-2.5,zMEN)],
+       [T_(1.0,-2.6,2.2),T_(3.0,-2.6,1.5,TEND),T_(3.9,-2.6,0.0,TEND),T_(3.2,-2.6,-1.7,zMEN),T_(1.5,-2.6,-2.4,zMEN)]]},
  /* ---- Bänder Sprunggelenk & Fuß ---- */
  {id:'atfl',name:'Lig. talofibulare anterius (ATFL)',group:'ankle',kind:'lig',r:0.26,
-  fas:[[T_(3.3,-41.2,0.6),A_(1.9,-1.2,2.0)]]},
+  fas:[[T_(3.4,-40.8,0.4),A_(1.9,-0.2,1.7)]]},
  {id:'cfl',name:'Lig. calcaneofibulare (CFL)',group:'ankle',kind:'lig',r:0.26,
-  fas:[[T_(3.4,-43.0,-0.5),C_(2.0,-3.2,-0.8)]]},
+  fas:[[T_(3.4,-42.0,-0.6),C_(1.6,-3.4,-0.4)]]},
  {id:'ptfl',name:'Lig. talofibulare posterius (PTFL)',group:'ankle',kind:'lig',r:0.24,
-  fas:[[T_(3.0,-42.3,-1.4),A_(1.2,-0.6,-2.2)]]},
+  fas:[[T_(3.2,-40.2,-1.0),A_(1.0,-1.1,-2.0)]]},
  {id:'deltoid',name:'Deltaband (medial)',group:'ankle',kind:'lig',r:0.3,
-  fas:[[T_(-3.0,-42.0,0.0),C_(-1.6,-0.4,-1.2)],[T_(-3.0,-41.8,0.5),C_(-2.0,-2.6,3.2)]]},
+  fas:[[T_(-3.0,-41.2,0.0),C_(-1.6,-1.0,-1.0)],[T_(-3.0,-41.0,0.5),C_(-2.0,-2.6,3.2)]]},
  {id:'plantar',name:'Plantarfaszie',group:'ankle',kind:'lig',r:0.3,static:true,
   fas:[[C_(0,-4.2,-5.5),C_(0,-4.9,3.0,TEND),C_(0,-4.8,12.0,TEND)]]},
  /* ---- Nerv ---- */
- {id:'nPer',name:'N. peroneus communis (Fibulakopf)',group:'nerve',kind:'nerve',r:0.2,
-  fas:[[B_(-2.5,-4.0,-4.8),F_(0.5,-16,-4.6),F_(2.6,-36,-3.6),T_(4.3,-5.6,-1.0,zNRV),T_(2.8,-9.5,1.0)]]},
+ {id:'nPer',name:'N. ischiadicus → N. peroneus communis (Fibulakopf)',group:'nerve',kind:'nerve',r:0.2,
+  fas:[[B_(-3.5,-1.0,-6.2),B_(-2.5,-4.0,-4.8),F_(0.5,-16,-4.6),F_(2.6,-36,-3.6),T_(4.3,-5.6,-1.0,zNRV),T_(2.8,-9.5,1.0)]]},
+ /* ---- Rumpf–Becken-Kette (Beckenkippung), weitere Hüftmuskeln – nur anhängen ---- */
+ {id:'erector',name:'Rückenstrecker (Erector spinae, lumbal)',group:'trunk',kind:'muscle',r:1.3,pcsa:2.5,joints:['pelvis'],layer:2,
+  fas:[[U_(1.8,22,-7.2),U_(1.8,10,-7.4),U_(1.6,3,-7.0,TEND),B_(-4.2,4.8,-8.6,TEND)]]},
+ {id:'rectAbd',name:'Gerader Bauchmuskel (Rectus abdominis)',group:'trunk',kind:'muscle',r:1.0,pcsa:1.6,joints:['pelvis'],layer:2,
+  fas:[[U_(2.0,26,9.0,TEND),U_(2.0,16,9.4),U_(1.5,6,8.4),B_(-6.4,-1.8,5.6,TEND)]]},
+ {id:'oblique',name:'Schräge Bauchmuskeln (Obliqui)',group:'trunk',kind:'muscle',r:0.9,pcsa:1.4,joints:['pelvis'],layer:2,
+  fas:[[U_(9.5,18,3.5,TEND),U_(7.5,9,5.5),B_(2.6,9.4,2.0,TEND)],[U_(6.5,12,7.5),B_(-3.0,-1.6,5.0,TEND)]]},
+ {id:'addLong',name:'Adductor longus · Pectineus',group:'hip',kind:'muscle',r:0.9,pcsa:1.2,joints:['hip'],
+  fas:[[B_(-6.6,-2.6,4.6,TEND),F_(0.5,-10,1.6),F_(2.5,-22,-0.8,TEND)]]},
+ {id:'piri',name:'Piriformis · tiefe Außenrotatoren',group:'hip',kind:'muscle',r:0.7,pcsa:0.8,joints:['hip'],
+  fas:[[B_(-7.6,3.0,-8.2),B_(-3.0,1.0,-6.4),F_(5.2,-0.8,-1.8,TEND)]]},
 ];
 const STRUCT_BY_ID={}; STRUCT.forEach(s=>STRUCT_BY_ID[s.id]=s);
 
@@ -1692,7 +1720,8 @@ const LAYER_GROUPS=[
  {id:'medial',name:'Pes anserinus',color:'#b5766a',items:[['sart','Sartorius'],['gracilis','Gracilis']]},
  {id:'calf',name:'Wade',color:'#b5766a',items:[['gastroM','Gastrocnemius medial'],['gastroL','Gastrocnemius lateral'],['soleus','Soleus · Achillessehne']]},
  {id:'shin',name:'Unterschenkel vorn/seitlich',color:'#b5766a',items:[['tibAnt','Tibialis anterior'],['tibPost','Tibialis posterior'],['peron','Peroneus longus']]},
- {id:'nerve',name:'Nerven',color:'#f4d35e',items:[['nPer','N. peroneus communis']]},
+ {id:'nerve',name:'Nerven',color:'#f4d35e',items:[['nPer','N. ischiadicus / peroneus']]},
+ {id:'trunk',name:'Rumpf & Becken',color:'#b5766a',items:[['erector','Rückenstrecker'],['rectAbd','Rectus abdominis'],['oblique','Schräge Bauchmuskeln'],['addLong','Adductor longus'],['piri','Piriformis']]},
 ];
 
 /* ===================== Beschreibungen ===================== */
@@ -1729,8 +1758,13 @@ const INFO={
  deltoid:{k:'Band (mehrschichtig)',f:'Innenband vom Innenknöchel zu Talus, Kahnbein und Fersenbein; sichert gegen Eversion und Außenrotation, stützt das Längsgewölbe.',p:'Pronationstrauma, Begleitverletzung bei Außenknöchelfraktur, Überlastung beim Knick-Senkfuß.',t:'Eversionsstress, Druckschmerz unter dem Innenknöchel.'},
  plantar:{k:'Faszie',f:'Spannt das Längsgewölbe vom Fersenbein zu den Zehen; Windlass-Mechanismus: Zehenstreckung spannt die Faszie und hebt das Gewölbe (Abstoßphase).',p:'Plantarfasziitis (Anlaufschmerz an der Ferse), Fersensporn, Ruptur (selten).',t:'Druck am medialen Fersenbeinhöcker, Dehnung mit Zehenstreckung (Windlass-Test).'},
  nPer:{k:'Nerv',f:'Läuft um den Fibulahals in die Unterschenkelloge; versorgt Fußheber und Fußaußenrand. Dort oberflächlich und druckgefährdet.',p:'Druckläsion (Gips, übereinandergeschlagene Beine, Lagerung) → Fußheberschwäche (Steppergang); Dehnung bei Slump-Position (Hüftbeugung, Kniestreckung, Plantarflexion + Inversion).',t:'Tinel am Fibulakopf, Slump-Test, Fersengang.'},
- pelvis:{k:'Knochen (Kontext)',f:'Becken mit Hüftpfanne; der Rumpf darüber wird bei Bodenkontakt automatisch so geneigt, dass der Körperschwerpunkt über dem Fuß bleibt (Gleichgewicht).',p:'Beckenkippung und Rumpfneigung bestimmen die Hüft- und Kniemomente: aufrechter Rumpf → mehr Knielast, vorgeneigter Rumpf → mehr Hüft- und Rückenlast.',t:''},
- femur:{k:'Knochen',f:'Femurkopf (Kugel, r ≈ 2,4 cm), Schenkelhals (125° zum Schaft), Trochanter major (Abduktoren) und minor (Iliopsoas), Schaft mit Linea aspera (Vasti, Adduktoren), Kondylen (Kugelflächen r ≈ 2,3 cm) mit Trochlea für die Patella.',p:'Schenkelhalsfraktur (Alter), Hüftimpingement (Cam am Kopf-Hals-Übergang), Knorpelschaden an den Kondylen.',t:''},
+ erector:{k:'Muskel (Rumpf ↔ Becken)',f:'Streckt die Lendenwirbelsäule und kippt das Becken nach vorn; hält den Rumpf beim Bücken und Heben gegen die Schwerkraft (exzentrisch beim Vorneigen).',p:'Überlastung beim Heben mit rundem Rücken; verkürzt/überaktiv beim Hohlkreuz („Lower-Crossed-Syndrom“ zusammen mit dem Hüftbeuger), schwach bei flachem Rücken.',t:'Rumpfneigung mit Last, Superman/Bird-Dog.'},
+ rectAbd:{k:'Muskel (Rumpf ↔ Becken)',f:'Vom Brustkorb zum Schambein: beugt den Rumpf und kippt das Becken nach hinten (richtet das Hohlkreuz auf); Gegenspieler des Rückenstreckers und des Hüftbeugers.',p:'Schwäche erlaubt anteriore Beckenkippung und Hohlkreuz; Rektusdiastase; Ansatzreizung am Schambein (Sportlerleiste).',t:'Beckenkippung im Liegen, Plank.'},
+ oblique:{k:'Muskel (Rumpf ↔ Becken)',f:'Von den Rippen zum Darmbeinkamm und Leistenband: Rumpfrotation und Seitneigung, Beckenkontrolle in der Frontalebene, Bauchpresse.',p:'Schwäche → Beckenabsinken und Rumpfausweichen im Einbeinstand; Überlastung bei Wurf-/Schlagsport.',t:'Side-Plank, Rotation gegen Widerstand.'},
+ addLong:{k:'Muskel + Sehne',f:'Vom Schambein zur Linea aspera: Adduktion und Hüftbeugung aus der Streckung; stabilisiert das Becken beim Cutting und Grätschen.',p:'Häufigste Leistenverletzung im Fußball (Adduktorenzerrung, Ansatztendinopathie am Schambein); Verkürzung bei Sitzhaltung.',t:'Squeeze-Test (Ball zwischen den Knien), Druckschmerz am Schambein.'},
+ piri:{k:'Muskel (tiefe Außenrotatoren)',f:'Vom Kreuzbein zum Trochanter major: Außenrotation im Stand, Abduktion bei gebeugter Hüfte; der N. ischiadicus läuft unter (selten durch) den Muskel.',p:'Piriformis-Syndrom: Verspannung reizt den N. ischiadicus (Gesäßschmerz mit Ausstrahlung ins Bein, verstärkt im Sitzen); verkürzt bei viel Sitzen.',t:'FAIR-Test (Flexion, Adduktion, Innenrotation), Dehnung im Vierer-Sitz.'},
+ pelvis:{k:'Knochen (Kontext)',f:'Becken mit Hüftpfanne; der Rumpf darüber wird bei Bodenkontakt automatisch so geneigt, dass der Körperschwerpunkt über dem Fuß bleibt (Gleichgewicht). Die Beckenkippung (Regler) verstellt das Becken gegen Rumpf und Oberschenkel: nach vorn = Hohlkreuz, Hüftbeuger und Rückenstrecker verkürzt, Hamstrings und Bauchmuskeln gedehnt; nach hinten umgekehrt.',p:'Beckenkippung und Rumpfneigung bestimmen die Hüft- und Kniemomente: aufrechter Rumpf → mehr Knielast, vorgeneigter Rumpf → mehr Hüft- und Rückenlast. Anteriore Kippung mit Hohlkreuz belastet Facetten und Bandscheiben, posteriore Kippung in der tiefen Kniebeuge („Butt Wink“) die Bandscheiben in Flexion.',t:'Beckenkippung im Stand (Hand am Kreuz), Thomas-Test.'},
+ femur:{k:'Knochen',f:'Femurkopf (Kugel, r ≈ 2,4 cm), Schenkelhals (125° zum Schaft), Trochanter major (Abduktoren) und minor (Iliopsoas), Schaft mit Linea aspera (Vasti, Adduktoren), Kondylen (Kugelflächen r ≈ 2,3 cm) mit Trochlea für die Patella.',p:'Schenkelhalsfraktur (Alter), Hüftimpingement (FAI: Cam am Kopf-Hals-Übergang oder Pincer am Pfannenrand) – der Kopf-Hals-Übergang stößt bei Beugung + Adduktion + Innenrotation an den vorderen Pfannenrand (Labrumschaden, Leistenschmerz beim Sitzen/Autofahren); Knorpelschaden an den Kondylen.',t:'FADIR-Test (Flexion 90°, Adduktion, Innenrotation), Preset „Hüftimpingement“.'},
  patella:{k:'Knochen (Sesambein)',f:'Vergrößert den Hebelarm des Quadrizeps; gleitet mit zunehmender Beugung von der Trochlea auf die Kondylen (Eingriff ab ≈ 20°). Kontaktfläche und -kraft steigen mit der Beugung; der Druck ist bei 60–90° am höchsten.',p:'Patellofemoraler Schmerz (häufigste Knie-Diagnose bei jungen Erwachsenen), Chondromalazie, Lateralisation/Luxation bei flacher Trochlea.',t:'Zohlen-Zeichen, Kniebeuge/Treppe abwärts schmerzhaft, Apprehension-Test der Patella.'},
  tibia:{k:'Knochen',f:'Tibiaplateau (medial größer, konkav; lateral konvex) mit Eminentia (Kreuzbandansätze), Tuberositas tibiae (Patellarsehne), Tuberculum Gerdy (Tractus), Pes anserinus medial; Fibula trägt kaum Last, bildet den Außenknöchel.',p:'Tibiakopffraktur, Stressfraktur, Osgood-Schlatter, Fibulakopf: N. peroneus.',t:''},
  foot:{k:'Knochen',f:'Talus (Rolle im Knöchelgabel: Dorsal-/Plantarflexion), Calcaneus (Subtalargelenk: Inversion/Eversion, Achillessehnenansatz), Mittel- und Vorfuß (Gewölbe, Abdruck über die Mittelfußköpfchen).',p:'Sprunggelenkarthrose nach Fraktur, vorderes Impingement (Fußballer: Osteophyten am Tibiavorderrand), hinteres Impingement (Os trigonum, Ballett).',t:''},
@@ -1741,10 +1775,11 @@ const INFO={
 /* ===================== Kinematik & Biomechanik des Beins =====================
    Pose (Grad): hipF Oberschenkel nach vorn (bei Bodenkontakt zur Senkrechten; klinische Hüftbeugung = hipF + Rumpfneigung), hipA Abduktion(+), hipR Innenrotation(+)/Außenrotation(−),
    knee Kniebeugung, tibR Tibia-Innenrotation(+), valg Valgus(+)/Varus(−), ankle Dorsalextension(+)/Plantarflexion(−), sub Inversion(+)/Eversion(−),
-   wt Gewichtsanteil auf diesem Bein (%), ground Bodenkontakt (0/1).
+   wt Gewichtsanteil auf diesem Bein (%), ground Bodenkontakt (0/1), tilt Beckenkippung nach vorn(+)/hinten(−) gegen den Rumpf,
+   other anderes Bein: 0 automatisch (gespiegelt; bei ≥ 90 % Gewichtsanteil abgehoben), 1 gespiegelt, 2 abgehoben, 3 hinten am Boden (Ausfallschritt), 4 vorn gestreckt (Pistol).
    Bodenkontakt: die Kette wird so verschoben, dass der Fuß am festen Bodenpunkt steht, und der Rumpf so geneigt, dass der Körperschwerpunkt
    darüber liegt (Analogon zum skapulothorakalen Rhythmus). Ohne Bodenkontakt hängt das Bein am ruhenden Becken. */
-const pose={hipF:0,hipA:0,hipR:0,knee:0,tibR:0,valg:0,ankle:0,sub:0,wt:50,ground:1};
+const pose={hipF:0,hipA:0,hipR:0,knee:0,tibR:0,valg:0,ankle:0,sub:0,wt:50,ground:1,tilt:0,other:0};
 const patho={cart:0,acl:0};             // cart: Knorpelverlust patellofemoral (0…1), acl: VKB-Insuffizienz (0…1)
 const FRAME_IDS=['B','U','F','P','T','A','C','F2','T2','A2','C2'];
 const mkFrames=()=>{ const o={}; for(const k of FRAME_IDS) o[k]={p:V3(),q:new THREE.Quaternion()}; return o; };
@@ -1761,68 +1796,120 @@ const GROUND_PT=V3(0,AN.groundY,2.7);                    // fester Auflagepunkt 
 function limits(ps){
   const k=clamp(ps.knee/30,0,1);
   return {hipF:[-20,Math.min(130,85+0.35*ps.knee)],hipA:[-30,45],hipR:[-45,45],knee:[0,140],
-    tibR:[-(3+17*k),3+17*k],valg:[-(4+11*k),4+11*k],ankle:[-45,20+22*clamp(ps.knee/60,0,1)],sub:[-15,30],wt:[0,100],ground:[0,1]};
+    tibR:[-(3+17*k),3+17*k],valg:[-(4+11*k),4+11*k],ankle:[-45,20+22*clamp(ps.knee/60,0,1)],sub:[-15,30],wt:[0,100],ground:[0,1],tilt:[-20,25],other:[0,4]};
 }
 function clampPose(ps=pose){
   for(const k in pose) if(!(typeof ps[k]==='number')||isNaN(ps[k])) ps[k]=k==='wt'?50:k==='ground'?1:0;
   const lim=limits(ps); for(const k in lim) ps[k]=clamp(ps[k],lim[k][0],lim[k][1]);
-  ps.ground=ps.ground>=0.5?1:0;
+  ps.ground=ps.ground>=0.5?1:0; ps.other=Math.round(ps.other);
   return ps;
 }
 /* Screw-home: in den letzten 30° der Streckung dreht die Tibia automatisch ≈ 8° nach außen */
 function screwHome(knee){ return -8*(1-smooth(clamp(knee/30,0,1))); }
+/* Kette Fuß → Knie: bei Bodenkontakt zwingt Eversion (Pronation) des Fußes die Tibia in Innenrotation (≈ 0,6°/°) – Knick-Senkfuß → Knievalgus */
+function pronationIR(ps){ return (ps.ground>=0.5&&ps.sub<0)?-0.6*ps.sub:0; }
+/* Anderes Bein: Modus aus Pose (0 = automatisch) */
+function otherMode(ps){ return ps.other>0?Math.round(ps.other):(ps.wt>=90?2:1); }
+const OTHER_POSE={2:{hipF:22,hipA:0,hipR:0,knee:45,tibR:0,valg:0,ankle:-5,sub:0},4:{hipF:80,hipA:0,hipR:0,knee:0,tibR:0,valg:0,ankle:-10,sub:0}};
 /* Patellabahn: Mittelpunkt auf einem Bogen um das Kniezentrum (Radius nimmt in tiefer Beugung ab, Patella taucht in die Fossa) */
 function patellaCenter(knee){ const phi=(AN.patPhi0-0.75*knee)*DEG, R=AN.patR0-1.0*clamp(knee/140,0,1); return AN.knee.clone().add(V3(0,R*Math.sin(phi),R*Math.cos(phi))); }
 const mirrorX=p=>V3(2*AN.mid-p.x,p.y,p.z);
 const mirrorQ=q=>new THREE.Quaternion(q.x,-q.y,-q.z,q.w);
 let LAST={ground:false,S:GROUND_PT.clone(),grf:0,lean:0,bodyLoad:0};   // Zustand der letzten Pose für evaluate()
 
+/* Rahmenkette eines Beins aus der Pose (Hüftzentrum bei hip); Ergebnis: Rahmen F P T A C relativ zur Welt (ohne Bodenverschiebung) */
+function solveLeg(ps,hip,out){
+  const qF=qMul(qAxis(V3(0,0,1),ps.hipA),qAxis(V3(-1,0,0),ps.hipF),qAxis(V3(0,1,0),-ps.hipR));
+  out.F.p.copy(hip); out.F.q.copy(qF);
+  const screw=screwHome(ps.knee), tibR=ps.tibR+pronationIR(ps);
+  out.T.p.copy(worldPt(out,{f:'F',v:AN.knee}));
+  out.T.q.copy(qMul(qF.clone(),qAxis(V3(1,0,0),ps.knee),qAxis(V3(0,0,1),ps.valg),qAxis(V3(0,1,0),-(tibR+screw))));
+  out.P.p.copy(out.F.p.clone().add(patellaCenter(ps.knee).applyQuaternion(qF))); out.P.q.copy(qMul(qF.clone(),qAxis(V3(1,0,0),0.7*ps.knee)));
+  /* Talus: Dorsalextension(+); bei Inversion kippt der Talus leicht mit (Talar tilt). Fuß: Inversion(+) = Außenrand nach unten, um die schräge Subtalarachse */
+  out.A.p.copy(worldPt(out,{f:'T',v:AN.ankle})); out.A.q.copy(qMul(out.T.q.clone(),qAxis(V3(-1,0,0),ps.ankle),qAxis(AN.subtalarAxis,-0.25*ps.sub)));
+  out.C.p.copy(worldPt(out,{f:'A',v:AN.subtalar})); out.C.q.copy(qMul(out.A.q.clone(),qAxis(AN.subtalarAxis,-ps.sub)));
+  return {screw,tibR};
+}
+/* Auflagepunkt (Druckmittelpunkt) eines Fußes: wandert stetig von der Ferse (Ferse ≥ 1,5 cm tiefer) über die Sohlenmitte (Sohle waagerecht) zum Ballen
+   (Ballen ≥ 1,5 cm tiefer) – ein Sprung des Hebelarms bei kleinen Winkeländerungen wäre unphysiologisch */
+const SOLE_DY0=AN.heel.y-AN.mtHeads.y;   /* Höhenunterschied Ferse–Ballen bei waagerechter Sohle (fußlokal) */
+function footContact(fr){ const heel=worldPt(fr,{f:'C',v:AN.heel}), mt=worldPt(fr,{f:'C',v:AN.mtHeads}); const s=clamp(0.5+(heel.y-mt.y-SOLE_DY0)/3.0,0,1); return heel.clone().lerp(mt,s); }
+/* Hinteres Bein am Boden (Ausfallschritt, Split Squat): der hintere Fuß steht fest REAR_STRIDE hinter dem Standfuß auf dem Ballen (Sohle ≈ 50° geneigt),
+   Hüft- und Kniewinkel aus der Zweiglieder-Kinematik (Knie vor der Linie Hüfte–Sprunggelenk, wie anatomisch möglich); steht die Hüfte zu hoch/zu weit vorn,
+   rutscht der Fuß so weit nach vorn, wie das gestreckte Bein reicht. dy korrigiert die Auflagehöhe nach einem Probelauf. */
+const REAR_STRIDE=80;                                                     /* Ballen des hinteren Fußes hinter der Sohlenmitte des Standfußes (cm) */
+function rearLegPose(hipW,groundY,dy=0){
+  const sole=50, L=AN.femLen+AN.tibLen-1.0;
+  const d=V3(0,groundY+9.0+dy-hipW.y,GROUND_PT.z-REAR_STRIDE+3.0-hipW.z);   /* Sprunggelenk ≈ 9 cm über und 3 cm vor dem Ballen */
+  const dzMax=Math.sqrt(Math.max(0,L*L-d.y*d.y)); if(-d.z>dzMax) d.z=-dzMax;  /* unerreichbar: Fuß rutscht nach vorn */
+  const D=Math.max(1,d.length());
+  const knee=180-Math.acos(clamp((AN.femLen*AN.femLen+AN.tibLen*AN.tibLen-D*D)/(2*AN.femLen*AN.tibLen),-1,1))/DEG;
+  const a=Math.atan2(d.z,-d.y)/DEG;                                            /* Richtung Hüfte → Sprunggelenk gegen die Senkrechte (nach vorn +) */
+  const b=Math.acos(clamp((AN.femLen*AN.femLen+D*D-AN.tibLen*AN.tibLen)/(2*AN.femLen*D),-1,1))/DEG;   /* Oberschenkel ↔ Verbindungslinie */
+  let hipF=a+b, kneeA=knee;
+  if(hipF<-25){ /* Hüftstreckung erschöpft (Hüfte weit vor dem Fuß): Oberschenkel bei −25°, Knie so, dass das Sprunggelenk die Zielhöhe erreicht – der Fuß rückt nach vorn */
+    hipF=-25; const h=-AN.femLen*Math.cos(25*DEG)-d.y; kneeA=h>=AN.tibLen?0:hipF+Math.acos(clamp(h/AN.tibLen,-1,1))/DEG; }
+  const theta=kneeA-hipF;                                                       /* Unterschenkelneigung nach hinten (Knie vor dem Sprunggelenk) */
+  return {hipF:clamp(hipF,-25,130),hipA:0,hipR:0,knee:clamp(kneeA,0,140),tibR:0,valg:0,ankle:clamp(theta-sole,-30,30),sub:0};
+}
+const TMP=mkFrames();
 function solvePose(ps,fr,pa=patho){
   const gnd=ps.ground>=0.5;
   fr.B.p.set(0,0,0); fr.B.q.identity();
-  const qF=qMul(qAxis(V3(0,0,1),ps.hipA),qAxis(V3(-1,0,0),ps.hipF),qAxis(V3(0,1,0),-ps.hipR));
-  fr.F.p.copy(AN.hip); fr.F.q.copy(qF);
-  const screw=screwHome(ps.knee);
-  fr.T.p.copy(worldPt(fr,{f:'F',v:AN.knee}));
-  fr.T.q.copy(qMul(qF.clone(),qAxis(V3(1,0,0),ps.knee),qAxis(V3(0,0,1),ps.valg),qAxis(V3(0,1,0),-(ps.tibR+screw))));
-  fr.P.p.copy(fr.F.p.clone().add(patellaCenter(ps.knee).applyQuaternion(qF))); fr.P.q.copy(qMul(qF.clone(),qAxis(V3(1,0,0),0.7*ps.knee)));
-  /* Talus: Dorsalextension(+); bei Inversion kippt der Talus leicht mit (Talar tilt). Fuß: Inversion(+) = Außenrand nach unten, um die schräge Subtalarachse */
-  fr.A.p.copy(worldPt(fr,{f:'T',v:AN.ankle})); fr.A.q.copy(qMul(fr.T.q.clone(),qAxis(V3(-1,0,0),ps.ankle),qAxis(AN.subtalarAxis,-0.25*ps.sub)));
-  fr.C.p.copy(worldPt(fr,{f:'A',v:AN.subtalar})); fr.C.q.copy(qMul(fr.A.q.clone(),qAxis(AN.subtalarAxis,-ps.sub)));
+  const leg=solveLeg(ps,AN.hip,fr);
   /* Bodenkontakt: Auflagepunkt (Ferse, Ballen oder Sohlenmitte) an den festen Bodenpunkt schieben */
-  const rh={lean:0,grf:0,balanced:true,screw,ground:gnd,comZ:0};
+  const rh={lean:0,grf:0,balanced:true,screw:leg.screw,tibR:leg.tibR,ground:gnd,comZ:0,tilt:ps.tilt,otherMode:otherMode(ps),otherGround:false};
   const bodyLoad=(EXT.F&&EXT.at==='body')?EXT.F.length():0;
-  if(gnd){
-    const heel=worldPt(fr,{f:'C',v:AN.heel}), mt=worldPt(fr,{f:'C',v:AN.mtHeads});
-    const dy=heel.y-mt.y; const S=Math.abs(dy)<1.0?heel.clone().lerp(mt,0.5):(dy<0?heel:mt);
-    const d=GROUND_PT.clone().sub(S); for(const k of ['B','F','P','T','A','C']) fr[k].p.add(d);
-  }
-  /* Rumpf: bei Bodenkontakt so neigen, dass der Gesamtschwerpunkt (beide Beine gespiegelt, Rumpf + Zusatzlast) über dem Auflagepunkt liegt */
-  fr.U.p.copy(fr.B.p.clone().add(AN.trunkOrigin));
+  if(gnd){ const d=GROUND_PT.clone().sub(footContact(fr)); for(const k of ['B','F','P','T','A','C']) fr[k].p.add(d); }
+  /* Anderes Bein: gespiegelt um die Beckenmitte (folgt dem Becken), abgehoben, hinten am Boden oder vorn gestreckt */
+  const mode=rh.otherMode; const midX=fr.B.p.x+AN.mid; const mirror=p=>V3(2*midX-p.x,p.y,p.z);
+  let other=null;
+  if(mode!==1){
+    let ps2=OTHER_POSE[mode]||OTHER_POSE[2];
+    const hipW=fr.B.p.clone().add(AN.hip);
+    for(const k of ['B','F','P','T','A','C']){ TMP[k].p.copy(fr[k].p); TMP[k].q.copy(fr[k].q); }
+    if(mode===3){
+      if(gnd){ /* hinteres Bein: Winkel aus Hüftlage und Schrittlänge, dann Auflagehöhe des Ballens nachkorrigieren (zwei Durchläufe genügen auf < 1 mm) */
+        let dy=0; for(let it=0;it<10;it++){ ps2=rearLegPose(hipW,AN.groundY,dy); solveLeg(Object.assign({ground:0},ps2),hipW,TMP); const err=footContact(TMP).y-AN.groundY; if(Math.abs(err)<0.05) break; dy-=0.5*err; } }   /* gedämpft: die Sohlenneigung hängt selbst von der Höhe ab */
+      else ps2={hipF:-12,hipA:0,hipR:0,knee:35,tibR:0,valg:0,ankle:-25,sub:0};
+    }
+    solveLeg(Object.assign({ground:0},ps2),hipW,TMP);
+    other={ps:ps2,S:footContact(TMP),onGround:mode===3&&gnd};
+    for(const k of ['F','T','A','C']){ fr[k+'2'].p.copy(mirror(TMP[k].p)); fr[k+'2'].q.copy(mirrorQ(TMP[k].q)); }
+  } else { for(const k of ['F','T','A','C']){ fr[k+'2'].p.copy(mirror(fr[k].p)); fr[k+'2'].q.copy(mirrorQ(fr[k].q)); } }
+  rh.otherGround=!!(other&&other.onGround)||mode===1;
+  /* Rumpf: bei Bodenkontakt so neigen, dass der Gesamtschwerpunkt (Rumpf + beide Beine + Zusatzlast) über dem gewichteten Auflagepunkt beider Füße liegt.
+     Das Becken dreht um die Hüftachse mit (Neigung + Kippung), der Rumpfursprung L5/S1 sitzt auf dem Kreuzbein und wandert mit – daher wird die Neigung
+     in drei Fixpunktschritten gelöst (die Rumpfbasis verschiebt sich mit der Neigung um wenige cm). */
   let lean=0;
+  const placeTrunk=()=>{ fr.B.q.copy(qAxis(V3(1,0,0),lean+ps.tilt)); fr.U.p.copy(fr.B.p.clone().add(AN.trunkOrigin.clone().applyQuaternion(fr.B.q))); };
+  placeTrunk();
   if(gnd){
-    const zLegs=2*(MASS.thigh*worldPt(fr,{f:'F',v:COM.F}).z+MASS.shank*worldPt(fr,{f:'T',v:COM.T}).z+MASS.foot*worldPt(fr,{f:'C',v:COM.C}).z);
+    const legCom=frs=>MASS.thigh*worldPt(frs,{f:'F',v:COM.F}).z+MASS.shank*worldPt(frs,{f:'T',v:COM.T}).z+MASS.foot*worldPt(frs,{f:'C',v:COM.C}).z;
+    const zLegs=legCom(fr)+(other?legCom(TMP):legCom(fr));
+    const w=ps.wt/100; const zSupport=(other&&other.onGround)?w*GROUND_PT.z+(1-w)*other.S.z:GROUND_PT.z;   /* Standfuß und ggf. zweiter Fuß tragen anteilig */
     const mU=MASS.trunk+bodyLoad/BW;                         // Zusatzlast (Langhantel) zählt zum Rumpf
-    const c=(GROUND_PT.z*(1+bodyLoad/BW)-zLegs)/mU-fr.U.p.z; // gefordert: a·sinλ + b·cosλ = c
     const a=AN.trunkCOM.y, b=AN.trunkCOM.z, r=Math.hypot(a,b);
-    if(Math.abs(c)<=r) lean=(Math.asin(c/r)-Math.atan2(b,a))/DEG; else lean=c>0?90:-90;
-    if(Math.abs(lean)>60){ lean=clamp(lean,-60,60); rh.balanced=false; }   /* mehr als 60° Rumpfneigung: Abstützung oder zweites Bein nötig */
+    for(let it=0;it<3;it++){
+      const c=(zSupport*(1+bodyLoad/BW)-zLegs)/mU-fr.U.p.z; // gefordert: a·sinλ + b·cosλ = c
+      if(Math.abs(c)<=r) lean=(Math.asin(c/r)-Math.atan2(b,a))/DEG; else lean=c>0?90:-90;
+      rh.balanced=Math.abs(lean)<=60; lean=clamp(lean,-60,60);   /* mehr als 60° Rumpfneigung: Abstützung oder zweites Bein nötig */
+      placeTrunk();
+    }
   }
   fr.U.q.copy(qAxis(V3(1,0,0),lean)); rh.lean=lean;
   rh.comZ=fr.U.p.z+AN.trunkCOM.y*Math.sin(lean*DEG)+AN.trunkCOM.z*Math.cos(lean*DEG);
-  rh.hipClin=ps.hipF+lean;                                 // klinische Hüftbeugung (Rumpf zu Oberschenkel)
-  fr.B.q.copy(qAxis(V3(1,0,0),lean));                       // Becken neigt sich mit dem Rumpf (um das Hüftzentrum)
-  /* Anderes Bein: gespiegelt (Kontext) */
-  for(const k of ['F','T','A','C']){ fr[k+'2'].p.copy(mirrorX(fr[k].p)); fr[k+'2'].q.copy(mirrorQ(fr[k].q)); }
+  rh.hipClin=ps.hipF+lean+ps.tilt;                          // klinische Hüftbeugung (Becken zu Oberschenkel)
+  rh.lordosis=ps.tilt;                                       // Beckenkippung gegen den Rumpf = zusätzliche Lendenlordose (+) / Entlordosierung (−)
   rh.grf=gnd?ps.wt/100*(BW+bodyLoad):0;
-  LAST={ground:gnd,S:GROUND_PT,grf:rh.grf,lean,bodyLoad,pose:ps};
+  LAST={ground:gnd,S:GROUND_PT,grf:rh.grf,lean,bodyLoad,pose:ps,tibR:leg.tibR};
   return rh;
 }
 
 /* Faszikel auswerten: Pfad in Weltkoordinaten mit Wrapping um die Kugeln der Struktur, Länge */
 function evalFascicle(struct,fas,fr){
   const items=fas.map(lm=>({p:worldPt(fr,lm),r:0,w:lm.w,z:lm.z}));
-  const spheres=(struct.wrap||[]).map(w=>({c:worldPt(fr,{f:w.f,v:w.v}),r:w.r}));
+  const spheres=(struct.wrap||[]).map(w=>({c:worldPt(fr,{f:w.f,v:w.v}),r:w.r,side:w.side?w.side.clone().applyQuaternion(fr[w.f].q):null}));
   const wrapped=wrapPath(items,spheres);
   return {items:wrapped,L:pathLength(wrapped)};
 }
@@ -1832,16 +1919,20 @@ const REF={};
 function fasKey(s,i){ return s.id+'#'+i; }
 function computeReferenceLengths(){
   const fr=mkFrames(); const pa0={cart:0,acl:0}; const EXT0=EXT.F; EXT.F=null;
-  const P0={hipF:0,hipA:0,hipR:0,knee:0,tibR:0,valg:0,ankle:0,sub:0,wt:50,ground:0};
+  const P0={hipF:0,hipA:0,hipR:0,knee:0,tibR:0,valg:0,ankle:0,sub:0,wt:50,ground:0,tilt:0,other:1};
   solvePose(P0,fr,pa0);
   for(const s of STRUCT){ if(s.kind==='muscle') s.fas.forEach((f,i)=>{ REF[fasKey(s,i)]=evalFascicle(s,f,fr).L; }); }
   const ligs=STRUCT.filter(s=>s.kind!=='muscle'&&!s.static); const maxL={};
   const sample=ps=>{ solvePose(clampPose(Object.assign({},P0,ps)),fr,pa0); for(const s of ligs) s.fas.forEach((f,i)=>{ const k=fasKey(s,i); const Lx=evalFascicle(s,f,fr).L; if(!(k in maxL)||Lx>maxL[k]) maxL[k]=Lx; }); };
   for(let knee=0;knee<=140;knee+=20) for(const valg of [-15,0,15]) for(const tibR of [-20,0,20]) for(const ankle of [-45,-20,0,20]) for(const sub of [-15,0,15,30]) sample({knee,valg,tibR,ankle,sub});
   for(let hipF=-20;hipF<=120;hipF+=35) for(let knee=0;knee<=140;knee+=35) for(const ankle of [-45,0,20]) for(const sub of [-15,30]) sample({hipF,knee,ankle,sub});
+  for(const tilt of [-20,25]) for(let hipF=-20;hipF<=120;hipF+=70) sample({tilt,hipF});
   /* Anker: Kreuzbänder und Seitenbänder tragen in Streckung, sind aber erst mit Valgus/Rotation endgradig → Beginn des Tragens bei 88 % */
-  const base={ACL:0.85,PCL:0.85,MCL:0.87,LCL:0.87,atfl:0.85,cfl:0.85,ptfl:0.85,deltoid:0.86,nPer:0.93};
+  const base={ACL:0.85,PCL:0.85,MCL:0.87,LCL:0.87,atfl:0.85,cfl:0.85,ptfl:0.85,deltoid:0.90,nPer:0.93};   /* Deltaband steif: trägt erst nahe der Maximallänge */
   for(const s of ligs) s.fas.forEach((f,i)=>{ const k=fasKey(s,i); REF[k]=(base[s.id]||0.85)*maxL[k]; REF[k+'max']=maxL[k]; });
+  /* Neutralstellung im Stand: seitlicher Versatz Kniezentrum ↔ Auflagepunkt (Bezug für das Adduktionsmoment der Kompartimente); Ruhestellung zuletzt wiederherstellen */
+  solvePose(Object.assign({},P0,{ground:1}),fr,pa0); REF.dxKnee0=fr.T.p.x-GROUND_PT.x;
+  solvePose(P0,fr,pa0);
   EXT.F=EXT0;
 }
 function refLength(s,i){ return REF[fasKey(s,i)]; }
@@ -1915,7 +2006,8 @@ function evaluate(fr){
   M.aclShift=M.acl/150*(1+4*patho.acl);                    // vordere Translation in mm (Bandsteifigkeit ≈ 150 N/mm)
   const ligMax=id=>{ const s=STRUCT_BY_ID[id]; let mx=-9; s.fas.forEach((f,i)=>{ mx=Math.max(mx,EVAL.fas[fasKey(s,i)].strain); }); return mx; };
   /* VKB-Spannung: Geometrie (in Streckung nahe der Maximallänge, daher × 0,75) + Innenrotation/Valgus (Verdrillung um das HKB, vereinfachter Zuschlag) + Schub der Patellarsehne */
-  M.aclStrain=ligMax('ACL')*0.75+0.0025*Math.max(0,ps.tibR)+0.002*Math.max(0,ps.valg)+M.acl/8000; M.pclStrain=ligMax('PCL')+M.pcl/8000; M.mcl=ligMax('MCL'); M.lcl=ligMax('LCL');
+  const tibRe=LAST.tibR!==undefined?LAST.tibR:ps.tibR;
+  M.aclStrain=ligMax('ACL')*0.75+0.0035*Math.max(0,tibRe)+0.0025*Math.max(0,ps.valg)+M.acl/8000;   /* Innenrotation und Valgus verdrillen das Band um das HKB: Zuschlag ≈ 0,35 %/° bzw. 0,25 %/° */ M.pclStrain=ligMax('PCL')+M.pcl/8000; M.mcl=ligMax('MCL'); M.lcl=ligMax('LCL');
   /* Achillessehne, Hüftkontaktkraft */
   M.ach=(Fj.ankle.gastroM||0)+(Fj.ankle.gastroL||0)+(Fj.ankle.soleus||0); M.achBW=M.ach/BW;
   { const Fsum=V3(); for(const id in Fj.hip){ Fsum.addScaledVector(fhat.hip[id],Fj.hip[id]); } const ext=gnd?V3(0,GRF-MASS.leg*BW,0):V3(0,-MASS.leg*BW,0); if(extF) ext.add(extF); M.hipJ=Fsum.add(ext).length(); M.hipBW=M.hipJ/BW; }
@@ -1932,6 +2024,17 @@ function evaluate(fr){
   M.menComp=clamp((knee-115)/30,0,1);
   M.atfl=ligMax('atfl'); M.cfl=ligMax('cfl'); M.ptfl=ligMax('ptfl'); M.delt=ligMax('deltoid'); M.nerve=ligMax('nPer');
   M.nerveComp=0;
+  /* Hüftimpingement (FAI): Kopf-Hals-Übergang vorn-oben ↔ vorderer-oberer Pfannenrand, in mm (Labrum ≈ 3 mm abgezogen) */
+  M.fai=Math.max(0,worldPt(fr,{f:'F',v:AN.headNeck}).distanceTo(worldPt(fr,{f:'B',v:AN.acetRim}))-0.3)*10;
+  M.faiComp=clamp((8-M.fai)/7,0,1);
+  /* Kompartimente: Frontalebenen-Moment am Knie (Bodenreaktionslinie neben dem Kniezentrum) verteilt die Kompression auf medial/lateral (Kondylenabstand ≈ 4,5 cm) */
+  { let share=0.55;                                          /* leichtes Übergewicht medial in Ruhe (Beinachse) */
+    if(gnd&&GRF>1){ const dx=(K.x-LAST.S.x-(REF.dxKnee0||0))*0.01; const xB=V3(1,0,0).applyQuaternion(fr.B.q); const lateral=dx*Math.sign(xB.x||1); M.mAdd=GRF*lateral;   /* Adduktionsmoment (+ = Lastlinie medial des Knies) gegenüber der Neutralstellung */
+      share=0.55+0.45*Math.tanh(M.mAdd/(GRF*0.08)); }        /* Sättigung: Bänder und Muskelspannung verhindern das Abheben eines Kompartiments (≈ 90 % bei 8 cm Hebel) */
+    else M.mAdd=0;
+    share=clamp(share-0.006*ps.valg,0,1);                    /* statische Beinachse ohne Boden: Valgus entlastet medial, Varus belastet medial */
+    M.medShare=share; M.tfMed=M.tf*share; M.tfLat=M.tf*(1-share); }
+  M.tibRe=tibRe; M.tilt=ps.tilt;
   return EVAL;
 }
 computeReferenceLengths();
@@ -1939,13 +2042,13 @@ computeReferenceLengths();
 /* ===================== Bein: klinische Positionen, Bewegungsabläufe, Übungen =====================
    Reihenfolge nie ändern, neue Einträge nur anhängen – die Position in PRESETS+ANIMS+PHYSIO (RUN_LIST) steckt als Basis-36-Index in Kurz-Links.
    Pose-Felder, die fehlen, gelten als 0 (wt: 50, ground: 1 werden hier immer angegeben). */
-const STAND={hipF:0,hipA:0,hipR:0,knee:0,tibR:0,valg:0,ankle:0,sub:0,wt:50,ground:1};
+const STAND={hipF:0,hipA:0,hipR:0,knee:0,tibR:0,valg:0,ankle:0,sub:0,wt:50,ground:1,tilt:0,other:0};   // other: 0 automatisch, 1 gespiegelt, 2 abgehoben, 3 hinten am Boden, 4 vorn gestreckt
 const P=o=>Object.assign({},STAND,o);
 const PRESETS=[
  {id:'stand',name:'Stand',pose:P({})},
  {id:'squatPar',name:'Kniebeuge parallel',pose:P({hipF:75,knee:100,ankle:25})},
  {id:'squatDeep',name:'Kniebeuge tief',pose:P({hipF:102,knee:140,ankle:38})},
- {id:'lunge',name:'Ausfallschritt (vorderes Bein)',pose:P({hipF:72,knee:90,ankle:18,wt:70})},
+ {id:'lunge',name:'Ausfallschritt (vorderes Bein)',pose:P({hipF:72,knee:90,ankle:18,wt:70,other:3})},
  {id:'stair',name:'Treppe auf ▶',pose:P({hipF:50,knee:65,ankle:15,wt:100}),sweep:{hipF:5,knee:5,ankle:0}},
  {id:'landing',name:'Landung nach Sprung',pose:P({hipF:33,knee:45,ankle:12,valg:6,wt:100})},
  {id:'cutting',name:'Cutting / Pivot (Valgus + Innenrotation)',pose:P({hipF:20,knee:20,valg:12,tibR:15,wt:100})},
@@ -1957,6 +2060,13 @@ const PRESETS=[
  {id:'lachman',name:'Lachman-Position (25°)',pose:P({knee:25,ground:0})},
  {id:'drawer',name:'Schubladentest (90°, sitzend)',pose:P({hipF:85,knee:90,ground:0})},
  {id:'slump',name:'Slump (Nervendehnung)',pose:P({hipF:85,knee:0,ankle:20,sub:15,ground:0})},
+ /* nur anhängen */
+ {id:'fadir',name:'Hüftimpingement-Test (FADIR)',pose:P({hipF:90,hipA:-15,hipR:25,knee:90,ground:0})},
+ {id:'trend',name:'Einbeinstand mit Beckenabsinken (Trendelenburg)',pose:P({hipA:-12,knee:5,wt:100,other:2})},
+ {id:'antTilt',name:'Hohlkreuz: Becken nach vorn gekippt',pose:P({tilt:18})},
+ {id:'postTilt',name:'Flachrücken: Becken nach hinten gekippt',pose:P({tilt:-14,knee:8})},
+ {id:'pronation',name:'Knick-Senkfuß: Pronation → Tibia-Innenrotation → Valgus',pose:P({sub:-15,valg:8,knee:12})},
+ {id:'thomas',name:'Thomas-Test (Hüftbeuger-Dehnung)',pose:P({hipF:-15,knee:60,tilt:-10,ground:0})},
 ];
 const ANIMS=[
  {id:'squatCycle',name:'Kniebeuge 0–140°',from:P({}),to:P({hipF:102,knee:140,ankle:38}),dur:5200},
@@ -1972,10 +2082,12 @@ const PHYSIO=[
  {id:'legExt',name:'Beinstrecker 15 kg ▶',pose:P({hipF:90,knee:90,ground:0}),sweep:{knee:0},load:{F:[0,-147,0],at:'foot',fixHip:true,label:'Maschine 15 kg am Unterschenkel, Oberschenkel aufliegend'}},
  {id:'legCurl',name:'Beinbeuger 10 kg ▶',pose:P({hipF:0,knee:0,ground:0}),sweep:{knee:100},load:{F:[0,-98,0],at:'foot',fixHip:true,label:'Maschine 10 kg am Unterschenkel, Bauchlage'}},
  {id:'calfRaiseW',name:'Wadenheben mit 20 kg ▶',pose:P({wt:100}),sweep:{ankle:-35},load:{F:[0,-196,0],at:'body',label:'Hantel 20 kg'}},
- {id:'pistol',name:'Einbein-Kniebeuge (Pistol) ▶',pose:P({wt:100}),sweep:{hipF:75,knee:105,ankle:30}},
- {id:'splitSquat',name:'Split Squat ▶',pose:P({hipF:15,knee:15,wt:70}),sweep:{hipF:75,knee:95,ankle:20}},
+ {id:'pistol',name:'Einbein-Kniebeuge (Pistol) ▶',pose:P({wt:100,other:4}),sweep:{hipF:75,knee:105,ankle:30}},
+ {id:'splitSquat',name:'Split Squat ▶',pose:P({hipF:42,knee:50,ankle:8,wt:70,other:3}),sweep:{hipF:75,knee:95,ankle:20}},
  {id:'heelWalk',name:'Fersengang (Fußheber)',pose:P({ankle:20,wt:100})},
  {id:'nordic',name:'Nordic Hamstring ▶',pose:P({hipF:0,knee:90,ground:0}),sweep:{knee:30},load:{F:[0,0,150],at:'foot',fixHip:true,label:'Partner hält die Fersen, Rumpf kippt nach vorn'}},
+ /* nur anhängen */
+ {id:'deadlift',name:'Kreuzheben 60 kg (Hüfthinge) ▶',pose:P({hipF:12,knee:8,tilt:8}),sweep:{hipF:34,knee:25,ankle:5},load:{F:[0,-589,0],at:'body',label:'Langhantel 60 kg in den Händen (Hüfte nach hinten, Schienbein bleibt senkrecht, Rumpf neigt sich für das Gleichgewicht)'}},
 ];
 
 /* ===================== Bein: Knochengeometrie =====================
@@ -1993,6 +2105,11 @@ function buildBones({G,MAT,boneMat,addBone,ell,pickables,BONES}){
     addBone(g,ell(V3(-3.6,-5.0,-4.6),V3(1.6,1.6,2.6),mat),'pelvis');                                         // Sitzbein
     addBone(g,staticTube([V3(-1.2,-2.2,4.2),V3(-5,-2.6,5.4),V3(-9,-2.4,5.6)],[1.0,0.9,1.0],8,{material:mat,rings:10}),'pelvis');   // Schambein
     addBone(g,ell(V3(-9,4.5,-8.5),V3(3.2,4.2,2.0),mat),'pelvis');                                             // Kreuzbein
+    addBone(g,staticTube([V3(-7.6,-2.6,4.9),V3(-6.5,-4.2,1.0),V3(-4.6,-5.2,-3.2)],[0.9,0.85,1.0],8,{material:mat,rings:12}),'pelvis');   // unterer Schambeinast → Sitzbein (Adduktoren)
+    addBone(g,ell(AN.ASIS,V3(0.9,1.0,0.9),mat),'pelvis'); addBone(g,ell(AN.AIIS,V3(0.8,0.9,0.8),mat),'pelvis');                  // Spina iliaca anterior superior/inferior
+    addBone(g,ell(AN.PSIS,V3(2.6,3.0,1.6),mat),'pelvis'); addBone(g,ell(V3(2*AN.mid-AN.PSIS.x,AN.PSIS.y,AN.PSIS.z),V3(2.6,3.0,1.6),mat),'pelvis');   // hinteres Darmbein / Iliosakralgelenk (schließt den Beckenring)
+    addBone(g,staticTube([V3(-13.4,-2.6,4.9),V3(-11.5,-4.2,1.0),V3(-13.4,-5.2,-3.2)],[0.9,0.85,1.0],8,{material:mat,rings:12}),'pelvis');
+    addBone(g,ell(V3(-14.4,-5.0,-4.6),V3(1.6,1.6,2.6),mat),'pelvis');                                             // Sitzbein links
     const wing2=ell(V3(-20.2,8.5,-1.5),V3(1.1,4.8,5.6),mat); wing2.rotation.y=-0.35; addBone(g,wing2,'pelvis'); // Darmbeinschaufel links
     addBone(g,ell(V3(-18,0.4,0),V3(3.1,3.1,3.1),mat),'pelvis');
     addBone(g,staticTube([V3(-16.8,-2.2,4.2),V3(-13,-2.6,5.4),V3(-9.2,-2.4,5.6)],[1.0,0.9,1.0],8,{material:mat,rings:10}),'pelvis');
@@ -2020,27 +2137,31 @@ function buildBones({G,MAT,boneMat,addBone,ell,pickables,BONES}){
   (function buildTibia(){
     const g=G.T, mat=boneMat('tibia'), L=LAYER.shank;
     addBone(g,ell(AN.plateau.c,AN.plateau.r,mat),'tibia',L);
-    addBone(g,staticTube([V3(0,-1.6,0.8),V3(0,-10,1.2),V3(0,-20,1.0),V3(0,-30,0.6),V3(0,-38,0.2),V3(0,-41.5,0)],[2.7,1.7,1.3,1.3,1.9,2.2],12,{material:mat,rings:26}),'tibia',L);
-    addBone(g,ell(V3(0,-5.0,3.2),V3(1.0,1.3,0.6),mat),'tibia',L);                                          // Tuberositas tibiae
+    addBone(g,ell(AN.metaph.c,AN.metaph.r,mat),'tibia',L);                                                  // Tibiakopf (Metaphyse)
+    addBone(g,staticTube([V3(0,-6.0,0.8),V3(0,-10,1.2),V3(0,-20,1.0),V3(0,-30,0.6),V3(0,-36,0.2),V3(0,-38.8,0.1)],[2.4,1.7,1.3,1.3,1.8,2.1],12,{material:mat,rings:26}),'tibia',L);   // Schaft bis zum Pilon (Gelenkfläche ≈ 2 cm über der Achse)
+    addBone(g,ell(V3(0,-5.4,3.4),V3(1.0,1.3,0.6),mat),'tibia',L);                                          // Tuberositas tibiae
     addBone(g,ell(AN.MM,V3(0.9,1.6,1.1),mat),'tibia',L);                                                     // Innenknöchel
-    addBone(g,staticTube([AN.fibHead,V3(3.7,-12,-1.6),V3(3.6,-25,-1.5),V3(3.5,-38,-1.1),AN.LM.clone().add(V3(0,-0.8,0))],[1.0,0.6,0.6,0.7,1.0],10,{material:mat,rings:24}),'tibia',L);   // Fibula
-    const hoffa=ell(V3(0,-2.8,2.3),V3(2.0,1.3,1.1),MAT.bursa.clone()); hoffa.material.userData=Object.assign({},MAT.bursa.userData); addBone(g,hoffa,'hoffa',L);
+    addBone(g,staticTube([AN.fibHead,V3(3.7,-12,-1.6),V3(3.6,-25,-1.5),V3(3.5,-36,-1.1),AN.LM.clone().add(V3(0,-0.6,0))],[1.0,0.6,0.6,0.7,1.0],10,{material:mat,rings:24}),'tibia',L);   // Fibula bis zur Spitze des Außenknöchels
+    const hoffa=ell(V3(0,-4.2,2.5),V3(2.0,1.3,1.1),MAT.bursa.clone()); hoffa.material.userData=Object.assign({},MAT.bursa.userData); addBone(g,hoffa,'hoffa',L);
   })();
   /* ---- Talus, Calcaneus, Fuß ---- */
   (function buildFoot(){
     const mat=boneMat('foot'), L=LAYER.shank;
     addBone(G.A,ell(V3(0,0,0),V3(1.7,1.5,2.0),mat),'foot',L);
     addBone(G.A,ell(V3(0,-0.4,2.8),V3(1.3,1.1,1.6),mat),'foot',L);                                          // Talushals/-kopf
-    addBone(G.A,ell(V3(0,-0.3,-2.3),V3(1.0,0.7,0.7),mat),'foot',L);                                         // Processus posterior
+    addBone(G.A,ell(V3(0,-0.3,-2.3),V3(1.3,0.8,0.9),mat),'foot',L);                                         // Processus posterior (Os trigonum)
+    addBone(G.A,ell(AN.talusLat,V3(0.9,0.7,1.3),mat),'foot',L);                                             // Processus lateralis (ATFL-Ansatz)
     const g=G.C;
     addBone(g,ell(V3(0,-2.4,-3.2),V3(1.8,2.2,4.3),mat),'foot',L);                                           // Calcaneus
-    addBone(g,ell(V3(-0.5,-3.0,3.0),V3(2.4,1.4,2.2),mat),'foot',L);                                         // Kahn-, Keil-, Würfelbein
+    addBone(g,ell(V3(-0.4,-3.1,3.0),V3(2.5,1.5,2.4),mat),'foot',L);                                         // Kahn-, Keilbeine
+    addBone(g,ell(AN.cuboid,V3(1.2,1.0,1.4),mat),'foot',L);                                                 // Würfelbein (Peroneus-longus-Rinne)
+    addBone(g,ell(AN.sustent,V3(0.9,0.6,1.2),mat),'foot',L);                                               // Sustentaculum tali (Deltaband, Tibialis posterior)
     for(const x of [-2.6,-1.3,0,1.3,2.6]){ const len=x<-2?7.6:x<0?8.6:x<1?8.4:7.6;
       addBone(g,staticTube([V3(x,-3.6,3.8),V3(x*1.05,-4.4,3.8+len*0.6),V3(x*1.1,-4.8,3.8+len)],[0.6,0.5,0.6],7,{material:mat,rings:10}),'foot',L);
       addBone(g,staticTube([V3(x*1.1,-4.8,3.8+len),V3(x*1.15,-4.9,3.8+len+2.2),V3(x*1.2,-4.9,3.8+len+3.6)],[0.5,0.45,0.35],7,{material:mat,rings:8}),'foot',L); }
   })();
   /* ---- Boden (Weltkoordinaten): flache Platte unter dem Auflagepunkt, nur bei Bodenkontakt sichtbar ---- */
-  { const gm=new THREE.Mesh(new THREE.BoxGeometry(70,0.6,70),MAT.contextSolid); gm.position.set(AN.mid,AN.groundY-0.35,4); ROOT.add(gm); (BONES.ground||(BONES.ground=[])).push(gm); gm.userData.sid='ground'; gm.userData.kind='bone'; pickables.push(gm); }
+  { const gm=new THREE.Mesh(new THREE.BoxGeometry(70,0.6,130),MAT.contextSolid); gm.position.set(AN.mid,AN.groundY-0.35,-22);   /* reicht bis unter den hinteren Fuß im Ausfallschritt */ ROOT.add(gm); (BONES.ground||(BONES.ground=[])).push(gm); gm.userData.sid='ground'; gm.userData.kind='bone'; pickables.push(gm); }
   /* ---- Anderes Bein (Kontext): gespiegelte Rahmen, Geometrie x-gespiegelt ---- */
   (function buildOther(){
     const mat=MAT.context;
@@ -2079,7 +2200,7 @@ const detailDefs=[
 ];
 
 /* Schichtstufen (von außen nach innen abtragen) */
-const PEEL=[{ids:[],key:'peel0'},{ids:['pelvis','other','ground'],key:'peel1'},{ids:['glutMax','glutMed','tfl','addMag','iliopsoas','sart','gracilis'],key:'peel2'},
+const PEEL=[{ids:[],key:'peel0'},{ids:['pelvis','other','ground'],key:'peel1'},{ids:['glutMax','glutMed','tfl','addMag','iliopsoas','sart','gracilis','erector','rectAbd','oblique','addLong','piri'],key:'peel2'},
   {ids:['rectF','vastL','vastM','bicF','semimem','semitend','gastroM','gastroL','soleus','tibAnt','tibPost','peron','nPer'],key:'peel3'},
   {ids:['patella','patTen','hoffa'],key:'peel4'},{ids:['MCL','LCL','atfl','cfl','ptfl','deltoid','plantar'],key:'peel5'},{ids:['ACL','PCL','menisci'],key:'peel6'}];
 PEEL.forEach(p=>Object.defineProperty(p,'name',{get(){ return t(p.key); }}));
@@ -2109,13 +2230,19 @@ const METRICS=[
  {id:'delt',name:'Deltaband (Innenband)',unit:'%',get:M=>M.delt*100,levels:LV_TENS,max:12,tension:true},
  {id:'mcl',name:'Innenband (MCL)',unit:'%',get:M=>M.mcl*100,levels:LV_TENS,max:12,tension:true},
  {id:'lcl',name:'Außenband (LCL)',unit:'%',get:M=>M.lcl*100,levels:LV_TENS,max:12,tension:true},
- {id:'nerve',name:'N. peroneus communis',unit:'%',get:M=>M.nerve*100,levels:[[8,'lvStretched','warn'],[-99,'lvRelaxed','ok']],max:12,tension:true},
+ {id:'nerve',name:'N. ischiadicus / peroneus',unit:'%',get:M=>M.nerve*100,levels:[[8,'lvStretched','warn'],[-99,'lvRelaxed','ok']],max:12,tension:true},
+ /* nur anhängen */
+ {id:'comp',name:'Kompartimente medial / lateral',unit:'%',get:M=>M.medShare*100,levels:[[80,'lvMedOver','bad'],[68,'lvMedRaised','warn'],[35,'lvBalanced','ok'],[20,'lvLatRaised','warn'],[-1,'lvLatOver','bad']],max:100,
+  text:(v,M)=>t('medS')+' '+fmt(M.tfMed)+' N · '+t('latS')+' '+fmt(M.tfLat)+' N',sub:'Verteilung der tibiofemoralen Kompression nach Beinachse und Bodenreaktionslinie (Adduktionsmoment): Varus/Beinachse medial → mediale Gonarthrose, Valgus → lateral'},
+ {id:'fai',name:'Hüftimpingement (Kopf-Hals-Übergang ↔ Pfannenrand)',unit:'mm',get:M=>M.fai,levels:[[8,'lvFree','ok'],[4,'lvContact','warn'],[-99,'lvStop','bad']],max:40,sub:'FADIR: Beugung + Adduktion + Innenrotation führt den vorderen Schenkelhals an den Pfannenrand (Cam/Pincer, Labrum)'},
+ {id:'tilt',name:'Beckenkippung / Lendenlordose',unit:'°',get:M=>M.tilt,levels:[[15,'lvHollow','warn'],[-10,'lvNeutral','ok'],[-99,'lvFlat','warn']],max:25,tension:true,
+  text:(v,M)=>(v>=0?'+':'')+fmt(v)+'° '+(v>=1?t('tiltAnt'):v<=-1?t('tiltPost'):t('neutralS')),sub:'Anteriore Kippung = Hohlkreuz (Hüftbeuger und Rückenstrecker verkürzt, Bauch und Hamstrings gedehnt), posteriore = Flachrücken'},
 ];
 /* Reihenfolge nach klinischer Häufigkeit: vorderer Knieschmerz (patellofemoral), Arthrose/Meniskus (tibiofemoral), VKB, Sehnen; Sprunggelenkbänder als Sammelzeile.
    Eingeklappt: HKB, Hüfte, Tractus, Impingements, Menisken, Seitenbänder, Nerv. */
 const ANKLE_LIG=['atfl','cfl','ptfl','delt'];
 const MONITOR={
-  top:['pf','pfPress','tf','acl','patTen','ach','ankleLig'], special:['pcl','hipJ','itb','ankAnt','ankPost','men','mcl','lcl','nerve'],
+  top:['pf','pfPress','tf','comp','acl','patTen','ach','ankleLig'], special:['pcl','hipJ','fai','tilt','itb','ankAnt','ankPost','men','mcl','lcl','nerve'],
   aggregate:{id:'ankleLig',ids:ANKLE_LIG,nameKey:'mAnkleLig',max:12,tension:true,
     text:(v,best)=>(v>=0?'+':'')+fmt(v)+' % '+t({atfl:'ligAtfl',cfl:'ligCfl',ptfl:'ligPtfl',delt:'ligDelt'}[best])},
 };
@@ -2138,17 +2265,20 @@ function computeLoads(){
   if(M.ankAntComp>0.2) add('foot',M.ankAntComp,t('antImp')+' '+fmt(M.ankAnt)+' mm','var(--violet)');
   if(M.ankPostComp>0.2) add('foot',M.ankPostComp,t('postImp')+' '+fmt(M.ankPost)+' mm','var(--violet)');
   if(M.achBW>0.5) add('soleus',M.achBW/4,t('achForce')+' '+fmt(M.ach)+' N','var(--amber)');
+  if(M.faiComp>0.2){ add('femur',M.faiComp,t('faiL')+' '+fmt(M.fai)+' mm','var(--violet)'); add('pelvis',M.faiComp*0.9,t('faiL')+' '+fmt(M.fai)+' mm','var(--violet)'); }
+  if(M.tfBW>0.8&&(M.medShare>0.68||M.medShare<0.32)) add('tibia',Math.abs(M.medShare-0.5)*1.6,(M.medShare>0.5?t('medS'):t('latS'))+' '+fmt(Math.max(M.medShare,1-M.medShare)*100)+' %','var(--violet)');
   return out;
 }
 /* Gruppen in fester klinischer Reihenfolge, innerhalb alphabetisch; nie umsortieren – Gruppenindex steckt in Kurz-Links. */
 const LOAD_GROUPS=[
- {id:'kneeJ',key:'lgKneeB',ids:['patella','patTen','ACL','PCL','MCL','LCL','menisci','hoffa'],open:true},
+ {id:'kneeJ',key:'lgKneeB',ids:['patella','patTen','ACL','PCL','MCL','LCL','menisci','hoffa','tibia'],open:true},
  {id:'quad',key:'lgQuadB',ids:['rectF','vastL','vastM'],open:true},
  {id:'ham',key:'lgHamB',ids:['bicF','semimem','semitend','sart','gracilis'],open:true},
  {id:'calf',key:'lgCalfB',ids:['gastroM','gastroL','soleus','tibAnt','tibPost','peron','plantar'],open:false},
- {id:'hip',key:'lgHipB',ids:['glutMax','glutMed','tfl','addMag','iliopsoas'],open:false},
+ {id:'hip',key:'lgHipB',ids:['glutMax','glutMed','tfl','addMag','iliopsoas','addLong','piri','pelvis','femur'],open:false},
  {id:'ankle',key:'lgAnkleB',ids:['atfl','cfl','ptfl','deltoid','foot'],open:false},
  {id:'nerve',key:'lgNerveB',ids:['nPer'],open:false},
+ {id:'trunk',key:'lgTrunkB',ids:['erector','rectAbd','oblique'],open:false},
 ];
 
 /* Anzeigenamen der Teile, die keine Strukturen sind – Schlüssel in i18n.js */
@@ -2171,18 +2301,20 @@ function structReadouts(id,M){
   if(id==='menisci') rows.push([t('liMen'),fmt(M.menComp*100)+' %']);
   if(id==='foot') rows.push([t('liAnkA'),fmt(M.ankAnt)+' mm'],[t('liAnkP'),fmt(M.ankPost)+' mm']);
   if(id==='femur'||id==='tibia') rows.push([t('liTF'),fmt(M.tfBW,1)+' × KG']);
-  if(id==='pelvis') rows.push([t('liHip'),fmt(M.hipBW,1)+' × KG']);
+  if(id==='pelvis') rows.push([t('liHip'),fmt(M.hipBW,1)+' × KG'],[t('liTilt'),(M.tilt>=0?'+':'')+fmt(M.tilt)+'°'],[t('liFai'),fmt(M.fai)+' mm']);
+  if(id==='femur') rows.push([t('liFai'),fmt(M.fai)+' mm']);
+  if(id==='tibia'||id==='menisci') rows.push([t('liComp'),t('medS')+' '+fmt(M.medShare*100)+' % · '+t('latS')+' '+fmt((1-M.medShare)*100)+' %']);
   return rows;
 }
 
 /* ===================== Bein: Texte für HUD, Pose-Zusammenfassung und Gleichgewichts-Block =====================
    Textbausteine aus pose, rh (Auswertung aus solvePose: lean, hipClin, screw, balanced, grf) und M (EVAL.metrics). */
-const READOUT0={lean:0,hipClin:0,screw:-8,balanced:true,grf:0,ground:true,comZ:0};
+const READOUT0={lean:0,hipClin:0,screw:-8,balanced:true,grf:0,ground:true,comZ:0,tilt:0,tibR:0,otherMode:1,otherGround:true};
 const sgn=(v,a,b)=>v<0?t(a):t(b);
 function hudMiniText(ps,M){ return `${t('kneeS')} ${fmt(ps.knee)}° · ${t('hipS')} ${fmt(ps.hipF)}° · PF ${fmt(M.pfBW,1)} × KG`; }
 function hudBodyHTML(ps,rh,M){
   return `${t('hip')} ${fmt(rh.hipClin)}° (${t('thigh')} ${fmt(ps.hipF)}°) · ${sgn(ps.hipA,'add','abd')} ${fmt(Math.abs(ps.hipA))}° · ${sgn(ps.hipR,'ER','IR')} ${fmt(Math.abs(ps.hipR))}°<br>`+
-    `${t('knee')} ${fmt(ps.knee)}° · ${t('tibRot')} ${sgn(ps.tibR+rh.screw,'ER','IR')} ${fmt(Math.abs(ps.tibR+rh.screw))}° · ${sgn(ps.valg,'varus','valgus')} ${fmt(Math.abs(ps.valg))}°<br>`+
+    `${t('knee')} ${fmt(ps.knee)}° · ${t('tibRot')} ${sgn((rh.tibR||ps.tibR)+rh.screw,'ER','IR')} ${fmt(Math.abs((rh.tibR||ps.tibR)+rh.screw))}° · ${sgn(ps.valg,'varus','valgus')} ${fmt(Math.abs(ps.valg))}°${Math.abs(ps.tilt)>=1?' · '+t('tiltS')+' '+sgn(ps.tilt,'tiltPost','tiltAnt')+' '+fmt(Math.abs(ps.tilt))+'°':''}<br>`+
     `${t('ankle')} ${sgn(ps.ankle,'plantar','dorsi')} ${fmt(Math.abs(ps.ankle))}° · ${t('subS')} ${sgn(ps.sub,'ev','inv')} ${fmt(Math.abs(ps.sub))}°`+
     `<span class="hud-more"><br>${rh.ground?`${t('trunk')} ${fmt(rh.lean)}°${rh.balanced?'':' · '+t('unbalanced')} · ${t('grf')} ${fmt(M.grf)} N`:t('noGround')} · ${t('moments')} H ${fmt(M.mHip)} · K ${fmt(M.mKnee)} · S ${fmt(M.mAnk)} Nm</span>`+
     `<br>PF ${fmt(M.pfBW,1)} × KG · TF ${fmt(M.tfBW,1)} × KG · ${t('aclS')} ${fmt(M.acl)} N · ${t('achS')} ${fmt(M.achBW,1)} × KG`;
@@ -2195,7 +2327,7 @@ function balanceReadoutHTML(ps,rh){
   return `${t('trunkLean')} ${fmt(rh.lean)}°${rh.balanced?'':' · '+t('unbalanced')} · ${t('hipClinL')} ${fmt(rh.hipClin)}°<br>`+
     `${t('grfL')} ${fmt(M.grf)} N (${fmt(M.grfBW*100)} % KG)<br>`+
     `${t('momentsL')}: ${t('hip')} ${fmt(M.mHip)} · ${t('knee')} ${fmt(M.mKnee)} · ${t('ankle')} ${fmt(M.mAnk)} Nm<br>`+
-    `${t('screwL')} ${fmt(Math.abs(rh.screw))}° ${t('ER')}`;
+    `${t('screwL')} ${fmt(Math.abs(rh.screw))}° ${t('ER')}`+(Math.abs((rh.tibR||0)-ps.tibR)>=0.5?` · ${t('pronL')} ${fmt((rh.tibR||0)-ps.tibR)}° ${t('IR')}`:'')+`<br>${t('tiltL')} ${(ps.tilt>=0?'+':'')+fmt(ps.tilt)}° · ${t('otherL')}: ${t(['otAuto','otMirror','otLift','otRear','otFront'][rh.otherMode]||'otMirror')}`;
 }
 
 /* ===================== Bein: 3D-Beschriftungen und Ziehen am Bein =====================
@@ -2205,8 +2337,8 @@ function balanceReadoutHTML(ps,rh){
 const LABELS=[
  {id:'femur',key:'lbGT',lm:F_(AN.GT.c.clone().add(V3(1.0,1.6,0)))},{id:'femur',key:'nameFemur',lm:F_(2.4,-22,0.3)},{id:'femur',key:'lbEpiL',lm:F_(AN.epiL.clone().add(V3(1.2,0.6,0)))},
  {id:'patella',key:'namePatella',lm:P_(0,0,1.3)},{id:'tibia',key:'lbTT',lm:T_(0,-5.2,4.3)},{id:'tibia',key:'nameTibia',lm:T_(0,-20,1.8)},{id:'tibia',key:'lbFibHead',lm:T_(4.8,-3.5,-1.5)},
- {id:'tibia',key:'lbLM',lm:T_(4.4,-43.2,-0.5)},{id:'tibia',key:'lbMM',lm:T_(-4.0,-41.5,-0.2)},{id:'foot',key:'lbCalc',lm:C_(0,-2.4,-7.8)},{id:'foot',key:'lbTalus',lm:A_(0,1.9,0.4)},{id:'foot',key:'lbMT',lm:C_(0,-3.6,13)},
- {id:'pelvis',key:'lbASIS',lm:B_(3.6,8.2,5.8)},{id:'pelvis',key:'lbIschium',lm:B_(-3.6,-6.4,-5.6)},{id:'pelvis',key:'lbSacrum',lm:B_(-9,5,-10.8)},{id:'hoffa',key:'nameHoffa',lm:T_(0,-2.8,3.6)},
+ {id:'tibia',key:'lbLM',lm:T_(4.4,-41.8,-0.5)},{id:'tibia',key:'lbMM',lm:T_(-4.0,-40.6,-0.2)},{id:'foot',key:'lbCalc',lm:C_(0,-2.4,-7.8)},{id:'foot',key:'lbTalus',lm:A_(0,1.9,0.4)},{id:'foot',key:'lbMT',lm:C_(0,-3.6,13)},
+ {id:'pelvis',key:'lbASIS',lm:B_(3.6,8.2,5.8)},{id:'pelvis',key:'lbIschium',lm:B_(-3.6,-6.4,-5.6)},{id:'pelvis',key:'lbSacrum',lm:B_(-9,5,-10.8)},{id:'pelvis',key:'lbPubis',lm:B_(-7.5,-3.4,6.2)},{id:'hoffa',key:'nameHoffa',lm:T_(0,-2.8,3.6)},
 ];
 STRUCT.forEach(s=>{ if(!s.surface) LABELS.push({id:s.id,struct:s}); });
 
@@ -2240,13 +2372,17 @@ de:{
  lKnee:'Knie beugen', eExt:'gestreckt', eFlex:'gebeugt', lTibR:'Unterschenkel drehen (Tibia)', lValg:'Valgus / Varus (Knie nach innen/außen)', eVarus:'Varus (O-Bein)', eValgus:'Valgus (X-Bein)',
  lAnkle:'Sprunggelenk', ePlantar:'Plantarflexion (Zehen runter)', eDorsi:'Dorsalextension', lSub:'Fuß kanten (Subtalar)', eEver:'Eversion', eInv:'Inversion',
  lWt:'Gewichtsanteil auf diesem Bein', eWt0:'unbelastet', eWt1:'einbeinig', lGround:'Bodenkontakt (Fuß steht auf dem Boden)', groundOn:'Fuß am Boden', groundOff:'Bein frei',
+ lTilt:'Beckenkippung (gegen den Rumpf)', eTiltPost:'nach hinten (Flachrücken)', eTiltAnt:'nach vorn (Hohlkreuz)', tiltAnt:'nach vorn', tiltPost:'nach hinten', tiltS:'Becken', tiltL:'Beckenkippung', pronL:'Pronation → Tibia',
+ lOther:'Anderes Bein', otAuto:'automatisch', otMirror:'gespiegelt', otLift:'abgehoben', otRear:'hinten am Boden', otFront:'vorn gestreckt', otherL:'anderes Bein',
+ lvMedOver:'medial überlastet', lvMedRaised:'medial betont', lvBalanced:'ausgeglichen', lvLatRaised:'lateral betont', lvLatOver:'lateral überlastet', medS:'medial', latS:'lateral', faiL:'Kopf-Hals-Übergang am Pfannenrand',
+ lvHollow:'Hohlkreuz', lvNeutral:'neutral', lvFlat:'Flachrücken', liTilt:'Beckenkippung', liFai:'Abstand Kopf-Hals-Übergang ↔ Pfannenrand', liComp:'Kompartimente', lgTrunkB:'Rumpf & Becken', lbPubis:'Schambein',
  balSum:'Becken, Rumpf & Gleichgewicht (automatisch)', balNote:'Bei Bodenkontakt steht der Fuß fest; der Rumpf neigt sich so weit nach vorn, dass der Körperschwerpunkt über dem Fuß bleibt. Die Bodenreaktionskraft (Gewichtsanteil × Körpergewicht, 75 kg) erzeugt die Gelenkmomente, die die Muskeln halten müssen. Ohne Bodenkontakt hängt das Bein am ruhenden Becken.',
  lCart:'Knorpelverlust patellofemoral', lAcl:'VKB-Insuffizienz (Bandlaxität)', pathoNote:'Knorpelverlust verkleinert die Kontaktfläche der Patella (Druck ↑); VKB-Insuffizienz vergrößert die vordere Tibiaverschiebung bei gleichem Schub.',
  lyBones:'nur Knochen', lyKnee:'Knie', disc1:'Vereinfachtes biomechanisches Lehrmodell (Landmarken- und Fadenmodell, statische Kraftverteilung ∝ Querschnitt × Hebelarm, Gleichgewicht über Rumpfneigung). Kein Diagnoseinstrument – Beschwerden bitte ärztlich/physiotherapeutisch abklären.',
  aria3d:'3D-Ansicht des rechten Beins', mArm:'Bein bewegen', mArmT:'Ziehen am Oberschenkel beugt die Hüfte, am Unterschenkel das Knie, am Fuß das Sprunggelenk', mRot:'Drehen', mRotT:'Ziehen: waagerecht Hüftrotation, senkrecht Sprunggelenk',
  hint:'Ziehen am Bein: bewegen · Ziehen im Leeren: Kamera drehen · Rad/Pinch: Zoom · Klick/Tipp: Struktur-Info',
  dv1:'Patellofemoralgelenk', dv1l:'von lateral, Femur aufgeschnitten', dv2:'Kreuzbänder', dv2l:'von vorn, Patella und Muskeln ausgeblendet', dv3:'Tractus & Epikondylus', dv3l:'Reibzone bei 15–30° Beugung', dv4:'Sprunggelenk lateral', dv4l:'ATFL · CFL · Achillessehne · Peronei',
- hMetrics:'Last-Monitor', mgSpecial:'Speziell: HKB · Hüfte · Tractus · Impingements · Menisken · Seitenbänder · Nerv', mgSpecialSub:'seltener bzw. nur in Endstellungen', mAnkleLig:'Sprunggelenk-Bänder (stärkstes)', mCapShow:'4 Bänder anzeigen ▸', mCapHide:'Bänder ausblenden ▾',
+ hMetrics:'Last-Monitor', mgSpecial:'Speziell: HKB · Hüfte (Kontaktkraft, Impingement) · Becken · Tractus · Sprunggelenk-Impingements · Menisken · Seitenbänder · Nerv', mgSpecialSub:'seltener bzw. nur in Endstellungen', mAnkleLig:'Sprunggelenk-Bänder (stärkstes)', mCapShow:'4 Bänder anzeigen ▸', mCapHide:'Bänder ausblenden ▾',
  lgKneeB:'Kniegelenk: Patella, Bänder, Menisken', lgQuadB:'Quadrizeps', lgHamB:'Hamstrings & Pes anserinus', lgCalfB:'Wade & Unterschenkel', lgHipB:'Hüfte', lgAnkleB:'Sprunggelenk', lgNerveB:'Nerven',
  tabMetrics:'Lasten',
  hipS:'Hüfte', kneeS:'Knie', hip:'Hüfte', knee:'Knie', ankle:'Sprunggelenk', thigh:'Oberschenkel', tibRot:'Tibia', subS:'Subtalar', neutralS:'neutral',
@@ -2266,13 +2402,17 @@ en:{
  lKnee:'Knee flexion', eExt:'extended', eFlex:'flexed', lTibR:'Tibial rotation', lValg:'Valgus / varus (knee inward/outward)', eVarus:'Varus (bow-leg)', eValgus:'Valgus (knock-knee)',
  lAnkle:'Ankle', ePlantar:'Plantar flexion (toes down)', eDorsi:'Dorsiflexion', lSub:'Foot tilt (subtalar)', eEver:'Eversion', eInv:'Inversion',
  lWt:'Body weight on this leg', eWt0:'unloaded', eWt1:'single leg', lGround:'Ground contact (foot on the floor)', groundOn:'foot on the floor', groundOff:'leg free',
+ lTilt:'Pelvic tilt (relative to the trunk)', eTiltPost:'posterior (flat back)', eTiltAnt:'anterior (hollow back)', tiltAnt:'anterior', tiltPost:'posterior', tiltS:'pelvis', tiltL:'Pelvic tilt', pronL:'pronation → tibia',
+ lOther:'Other leg', otAuto:'automatic', otMirror:'mirrored', otLift:'lifted', otRear:'behind on the floor', otFront:'extended in front', otherL:'other leg',
+ lvMedOver:'medial overload', lvMedRaised:'medial emphasis', lvBalanced:'balanced', lvLatRaised:'lateral emphasis', lvLatOver:'lateral overload', medS:'medial', latS:'lateral', faiL:'head–neck junction at the acetabular rim',
+ lvHollow:'hollow back', lvNeutral:'neutral', lvFlat:'flat back', liTilt:'Pelvic tilt', liFai:'Head–neck junction ↔ acetabular rim', liComp:'Compartments', lgTrunkB:'Trunk & pelvis', lbPubis:'Pubis',
  balSum:'Pelvis, trunk & balance (automatic)', balNote:'With ground contact the foot is fixed; the trunk leans forward just enough to keep the centre of mass over the foot. The ground reaction force (weight share × body weight, 75 kg) creates the joint moments the muscles have to hold. Without ground contact the leg hangs from the resting pelvis.',
  lCart:'Patellofemoral cartilage loss', lAcl:'ACL insufficiency (laxity)', pathoNote:'Cartilage loss reduces the patellar contact area (pressure ↑); ACL insufficiency increases anterior tibial translation for the same shear.',
  lyBones:'bones only', lyKnee:'knee', disc1:'Simplified biomechanical teaching model (landmark and string model, static force distribution ∝ cross-section × lever arm, balance via trunk lean). Not a diagnostic tool – please have complaints assessed by a physician or physiotherapist.',
  aria3d:'3D view of the right leg', mArm:'Move leg', mArmT:'Dragging the thigh flexes the hip, the shank the knee, the foot the ankle', mRot:'Rotate', mRotT:'Drag: horizontal hip rotation, vertical ankle',
  hint:'Drag the leg: move · drag empty space: orbit · wheel/pinch: zoom · click/tap: structure info',
  dv1:'Patellofemoral joint', dv1l:'from lateral, femur cut open', dv2:'Cruciate ligaments', dv2l:'from the front, patella and muscles hidden', dv3:'Iliotibial band & epicondyle', dv3l:'friction zone at 15–30° flexion', dv4:'Ankle, lateral', dv4l:'ATFL · CFL · Achilles tendon · peroneals',
- hMetrics:'Load monitor', mgSpecial:'Special: PCL · hip · iliotibial band · impingements · menisci · collaterals · nerve', mgSpecialSub:'less common or end-range only', mAnkleLig:'Ankle ligaments (most tensioned)', mCapShow:'show 4 ligaments ▸', mCapHide:'hide ligaments ▾',
+ hMetrics:'Load monitor', mgSpecial:'Special: PCL · hip (contact force, impingement) · pelvis · iliotibial band · ankle impingements · menisci · collaterals · nerve', mgSpecialSub:'less common or end-range only', mAnkleLig:'Ankle ligaments (most tensioned)', mCapShow:'show 4 ligaments ▸', mCapHide:'hide ligaments ▾',
  lgKneeB:'Knee joint: patella, ligaments, menisci', lgQuadB:'Quadriceps', lgHamB:'Hamstrings & pes anserinus', lgCalfB:'Calf & lower leg', lgHipB:'Hip', lgAnkleB:'Ankle', lgNerveB:'Nerves',
  tabMetrics:'Loads',
  hipS:'Hip', kneeS:'Knee', hip:'Hip', knee:'Knee', ankle:'Ankle', thigh:'thigh', tibRot:'Tibia', subS:'Subtalar', neutralS:'neutral',
@@ -2288,22 +2428,24 @@ en:{
 }};
 
 /* Englische Namen der Strukturen, Schichten, Presets, Lasten, Metriken (deutsche Namen stehen bei den Definitionen) */
-const STRUCT_EN={iliopsoas:'Iliopsoas',glutMax:'Gluteus maximus',glutMed:'Gluteus medius',tfl:'Tensor fasciae latae · iliotibial band',addMag:'Adductor magnus',
+const STRUCT_EN={erector:'Erector spinae (lumbar)',rectAbd:'Rectus abdominis',oblique:'Oblique abdominals',addLong:'Adductor longus · pectineus',piri:'Piriformis · deep external rotators',nPer:'Sciatic → common peroneal nerve (fibular head)',iliopsoas:'Iliopsoas',glutMax:'Gluteus maximus',glutMed:'Gluteus medius',tfl:'Tensor fasciae latae · iliotibial band',addMag:'Adductor magnus',
  rectF:'Rectus femoris',vastL:'Vastus lateralis',vastM:'Vastus medialis',bicF:'Biceps femoris (long head)',semimem:'Semimembranosus',semitend:'Semitendinosus',sart:'Sartorius',gracilis:'Gracilis',
  gastroM:'Gastrocnemius, medial head',gastroL:'Gastrocnemius, lateral head',soleus:'Soleus · Achilles tendon',tibAnt:'Tibialis anterior',tibPost:'Tibialis posterior',peron:'Peroneus longus',
  ACL:'Anterior cruciate ligament (AM · PL)',PCL:'Posterior cruciate ligament',MCL:'Medial collateral ligament',LCL:'Lateral collateral ligament',patTen:'Patellar tendon',menisci:'Menisci (medial · lateral)',
- atfl:'Anterior talofibular ligament (ATFL)',cfl:'Calcaneofibular ligament (CFL)',ptfl:'Posterior talofibular ligament (PTFL)',deltoid:'Deltoid ligament (medial)',plantar:'Plantar fascia',nPer:'Common peroneal nerve (fibular head)'};
-const GROUP_EN={bones:'Bones',joint:'Knee: ligaments & menisci',ankle:'Ankle & foot',quad:'Quadriceps',ham:'Hamstrings',hip:'Hip',medial:'Pes anserinus',calf:'Calf',shin:'Lower leg, anterior/lateral',nerve:'Nerves'};
+ atfl:'Anterior talofibular ligament (ATFL)',cfl:'Calcaneofibular ligament (CFL)',ptfl:'Posterior talofibular ligament (PTFL)',deltoid:'Deltoid ligament (medial)',plantar:'Plantar fascia'};
+const GROUP_EN={bones:'Bones',joint:'Knee: ligaments & menisci',ankle:'Ankle & foot',quad:'Quadriceps',ham:'Hamstrings',hip:'Hip',medial:'Pes anserinus',calf:'Calf',shin:'Lower leg, anterior/lateral',nerve:'Nerves',trunk:'Trunk & pelvis'};
 const LAYER_EN={pelvis:'Pelvis & trunk',femur:'Femur',patella:'Patella',tibia:'Tibia & fibula',foot:'Talus, calcaneus & foot',other:'Other leg (context)',ground:'Ground',
  ACL:'Anterior cruciate lig.',PCL:'Posterior cruciate lig.',MCL:'Medial collateral',LCL:'Lateral collateral',patTen:'Patellar tendon',menisci:'Menisci',hoffa:'Hoffa fat pad',
  atfl:'ATFL',cfl:'CFL',ptfl:'PTFL',deltoid:'Deltoid lig.',plantar:'Plantar fascia',rectF:'Rectus femoris',vastL:'Vastus lateralis',vastM:'Vastus medialis',bicF:'Biceps femoris',semimem:'Semimembranosus',semitend:'Semitendinosus',
  iliopsoas:'Iliopsoas',glutMax:'Gluteus maximus',glutMed:'Gluteus medius',tfl:'Tensor · iliotibial band',addMag:'Adductor magnus',sart:'Sartorius',gracilis:'Gracilis',
- gastroM:'Gastrocnemius medial',gastroL:'Gastrocnemius lateral',soleus:'Soleus · Achilles',tibAnt:'Tibialis anterior',tibPost:'Tibialis posterior',peron:'Peroneus longus',nPer:'Common peroneal nerve'};
+ gastroM:'Gastrocnemius medial',gastroL:'Gastrocnemius lateral',soleus:'Soleus · Achilles',tibAnt:'Tibialis anterior',tibPost:'Tibialis posterior',peron:'Peroneus longus',nPer:'Common peroneal nerve',erector:'Erector spinae',rectAbd:'Rectus abdominis',oblique:'Oblique abdominals',addLong:'Adductor longus',piri:'Piriformis',nPer:'Sciatic / peroneal nerve'};
 const PRESET_EN={stand:'Stand',squatPar:'Squat, parallel',squatDeep:'Squat, deep',lunge:'Lunge (front leg)',stair:'Stair up ▶',landing:'Landing after a jump',cutting:'Cutting / pivot (valgus + internal rotation)',
  calfRaise:'Single-leg calf raise',squatRest:'Deep squat rest',kneelSit:'Kneeling sit (heels)',supTrauma:'Supination sprain (ankle roll)',pointe:'En pointe',lachman:'Lachman position (25°)',drawer:'Drawer test (90°, sitting)',slump:'Slump (nerve tension)',
  squatCycle:'Squat 0–140°',swing:'Gait: swing phase (simplified)',landingAnim:'Jump landing (single leg)',ankleRom:'Ankle: plantar/dorsiflexion',
- barbellSquat:'Barbell squat 40 kg ▶',wallSit:'Wall sit (90°)',stepUp:'Step-up 20 cm ▶',legExt:'Leg extension 15 kg ▶',legCurl:'Leg curl 10 kg ▶',calfRaiseW:'Calf raise with 20 kg ▶',pistol:'Single-leg squat (pistol) ▶',splitSquat:'Split squat ▶',heelWalk:'Heel walk (dorsiflexors)',nordic:'Nordic hamstring ▶'};
-const LOAD_EN={barbellSquat:'Barbell 40 kg on the shoulders',legExt:'Machine 15 kg at the shank, thigh supported',legCurl:'Machine 10 kg at the shank, prone',calfRaiseW:'Dumbbell 20 kg',nordic:'Partner holds the heels, trunk falls forward'};
+ barbellSquat:'Barbell squat 40 kg ▶',wallSit:'Wall sit (90°)',stepUp:'Step-up 20 cm ▶',legExt:'Leg extension 15 kg ▶',legCurl:'Leg curl 10 kg ▶',calfRaiseW:'Calf raise with 20 kg ▶',pistol:'Single-leg squat (pistol) ▶',splitSquat:'Split squat ▶',heelWalk:'Heel walk (dorsiflexors)',nordic:'Nordic hamstring ▶',
+ fadir:'Hip impingement test (FADIR)',trend:'Single-leg stance with pelvic drop (Trendelenburg)',antTilt:'Hollow back: anterior pelvic tilt',postTilt:'Flat back: posterior pelvic tilt',pronation:'Flat foot: pronation → tibial internal rotation → valgus',thomas:'Thomas test (hip flexor stretch)',
+ deadlift:'Deadlift 60 kg (hip hinge) ▶'};
+const LOAD_EN={barbellSquat:'Barbell 40 kg on the shoulders',legExt:'Machine 15 kg at the shank, thigh supported',legCurl:'Machine 10 kg at the shank, prone',calfRaiseW:'Dumbbell 20 kg',nordic:'Partner holds the heels, trunk falls forward',deadlift:'Barbell 60 kg in the hands (hips back, shins stay vertical, trunk leans for balance)'};
 const METRIC_EN={pf:{name:'Patellofemoral force',sub:'Quadriceps and patellar tendon pull press the patella into the trochlea; grows with flexion and load (walking ≈ 0.5, stairs ≈ 3, deep squat 5–7 × BW)'},
  pfPress:{name:'Patellofemoral pressure',sub:'Force ÷ contact area (2–6 cm², growing to 90°); cartilage loss reduces the area'},
  tf:{name:'Tibiofemoral compression',sub:'Ground reaction plus tendon pull along the tibia (walking 2–3, squat 5–7 × BW)'},
@@ -2316,8 +2458,16 @@ const METRIC_EN={pf:{name:'Patellofemoral force',sub:'Quadriceps and patellar te
  ankAnt:{name:'Anterior ankle impingement',sub:'Talar neck ↔ anterior tibial rim in dorsiflexion (squat, footballer’s ankle)'},
  ankPost:{name:'Posterior impingement (os trigonum)',sub:'Posterior process ↔ posterior tibial rim in plantar flexion (ballet, football)'},
  men:{name:'Menisci: posterior horn compression',sub:'From ≈ 115° the posterior horns are pushed backwards (deep squat, kneeling)'},
- atfl:{name:'ATFL (anterior talofibular)'},cfl:{name:'CFL (calcaneofibular)'},ptfl:{name:'PTFL (posterior talofibular)'},delt:{name:'Deltoid ligament (medial)'},mcl:{name:'Medial collateral (MCL)'},lcl:{name:'Lateral collateral (LCL)'},nerve:{name:'Common peroneal nerve'}};
+ atfl:{name:'ATFL (anterior talofibular)'},cfl:{name:'CFL (calcaneofibular)'},ptfl:{name:'PTFL (posterior talofibular)'},delt:{name:'Deltoid ligament (medial)'},mcl:{name:'Medial collateral (MCL)'},lcl:{name:'Lateral collateral (LCL)'},nerve:{name:'Sciatic / peroneal nerve'},
+ comp:{name:'Compartments medial / lateral',sub:'Split of tibiofemoral compression by leg axis and ground-reaction line (adduction moment): varus/medial axis → medial osteoarthritis, valgus → lateral'},
+ fai:{name:'Hip impingement (head–neck junction ↔ acetabular rim)',sub:'FADIR: flexion + adduction + internal rotation brings the anterior femoral neck to the acetabular rim (cam/pincer, labrum)'},
+ tilt:{name:'Pelvic tilt / lumbar lordosis',sub:'Anterior tilt = hollow back (hip flexors and erector spinae shortened, abdominals and hamstrings lengthened), posterior = flat back'}};
 const INFO_EN={
+ erector:{k:'Muscle (trunk ↔ pelvis)',f:'Extends the lumbar spine and tilts the pelvis forward; holds the trunk against gravity when bending and lifting (eccentric when leaning forward).',p:'Overload when lifting with a rounded back; short/overactive in a hollow back (“lower crossed syndrome” together with the hip flexor), weak with a flat back.',t:'Trunk lean under load, superman/bird-dog.'},
+ rectAbd:{k:'Muscle (trunk ↔ pelvis)',f:'From the rib cage to the pubis: flexes the trunk and tilts the pelvis backward (reduces the hollow back); antagonist of the erector spinae and hip flexor.',p:'Weakness allows anterior pelvic tilt and hollow back; diastasis recti; insertion irritation at the pubis (athletic pubalgia).',t:'Pelvic tilt lying down, plank.'},
+ oblique:{k:'Muscle (trunk ↔ pelvis)',f:'From the ribs to the iliac crest and inguinal ligament: trunk rotation and side bending, frontal-plane pelvic control, abdominal brace.',p:'Weakness → pelvic drop and trunk sway in single-leg stance; overload in throwing/striking sports.',t:'Side plank, rotation against resistance.'},
+ addLong:{k:'Muscle + tendon',f:'From the pubis to the linea aspera: adduction and hip flexion from extension; stabilises the pelvis in cutting and straddling.',p:'Most common groin injury in football (adductor strain, insertional tendinopathy at the pubis); shortened with prolonged sitting.',t:'Squeeze test (ball between the knees), tenderness at the pubis.'},
+ piri:{k:'Muscle (deep external rotators)',f:'From the sacrum to the greater trochanter: external rotation in standing, abduction with the hip flexed; the sciatic nerve runs beneath (rarely through) the muscle.',p:'Piriformis syndrome: tightness irritates the sciatic nerve (buttock pain radiating into the leg, worse when sitting); shortened with prolonged sitting.',t:'FAIR test (flexion, adduction, internal rotation), figure-four stretch.'},
  iliopsoas:{k:'Muscle + tendon',f:'Strongest hip flexor (psoas from the lumbar spine, iliacus from the iliac fossa) to the lesser trochanter; raises the trunk when sitting up.',p:'Shortening with prolonged sitting → anterior pelvic tilt, lordosis; snapping hip; hip flexor pain in sprinters.',t:'Thomas test, resisted hip flexion in sitting.'},
  glutMax:{k:'Muscle',f:'Hip extension and external rotation, especially from flexion (rising, stairs, sprinting); upper fibres pull into the iliotibial band.',p:'Weakness shifts work to hamstrings and back; trochanteric bursitis.',t:'Prone hip extension, single-leg bridge.'},
  glutMed:{k:'Muscle',f:'Hip abduction and pelvic stabilisation in single-leg stance: keeps the pelvis level (force couple with body weight).',p:'Weakness → Trendelenburg sign, knee valgus on landing/squatting, iliotibial band overload, bursitis.',t:'Trendelenburg test, single-leg squat (knee drifting inward?).'},
@@ -2350,8 +2500,8 @@ const INFO_EN={
  deltoid:{k:'Ligament (multilayered)',f:'Medial ligament from the medial malleolus to talus, navicular and calcaneus; resists eversion and external rotation, supports the longitudinal arch.',p:'Pronation injury, associated with lateral malleolar fracture, overload in flatfoot.',t:'Eversion stress, tenderness below the medial malleolus.'},
  plantar:{k:'Fascia',f:'Tenses the longitudinal arch from the calcaneus to the toes; windlass mechanism: toe extension tightens the fascia and raises the arch (push-off).',p:'Plantar fasciitis (start-up heel pain), heel spur, rupture (rare).',t:'Pressure at the medial calcaneal tubercle, stretch with toe extension (windlass test).'},
  nPer:{k:'Nerve',f:'Winds around the fibular neck into the anterior compartment; supplies dorsiflexors and the lateral foot. Superficial and pressure-sensitive there.',p:'Pressure lesion (cast, crossed legs, positioning) → foot drop (steppage gait); stretched in the slump position (hip flexion, knee extension, plantar flexion + inversion).',t:'Tinel at the fibular head, slump test, heel walking.'},
- pelvis:{k:'Bone (context)',f:'Pelvis with the acetabulum; with ground contact the trunk above is tilted automatically so that the centre of mass stays over the foot (balance).',p:'Pelvic tilt and trunk lean determine the hip and knee moments: upright trunk → more knee load, forward lean → more hip and back load.',t:''},
- femur:{k:'Bone',f:'Femoral head (sphere, r ≈ 2.4 cm), neck (125° to the shaft), greater trochanter (abductors) and lesser trochanter (iliopsoas), shaft with linea aspera (vasti, adductors), condyles (spherical surfaces r ≈ 2.3 cm) with the trochlea for the patella.',p:'Femoral neck fracture (elderly), hip impingement (cam at the head–neck junction), condylar cartilage damage.',t:''},
+ pelvis:{k:'Bone (context)',f:'Pelvis with the acetabulum; with ground contact the trunk above is leaned automatically so that the centre of mass stays over the foot (balance). The pelvic tilt slider rotates the pelvis against trunk and thigh: forward = hollow back with shortened hip flexors and erector spinae and lengthened hamstrings and abdominals; backward the reverse.',p:'Pelvic tilt and trunk lean set the hip and knee moments: upright trunk → more knee load, forward lean → more hip and back load. Anterior tilt with hollow back loads facets and discs, posterior tilt in the deep squat (“butt wink”) loads the discs in flexion.',t:'Pelvic tilt in standing (hand on the lower back), Thomas test.'},
+ femur:{k:'Bone',f:'Femoral head (sphere, r ≈ 2.4 cm), neck (125° to the shaft), greater trochanter (abductors) and lesser trochanter (iliopsoas), shaft with the linea aspera (vasti, adductors), condyles (spherical surfaces r ≈ 2.3 cm) with the trochlea for the patella.',p:'Femoral neck fracture (age), hip impingement (FAI: cam at the head–neck junction or pincer at the acetabular rim) – the head–neck junction abuts the anterior rim in flexion + adduction + internal rotation (labral damage, groin pain when sitting/driving); cartilage damage at the condyles.',t:'FADIR test (flexion 90°, adduction, internal rotation), preset “Hip impingement”.'},
  patella:{k:'Bone (sesamoid)',f:'Increases the lever arm of the quadriceps; glides from the trochlea onto the condyles with increasing flexion (engagement from ≈ 20°). Contact area and force increase with flexion; pressure peaks at 60–90°.',p:'Patellofemoral pain (most common knee diagnosis in young adults), chondromalacia, lateralisation/dislocation with a flat trochlea.',t:'Zohlen sign, painful squat/stairs down, patellar apprehension test.'},
  tibia:{k:'Bone',f:'Tibial plateau (medial larger, concave; lateral convex) with the eminence (cruciate attachments), tibial tuberosity (patellar tendon), Gerdy’s tubercle (iliotibial band), pes anserinus medially; the fibula carries little load and forms the lateral malleolus.',p:'Tibial plateau fracture, stress fracture, Osgood–Schlatter, fibular head: peroneal nerve.',t:''},
  foot:{k:'Bone',f:'Talus (roll in the ankle mortise: dorsi-/plantar flexion), calcaneus (subtalar joint: inversion/eversion, Achilles insertion), mid- and forefoot (arches, push-off over the metatarsal heads).',p:'Ankle arthritis after fracture, anterior impingement (footballer’s ankle: osteophytes at the anterior tibial rim), posterior impingement (os trigonum, ballet).',t:''},
@@ -2374,6 +2524,9 @@ const POSE_PARAMS=[
  {key:'sub',url:'sub',code:'Z',min:-15,max:30,step:1,def:0,label:'lSub',ends:['eEver','eInv'],text:ps=>Math.abs(ps.sub)<1?t('neutralS'):(ps.sub<0?t('ev'):t('inv'))+' '+fmt(Math.abs(ps.sub))+'°'},
  {key:'wt',url:'wt',code:'w',min:0,max:100,step:5,def:50,label:'lWt',ends:['eWt0','eWt1'],text:ps=>fmt(ps.wt)+' % · '+fmt(ps.wt/100*BW)+' N'},
  {key:'ground',url:'ground',code:'b',type:'check',min:0,max:1,step:1,def:1,label:'lGround',ends:[],text:ps=>ps.ground>=0.5?t('groundOn'):t('groundOff')},
+ /* nur anhängen (Reihenfolge = Regler) */
+ {key:'tilt',url:'tilt',code:'t',min:-20,max:25,step:1,def:0,label:'lTilt',ends:['eTiltPost','eTiltAnt'],text:ps=>Math.abs(ps.tilt)<1?t('neutralS'):(ps.tilt<0?t('tiltPost'):t('tiltAnt'))+' '+fmt(Math.abs(ps.tilt))+'°'},
+ {key:'other',url:'other',code:'o',type:'seg',min:0,max:4,step:1,def:0,label:'lOther',ends:[],options:[[0,'otAuto'],[1,'otMirror'],[2,'otLift'],[3,'otRear'],[4,'otFront']],text:ps=>t(['otAuto','otMirror','otLift','otRear','otFront'][Math.round(ps.other)]||'otAuto')+(ps.other<0.5?' → '+t(otherMode(ps)===2?'otLift':'otMirror'):'')},
 ];
 const PATHO_PARAMS=[
  {key:'cart',url:'cart',code:'c',min:0,max:100,step:5,sliderScale:100,urlScale:100,compactScale:100,label:'lCart',text:v=>fmt(v*100)+' %'},
@@ -2430,6 +2583,8 @@ const $=id=>document.getElementById(id);
   const pc=$('poseCtls');
   pc.innerHTML=POSE_PARAMS.map(p=>p.type==='check'
     ?`<div class="ctl check"><label for="ps_${p.key}"><input type="checkbox" id="ps_${p.key}"${p.def?' checked':''}> <span data-i18n="${p.label}"></span></label><span class="val" id="pv_${p.key}"></span></div>`
+    :p.type==='seg'
+    ?`<div class="ctl"><label data-i18n="${p.label}"></label><span class="val" id="pv_${p.key}"></span><div class="seg pseg" id="ps_${p.key}">${p.options.map(([v,k])=>`<button type="button" data-v="${v}"${v===p.def?' class="on"':''} data-i18n="${k}"></button>`).join('')}</div></div>`
     :`<div class="ctl"><label for="ps_${p.key}" data-i18n="${p.label}"></label><span class="val" id="pv_${p.key}"></span><input type="range" id="ps_${p.key}" min="${p.min}" max="${p.max}" value="${p.def}" step="${p.step}"><div class="ends"><span data-i18n="${p.ends[0]}"></span><span data-i18n="${p.ends[1]}"></span></div></div>`).join('');
   if(MOD.readout) pc.insertAdjacentHTML('beforeend',`<details class="sub" id="readoutDetails"><summary data-i18n="${MOD.readout.sum}"></summary><div class="kvs" id="readout" style="font-family:var(--mono);font-size:11.5px;color:var(--muted);line-height:1.6"></div><p class="note" data-i18n="${MOD.readout.note}"></p></details>`);
   const pa=$('pathoCtls');
@@ -2635,12 +2790,15 @@ const SL={},VL={}; for(const p of POSE_PARAMS){ SL[p.key]=$('ps_'+p.key); VL[p.k
 let syncing=false;
 function syncSliders(){
   syncing=true;
-  for(const p of POSE_PARAMS){ const el=SL[p.key]; if(p.type==='check'){ el.checked=pose[p.key]>=0.5; continue; } const v=Math.round(pose[p.key]); if(+el.value!==v) el.value=v; }
+  for(const p of POSE_PARAMS){ const el=SL[p.key]; if(p.type==='check'){ el.checked=pose[p.key]>=0.5; continue; } const v=Math.round(pose[p.key]);
+    if(p.type==='seg'){ el.querySelectorAll('button').forEach(b=>b.classList.toggle('on',+b.dataset.v===v)); continue; } if(+el.value!==v) el.value=v; }
   for(const p of POSE_PARAMS){ VL[p.key].textContent=p.text(pose); }
   for(const p of POSE_PARAMS){ if(!p.range) continue; const r=p.range(pose); const el=SL[p.key]; if(r.min!==undefined) el.min=Math.round(r.min); if(r.max!==undefined) el.max=Math.round(r.max); }
   syncing=false;
 }
-for(const p of POSE_PARAMS){ SL[p.key].addEventListener(p.type==='check'?'change':'input',()=>{ if(syncing) return; stopAnim(); const o={}; o[p.key]=p.type==='check'?(SL[p.key].checked?1:0):+SL[p.key].value; setPose(o); }); }
+for(const p of POSE_PARAMS){
+  if(p.type==='seg'){ SL[p.key].querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{ stopAnim(); const o={}; o[p.key]=+b.dataset.v; setPose(o); })); continue; }
+  SL[p.key].addEventListener(p.type==='check'?'change':'input',()=>{ if(syncing) return; stopAnim(); const o={}; o[p.key]=p.type==='check'?(SL[p.key].checked?1:0):+SL[p.key].value; setPose(o); }); }
 $('btnNeutral').addEventListener('click',()=>runPreset(PRESETS[0]));
 // Pathologie (Regler in Anzeigeeinheit, Zustand in Modelleinheit: sliderScale)
 const PL={}; for(const p of PATHO_PARAMS) PL[p.key]=$('pp_'+p.key);
